@@ -1,0 +1,143 @@
+:root {
+  --bg-color: #F8F4F1;
+  --card-bg: #FFFFFF;
+  --soft-beige: #F3EDE8;
+  --nude-accent: #E8DFD9;
+  --tan-accent: #C9B6A8;
+  --border-soft: #EFE7E2;
+  --text-primary: #5A4B44;
+  --text-secondary: #7C706A;
+  --button-dark: #3D322C;
+  --gold-accent: #D4A373;
+  --green-accent: #8A9A86;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app-container {
+  max-width: 440px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background-color: var(--bg-color);
+  position: relative;
+  box-shadow: 0 10px 40px rgba(90, 75, 68, 0.08);
+  display: flex;
+  flex-direction: column;
+}
+
+.font-heading {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.custom-card {
+  background-color: var(--card-bg);
+  border-radius: 24px;
+  border: 1px solid var(--border-soft);
+  padding: 20px;
+  box-shadow: 0 4px 16px rgba(90, 75, 68, 0.03);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.custom-card:active {
+  transform: scale(0.99);
+}
+
+.btn-dark {
+  background-color: var(--button-dark);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 28px;
+  padding: 16px 24px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: opacity 0.2s ease;
+}
+
+.btn-dark:hover {
+  opacity: 0.92;
+}
+
+.chip-pill {
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid var(--border-soft);
+  background-color: var(--card-bg);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.chip-pill.active {
+  background-color: var(--button-dark);
+  color: #FFFFFF;
+  border-color: var(--button-dark);
+}
+
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 440px;
+  background-color: var(--card-bg);
+  border-top: 1px solid var(--border-soft);
+  display: flex;
+  justify-content: space-around;
+  padding: 10px 0;
+  z-index: 100;
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: var(--tan-accent);
+  font-size: 11px;
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+
+.nav-item.active {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.player-bar {
+  position: fixed;
+  bottom: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 32px);
+  max-width: 408px;
+  background-color: var(--card-bg);
+  border-radius: 32px;
+  border: 1px solid var(--border-soft);
+  padding: 10px 16px;
+  box-shadow: 0 8px 24px rgba(90, 75, 68, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 90;
+  cursor: pointer;
+}

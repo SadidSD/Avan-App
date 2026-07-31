@@ -1,0 +1,36 @@
+name: avan_app
+description: AVAN Mindset & Affirmation App - Warm, Calm, Minimal & Meaningful.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  google_fonts: ^6.1.0
+  provider: ^6.1.2
+  audioplayers: ^6.0.0
+  flutter_tts: ^4.2.0
+  shared_preferences: ^2.2.2
+  flutter_staggered_grid_view: ^0.7.0
+  table_calendar: ^3.0.9
+  intl: ^0.19.0
+  speech_to_text: ^7.0.0
+  record: ^5.1.2
+  cupertino_icons: ^1.0.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/onboarding_girl_profile.jpg
+    - assets/images/onboarding_archway_sun.jpg
+    - assets/images/onboarding_moon_clouds.jpg
+    - assets/images/featured_meditation.jpg
+    - assets/images/sleep_story_night.jpg
