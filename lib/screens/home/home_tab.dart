@@ -1,13 +1,13 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'dart:math' as math;
 import '../../providers/app_provider.dart';
 import '../../providers/audio_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/custom_card.dart';
 import '../../widgets/paywall_modal.dart';
 import '../../data/playlists_data.dart';
+import '../../models/playlist.dart';
 
 class HomeTab extends StatefulWidget {
   const HomeTab({Key? key}) : super(key: key);
@@ -16,990 +16,848 @@ class HomeTab extends StatefulWidget {
   State<HomeTab> createState() => _HomeTabState();
 }
 
-class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
+class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
+  late AnimationController _fadeController;
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _fadeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    )..forward();
+  }
+
+  @override
+  void dispose() {
+    _fadeController.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final appProvider = Provider.of<AppProvider>(context);
     final audioProvider = Provider.of<AudioProvider>(context);
-    final personalizedPlaylist = freePlaylists.isNotEmpty ? freePlaylists.first : null;
+
+    final isGrowth = appProvider.isGrowthMode;
+    final hour = DateTime.now().hour;
+
+    // Theme tokens based on mode
+    final primaryColor = isGrowth ? AppColors.growthPrimary : AppColors.healingPrimary;
+    final secondaryColor = isGrowth ? AppColors.growthSecondary : AppColors.healingSecondary;
+    final accentColor = isGrowth ? AppColors.growthAccent : AppColors.healingAccent;
+    final backgroundColor = isGrowth ? AppColors.growthBackground : AppColors.healingBackground;
+    final cardBgColor = isGrowth ? AppColors.growthCardBackground : AppColors.healingCardBackground;
+    final textPrimary = isGrowth ? AppColors.growthTextPrimary : AppColors.healingTextPrimary;
+    final textSecondary = isGrowth ? AppColors.growthTextSecondary : AppColors.healingTextSecondary;
+
+    String greeting;
+    if (hour < 12) {
+      greeting = 'Good Morning';
+    } else if (hour < 17) {
+      greeting = 'Good Afternoon';
+    } else {
+      greeting = 'Good Evening';
+    }
+
+    final userName = 'Alex';
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: backgroundColor,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              _FadeInSection(
-                delay: 0,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: AnimatedBuilder(
+          animation: _fadeController,
+          builder: (context, child) {
+            return FadeTransition(
+              opacity: _fadeController,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Column(
+                    // --- 1. HEADER SECTION ---
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${isGrowth ? '🌅' : '🌙'} $greeting, $userName!',
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Row(
+                                children: [
+                                  Text(
+                                    isGrowth ? '🔥' : '💚',
+                                    style: const TextStyle(fontSize: 14),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    isGrowth
+                                        ? '${appProvider.streakData.currentStreak}-Day Streak'
+                                        : '${appProvider.streakData.currentStreak}-Day Healing Streak',
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: textSecondary,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    '⏱️ 12 min today',
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 13,
+                                      color: textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
                         Row(
                           children: [
-                            ShaderMask(
-                              shaderCallback: (bounds) => const LinearGradient(
-                                colors: [Color(0xFF333333), Color(0xFF8B6B5D), Color(0xFF333333)],
-                                stops: [0.0, 0.5, 1.0],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ).createShader(bounds),
-                              child: const Text(
-                                'Good morning, Alex',
-                                style: TextStyle(
-                                  fontFamily: 'Plus Jakarta Sans',
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.w800,
-                                  color: Colors.white,
+                            Stack(
+                              children: [
+                                IconButton(
+                                  icon: Icon(Icons.notifications_outlined, color: textPrimary, size: 24),
+                                  onPressed: () {},
                                 ),
-                              ),
+                                Positioned(
+                                  right: 10,
+                                  top: 10,
+                                  child: Container(
+                                    width: 8,
+                                    height: 8,
+                                    decoration: const BoxDecoration(
+                                      color: Colors.redAccent,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 8),
-                            const _AnimatedWaveEmoji(),
+                            IconButton(
+                              icon: Icon(Icons.settings_outlined, color: textPrimary, size: 24),
+                              onPressed: () => appProvider.setNavIndex(4), // Go to Profile
+                            ),
                           ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Take a deep breath and start your day.',
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: AppColors.textSecondary.withOpacity(0.8),
-                            letterSpacing: 0.2,
-                          ),
                         ),
                       ],
                     ),
-                    Stack(
+                    const SizedBox(height: 20),
+
+                    // --- Mode Switcher Banner ---
+                    _buildModeToggleBar(appProvider, primaryColor, textPrimary, textSecondary),
+                    const SizedBox(height: 24),
+
+                    // --- 2. MOOD CHECK-IN ---
+                    Text(
+                      'HOW ARE YOU FEELING TODAY?',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.1,
+                        color: textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildMoodCheckinRow(appProvider, primaryColor, cardBgColor, textSecondary),
+                    const SizedBox(height: 28),
+
+                    // --- 3. YOUR PERSONALIZED PLAYLIST ---
+                    Text(
+                      'YOUR PERSONALIZED PLAYLIST',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.1,
+                        color: textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildPersonalizedPlaylistCard(
+                      context,
+                      isGrowth,
+                      primaryColor,
+                      secondaryColor,
+                      cardBgColor,
+                      textPrimary,
+                      textSecondary,
+                      audioProvider,
+                    ),
+                    const SizedBox(height: 28),
+
+                    // --- 4. QUICK ACTIONS ---
+                    Text(
+                      'QUICK ACTIONS',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.1,
+                        color: textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildQuickActionsGrid(context, appProvider, cardBgColor, primaryColor),
+                    const SizedBox(height: 28),
+
+                    // --- 5. SEARCH / SITUATION DISCOVERY ---
+                    Text(
+                      '🔍 WHAT\'S YOUR SITUATION?',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.1,
+                        color: textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildSituationSearchSection(context, isGrowth, cardBgColor, textPrimary, textSecondary, audioProvider),
+                    const SizedBox(height: 28),
+
+                    // --- 6. RECOMMENDED FOR YOU ---
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.borderSoft.withOpacity(0.5),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                            border: Border.all(color: AppColors.borderSoft.withOpacity(0.3)),
+                        Text(
+                          'RECOMMENDED FOR YOU',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.1,
+                            color: textSecondary,
                           ),
-                          child: const Icon(Icons.notifications_none_rounded, color: AppColors.textPrimary, size: 24),
                         ),
-                        Positioned(
-                          right: 12,
-                          top: 12,
-                          child: Container(
-                            width: 8,
-                            height: 8,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFFF6B6B),
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(color: Color(0x66FF6B6B), blurRadius: 4, spreadRadius: 1),
-                              ],
+                        TextButton(
+                          onPressed: () {},
+                          child: Text(
+                            'View All',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: primaryColor,
                             ),
                           ),
                         ),
                       ],
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 28),
+                    const SizedBox(height: 8),
+                    _buildRecommendedList(context, isGrowth, cardBgColor, textPrimary, textSecondary, audioProvider, appProvider),
+                    const SizedBox(height: 28),
 
-              // Today's Affirmation Hero Card
-              _FadeInSection(
-                delay: 100,
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFFD4BBA5).withOpacity(0.3),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
-                  ),
-                  child: Stack(
-                    children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(24),
-                          gradient: const LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [Color(0xFFF9E8D9), Color(0xFFE2C4A8)],
-                          ),
-                        ),
-                      ),
-                      // Decorative orbs
-                      Positioned(
-                        top: -20,
-                        right: -20,
-                        child: Container(
-                          width: 100,
-                          height: 100,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white.withOpacity(0.2),
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        bottom: -30,
-                        left: 20,
-                        child: Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: const Color(0xFFD4BBA5).withOpacity(0.4),
-                          ),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(24.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.6),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: const Text(
-                                    "TODAY'S AFFIRMATION",
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w700,
-                                      letterSpacing: 1.2,
-                                      color: Color(0xFF8B6B5D),
-                                    ),
-                                  ),
-                                ),
-                                const Spacer(),
-                                const Icon(Icons.auto_awesome, size: 20, color: Colors.white),
-                              ],
-                            ),
-                            const SizedBox(height: 20),
-                            Text(
-                              '"${audioProvider.currentAffirmation?.quote ?? 'Every day is a new beginning'}"',
-                              style: const TextStyle(
-                                fontFamily: 'Georgia', // Elegant serif
-                                fontStyle: FontStyle.italic,
-                                fontSize: 26,
-                                fontWeight: FontWeight.w600,
-                                height: 1.4,
-                                color: Color(0xFF4A3B32),
-                              ),
-                            ),
-                            const SizedBox(height: 28),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Material(
-                                  color: Colors.transparent,
-                                  child: InkWell(
-                                    onTap: () {
-                                      audioProvider.nextAffirmation();
-                                    },
-                                    borderRadius: BorderRadius.circular(20),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.7),
-                                        borderRadius: BorderRadius.circular(20),
-                                        border: Border.all(color: Colors.white, width: 1),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: const [
-                                          Icon(Icons.refresh_rounded, size: 18, color: Color(0xFF4A3B32)),
-                                          SizedBox(width: 6),
-                                          Text(
-                                            'Refresh',
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              color: Color(0xFF4A3B32),
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.4),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(Icons.eco_rounded, color: Color(0xFF8B6B5D), size: 24),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 36),
-
-              // Your Personalized Playlist Section
-              if (personalizedPlaylist != null) ...[
-                _FadeInSection(
-                  delay: 200,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const _SectionTitle('Your Personalized Playlist'),
-                      const SizedBox(height: 16),
-                      Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFFFFDFD6), Color(0xFFF2C2B5)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFFF2C2B5).withOpacity(0.4),
-                              blurRadius: 15,
-                              offset: const Offset(0, 8),
-                            ),
-                          ],
-                        ),
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(20),
-                            onTap: () {
-                              audioProvider.openPlaylist(personalizedPlaylist, context);
-                            },
-                            child: Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(16),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.6),
-                                      borderRadius: BorderRadius.circular(16),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(0.05),
-                                          blurRadius: 10,
-                                        ),
-                                      ],
-                                    ),
-                                    child: const Icon(Icons.stars_rounded, color: Color(0xFFD67362), size: 32),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        const _PulseBadge(text: '24h free access'),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          personalizedPlaylist.title,
-                                          style: const TextStyle(
-                                            fontFamily: 'Plus Jakarta Sans',
-                                            fontWeight: FontWeight.w800,
-                                            fontSize: 18,
-                                            color: Color(0xFF4A3B32),
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          '${personalizedPlaylist.duration} • ${personalizedPlaylist.category}',
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            color: const Color(0xFF4A3B32).withOpacity(0.7),
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const _RingAnimatedPlayButton(),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 36),
-              ],
-
-              // Free Playlists Section
-              _FadeInSection(
-                delay: 300,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const _SectionTitle('Free Playlists'),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      height: 200,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        clipBehavior: Clip.none,
-                        itemCount: freePlaylists.length,
-                        itemBuilder: (context, index) {
-                          final playlist = freePlaylists[index];
-                          // Unique gradients based on index
-                          final gradients = [
-                            const [Color(0xFFE3F0E5), Color(0xFFB5D8C1)],
-                            const [Color(0xFFF4E5F7), Color(0xFFD3B6DD)],
-                            const [Color(0xFFFFF0D4), Color(0xFFE8CFA6)],
-                            const [Color(0xFFE5F1F7), Color(0xFFB1D2E3)],
-                          ];
-                          final icons = [Icons.spa_rounded, Icons.nightlight_round, Icons.wb_sunny_rounded, Icons.water_drop_rounded];
-                          
-                          return Container(
-                            width: 150,
-                            margin: const EdgeInsets.only(right: 16),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(20),
-                                color: Colors.white,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.04),
-                                    blurRadius: 15,
-                                    offset: const Offset(0, 8),
-                                  ),
-                                ],
-                              ),
-                              child: Material(
-                                color: Colors.transparent,
-                                child: InkWell(
-                                  borderRadius: BorderRadius.circular(20),
-                                  onTap: () {
-                                    audioProvider.openPlaylist(playlist, context);
-                                  },
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(12),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Expanded(
-                                          child: Container(
-                                            decoration: BoxDecoration(
-                                              gradient: LinearGradient(
-                                                colors: gradients[index % gradients.length],
-                                                begin: Alignment.topLeft,
-                                                end: Alignment.bottomRight,
-                                              ),
-                                              borderRadius: BorderRadius.circular(16),
-                                            ),
-                                            child: Center(
-                                              child: Icon(
-                                                icons[index % icons.length],
-                                                color: Colors.white.withOpacity(0.9),
-                                                size: 40,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(height: 16),
-                                        Text(
-                                          playlist.title,
-                                          style: const TextStyle(
-                                            fontFamily: 'Plus Jakarta Sans',
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: 15,
-                                            color: AppColors.textPrimary,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        const SizedBox(height: 6),
-                                        Text(
-                                          '${playlist.duration} • ${playlist.category}',
-                                          style: const TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w500,
-                                            color: AppColors.textSecondary,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        },
+                    // --- 7. TODAY'S AFFIRMATION ---
+                    Text(
+                      'TODAY\'S AFFIRMATION',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.1,
+                        color: textSecondary,
                       ),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 36),
-
-              // Premium Playlists Section
-              _FadeInSection(
-                delay: 400,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const _SectionTitle('Premium Playlists'),
-                    const SizedBox(height: 16),
-                    ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: premiumPlaylists.length,
-                      itemBuilder: (context, index) {
-                        final playlist = premiumPlaylists[index];
-                        final isLocked = !appProvider.isPremium;
-                        
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(20),
-                              color: Colors.white,
-                              border: Border.all(
-                                color: isLocked ? Colors.transparent : AppColors.goldAccent.withOpacity(0.3),
-                                width: 1.5,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.03),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(20),
-                              child: Stack(
-                                children: [
-                                  Material(
-                                    color: Colors.transparent,
-                                    child: InkWell(
-                                      onTap: () {
-                                        if (isLocked) {
-                                          PaywallModal.show(context);
-                                        } else {
-                                          audioProvider.openPlaylist(playlist, context);
-                                        }
-                                      },
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(16),
-                                        child: Row(
-                                          children: [
-                                            Container(
-                                              padding: const EdgeInsets.all(14),
-                                              decoration: BoxDecoration(
-                                                gradient: LinearGradient(
-                                                  colors: isLocked
-                                                      ? [const Color(0xFFF0F0F0), const Color(0xFFE0E0E0)]
-                                                      : [const Color(0xFFFFF7E6), const Color(0xFFFFE4B5)],
-                                                  begin: Alignment.topLeft,
-                                                  end: Alignment.bottomRight,
-                                                ),
-                                                borderRadius: BorderRadius.circular(16),
-                                              ),
-                                              child: Icon(
-                                                isLocked ? Icons.workspace_premium_rounded : Icons.star_rounded, 
-                                                color: isLocked ? const Color(0xFF9E9E9E) : AppColors.goldAccent, 
-                                                size: 26,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 16),
-                                            Expanded(
-                                              child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    playlist.title,
-                                                    style: TextStyle(
-                                                      fontFamily: 'Plus Jakarta Sans',
-                                                      fontWeight: FontWeight.w700,
-                                                      fontSize: 16,
-                                                      color: isLocked ? AppColors.textSecondary : AppColors.textPrimary,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(height: 6),
-                                                  Text(
-                                                    '${playlist.duration} • ${playlist.category}',
-                                                    style: const TextStyle(
-                                                      fontSize: 13,
-                                                      fontWeight: FontWeight.w500,
-                                                      color: AppColors.textSecondary,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                            Container(
-                                              padding: const EdgeInsets.all(10),
-                                              decoration: BoxDecoration(
-                                                color: isLocked ? const Color(0xFFF5F5F5) : AppColors.buttonDark,
-                                                shape: BoxShape.circle,
-                                              ),
-                                              child: Icon(
-                                                isLocked ? Icons.lock_outline_rounded : Icons.play_arrow_rounded, 
-                                                color: isLocked ? const Color(0xFFBDBDBD) : Colors.white, 
-                                                size: 22,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  if (isLocked)
-                                    Positioned.fill(
-                                      child: IgnorePointer(
-                                        child: ClipRRect(
-                                          borderRadius: BorderRadius.circular(20),
-                                          child: BackdropFilter(
-                                            filter: ImageFilter.blur(sigmaX: 0.5, sigmaY: 0.5),
-                                            child: Container(
-                                              color: Colors.white.withOpacity(0.3),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      },
+                    const SizedBox(height: 12),
+                    _buildTodaysAffirmationCard(
+                      context,
+                      isGrowth,
+                      primaryColor,
+                      secondaryColor,
+                      cardBgColor,
+                      textPrimary,
+                      textSecondary,
+                      appProvider,
+                      audioProvider,
                     ),
+                    const SizedBox(height: 100), // Spacing for player bar & bottom nav
                   ],
                 ),
               ),
-              const SizedBox(height: 36),
+            );
+          },
+        ),
+      ),
+    );
+  }
 
-              // Your Progress
-              _FadeInSection(
-                delay: 500,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const _SectionTitle('Your Progress'),
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(24),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.04),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          // Streak
-                          Column(
-                            children: [
-                              const _GlowingFireIcon(),
-                              const SizedBox(height: 12),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: AppColors.softBeige,
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Column(
-                                  children: [
-                                    Text(
-                                      '${appProvider.streakData.currentStreak}',
-                                      style: const TextStyle(
-                                        fontFamily: 'Plus Jakarta Sans',
-                                        fontWeight: FontWeight.w800,
-                                        fontSize: 20,
-                                        color: AppColors.textPrimary,
-                                      ),
-                                    ),
-                                    const Text(
-                                      'Day Streak',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w600,
-                                        color: AppColors.textSecondary,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          Container(height: 80, width: 1, color: AppColors.borderSoft.withOpacity(0.5)),
-                          // Weekly Progress
-                          Column(
-                            children: [
-                              SizedBox(
-                                width: 56,
-                                height: 56,
-                                child: Stack(
-                                  alignment: Alignment.center,
-                                  children: [
-                                    TweenAnimationBuilder<double>(
-                                      tween: Tween<double>(begin: 0, end: appProvider.streakData.weeklyProgress),
-                                      duration: const Duration(milliseconds: 1500),
-                                      curve: Curves.easeOutCubic,
-                                      builder: (context, value, child) {
-                                        return CircularProgressIndicator(
-                                          value: value,
-                                          strokeWidth: 6,
-                                          backgroundColor: AppColors.nudeAccent,
-                                          valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF8B6B5D)),
-                                          strokeCap: StrokeCap.round,
-                                        );
-                                      },
-                                    ),
-                                    const Icon(Icons.insights_rounded, color: Color(0xFF8B6B5D), size: 24),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: AppColors.softBeige,
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Column(
-                                  children: [
-                                    Text(
-                                      '${(appProvider.streakData.weeklyProgress * 100).toInt()}%',
-                                      style: const TextStyle(
-                                        fontFamily: 'Plus Jakarta Sans',
-                                        fontWeight: FontWeight.w800,
-                                        fontSize: 20,
-                                        color: AppColors.textPrimary,
-                                      ),
-                                    ),
-                                    const Text(
-                                      'Weekly Goal',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w600,
-                                        color: AppColors.textSecondary,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 80),
-            ],
+  // --- Widget 1: Mode Switcher Bar ---
+  Widget _buildModeToggleBar(AppProvider appProvider, Color primaryColor, Color textPrimary, Color textSecondary) {
+    final mode = appProvider.appModeSetting;
+
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: AppColors.borderSoft.withOpacity(0.4),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildModeTab(
+              label: '🚀 Growth',
+              isSelected: mode == AppMode.growth,
+              onTap: () {
+                appProvider.setAppMode(AppMode.growth);
+                _fadeController.forward(from: 0);
+              },
+            ),
+          ),
+          Expanded(
+            child: _buildModeTab(
+              label: '💔 Healing',
+              isSelected: mode == AppMode.healing,
+              onTap: () {
+                appProvider.setAppMode(AppMode.healing);
+                _fadeController.forward(from: 0);
+              },
+            ),
+          ),
+          Expanded(
+            child: _buildModeTab(
+              label: '🔄 Auto',
+              isSelected: mode == AppMode.auto,
+              onTap: () {
+                appProvider.setAppMode(AppMode.auto);
+                _fadeController.forward(from: 0);
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModeTab({required String label, required bool isSelected, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: isSelected
+              ? [const BoxShadow(color: Color(0x10000000), blurRadius: 6, offset: Offset(0, 2))]
+              : null,
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 12,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+            color: isSelected ? AppColors.buttonDark : AppColors.textSecondary,
           ),
         ),
       ),
     );
   }
-}
 
-// -----------------------------------------------------------------------------
-// Helper Widgets for Premium UI
-// -----------------------------------------------------------------------------
+  // --- Widget 2: Mood Check-in Row ---
+  Widget _buildMoodCheckinRow(AppProvider appProvider, Color primaryColor, Color cardBgColor, Color textSecondary) {
+    final selectedMood = appProvider.selectedMood;
+    final moods = [
+      {'emoji': '😊', 'label': 'Happy'},
+      {'emoji': '😐', 'label': 'Neutral'},
+      {'emoji': '😔', 'label': 'Sad'},
+      {'emoji': '😨', 'label': 'Anxious'},
+      {'emoji': '😌', 'label': 'Calm'},
+      {'emoji': '🤔', 'label': 'Thoughtful'},
+    ];
 
-class _SectionTitle extends StatelessWidget {
-  final String title;
-  const _SectionTitle(this.title);
-
-  @override
-  Widget build(BuildContext context) {
     return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: moods.map((mood) {
+        final emoji = mood['emoji']!;
+        final label = mood['label']!;
+        final isSelected = selectedMood == emoji;
+
+        return GestureDetector(
+          onTap: () => appProvider.setSelectedMood(emoji),
+          child: Column(
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: isSelected ? primaryColor.withOpacity(0.18) : cardBgColor,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isSelected ? primaryColor : AppColors.borderSoft.withOpacity(0.5),
+                    width: isSelected ? 2 : 1,
+                  ),
+                ),
+                child: Text(
+                  emoji,
+                  style: TextStyle(fontSize: isSelected ? 26 : 22),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 10,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w400,
+                  color: isSelected ? primaryColor : textSecondary,
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  // --- Widget 3: Personalized Playlist Card ---
+  Widget _buildPersonalizedPlaylistCard(
+    BuildContext context,
+    bool isGrowth,
+    Color primaryColor,
+    Color secondaryColor,
+    Color cardBgColor,
+    Color textPrimary,
+    Color textSecondary,
+    AudioProvider audioProvider,
+  ) {
+    final playlistTitle = isGrowth ? 'Unshakeable Confidence' : 'Healing Your Heart';
+    final playlistDesc = isGrowth
+        ? 'Based on your goal: Build Confidence'
+        : 'Based on your situation: Healing from breakup';
+    final durationStr = isGrowth ? '7 min' : '10 min';
+    final iconEmoji = isGrowth ? '🎯' : '💔';
+
+    final targetPlaylist = freePlaylists.firstWhere(
+      (p) => isGrowth ? p.id.contains('confidence') || p.id.contains('energy') : p.id.contains('sleep') || p.id.contains('calm'),
+      orElse: () => freePlaylists.first,
+    );
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: cardBgColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: primaryColor.withOpacity(0.15)),
+        boxShadow: [
+          BoxShadow(
+            color: primaryColor.withOpacity(0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: primaryColor.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Center(
+              child: Text(iconEmoji, style: const TextStyle(fontSize: 26)),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  playlistTitle,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  playlistDesc,
+                  style: TextStyle(fontFamily: 'Inter', fontSize: 12, color: textSecondary),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    const Icon(Icons.timer_outlined, size: 13, color: Colors.grey),
+                    const SizedBox(width: 4),
+                    Text(durationStr, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                    const SizedBox(width: 12),
+                    const Icon(Icons.mic_outlined, size: 13, color: Colors.grey),
+                    const SizedBox(width: 4),
+                    const Text('12 affirmations', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          ElevatedButton(
+            onPressed: () => audioProvider.openPlaylist(targetPlaylist, context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: primaryColor,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            ),
+            child: const Text('▶ Play', style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.bold, fontSize: 13)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- Widget 4: Quick Actions Grid ---
+  Widget _buildQuickActionsGrid(BuildContext context, AppProvider appProvider, Color cardBgColor, Color primaryColor) {
+    final actions = [
+      {'icon': '🎧', 'label': 'Listen', 'premium': false, 'tab': 0},
+      {'icon': '🗣️', 'label': 'Repeat After', 'premium': true, 'tab': 1},
+      {'icon': '📝', 'label': 'Write Journal', 'premium': false, 'tab': 2},
+      {'icon': '🖼️', 'label': 'Vision Board', 'premium': true, 'tab': 3},
+    ];
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: actions.map((act) {
+        final isPremium = act['premium'] == true;
+        final tabIndex = act['tab'] as int;
+
+        return Expanded(
+          child: GestureDetector(
+            onTap: () {
+              if (isPremium && !appProvider.isPremium) {
+                PaywallModal.show(context);
+              } else {
+                appProvider.setNavIndex(tabIndex);
+              }
+            },
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: cardBgColor,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isPremium ? Colors.amber.shade400 : AppColors.borderSoft.withOpacity(0.5),
+                  width: isPremium ? 1.5 : 1.0,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.03),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  Text(act['icon'] as String, style: const TextStyle(fontSize: 24)),
+                  const SizedBox(height: 4),
+                  Text(
+                    act['label'] as String,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontFamily: 'Inter', fontSize: 10, fontWeight: FontWeight.w600),
+                  ),
+                  if (isPremium) ...[
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.shade100,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        'PREMIUM',
+                        style: TextStyle(fontSize: 7, fontWeight: FontWeight.bold, color: Colors.amber.shade800),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  // --- Widget 5: Situation Search Section ---
+  Widget _buildSituationSearchSection(
+    BuildContext context,
+    bool isGrowth,
+    Color cardBgColor,
+    Color textPrimary,
+    Color textSecondary,
+    AudioProvider audioProvider,
+  ) {
+    final growthSituations = [
+      {'icon': '💼', 'text': 'I Have A Job Interview'},
+      {'icon': '📚', 'text': 'I Have An Exam Tomorrow'},
+      {'icon': '🚀', 'text': 'I Need To Build Confidence'},
+    ];
+
+    final healingSituations = [
+      {'icon': '💔', 'text': 'I\'m Going Through A Breakup'},
+      {'icon': '🕊️', 'text': 'I\'m Grieving A Loss'},
+      {'icon': '😰', 'text': 'I Can\'t Fall Asleep'},
+    ];
+
+    final list = isGrowth ? growthSituations : healingSituations;
+
+    return Column(
       children: [
+        // Search Input Bar
         Container(
-          width: 4,
-          height: 16,
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
           decoration: BoxDecoration(
-            color: const Color(0xFF8B6B5D),
-            borderRadius: BorderRadius.circular(2),
+            color: cardBgColor,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.borderSoft),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.search_rounded, color: Colors.grey, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  decoration: const InputDecoration(
+                    hintText: 'Search playlists by situation...',
+                    hintStyle: TextStyle(fontSize: 13, color: Colors.grey),
+                    border: InputBorder.none,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(width: 8),
-        Text(
-          title,
-          style: const TextStyle(
-            fontFamily: 'Plus Jakarta Sans',
-            fontSize: 19,
-            fontWeight: FontWeight.w800,
-            color: AppColors.textPrimary,
-            letterSpacing: 0.2,
-          ),
+        const SizedBox(height: 10),
+
+        // Popular List Items
+        Column(
+          children: list.map((sit) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: InkWell(
+                onTap: () {
+                  final target = freePlaylists.first;
+                  audioProvider.openPlaylist(target, context);
+                },
+                borderRadius: BorderRadius.circular(10),
+                child: Padding(
+                  padding: const EdgeInsets.all(6.0),
+                  child: Row(
+                    children: [
+                      Text(sit['icon']!, style: const TextStyle(fontSize: 16)),
+                      const SizedBox(width: 10),
+                      Text(
+                        sit['text']!,
+                        style: TextStyle(fontFamily: 'Inter', fontSize: 13, fontWeight: FontWeight.w500, color: textPrimary),
+                      ),
+                      const Spacer(),
+                      const Icon(Icons.arrow_forward_ios_rounded, size: 12, color: Colors.grey),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
         ),
       ],
     );
   }
-}
 
-class _AnimatedWaveEmoji extends StatefulWidget {
-  const _AnimatedWaveEmoji();
+  // --- Widget 6: Recommended List ---
+  Widget _buildRecommendedList(
+    BuildContext context,
+    bool isGrowth,
+    Color cardBgColor,
+    Color textPrimary,
+    Color textSecondary,
+    AudioProvider audioProvider,
+    AppProvider appProvider,
+  ) {
+    final items = isGrowth ? freePlaylists : premiumPlaylists.take(4).toList();
 
-  @override
-  State<_AnimatedWaveEmoji> createState() => _AnimatedWaveEmojiState();
-}
+    return SizedBox(
+      height: 110,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: items.length,
+        itemBuilder: (context, index) {
+          final playlist = items[index];
+          final isLocked = playlist.isPremium && !appProvider.isPremium;
 
-class _AnimatedWaveEmojiState extends State<_AnimatedWaveEmoji> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(seconds: 2))..repeat(reverse: true);
-    _animation = Tween<double>(begin: -0.1, end: 0.2).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _animation,
-      builder: (context, child) {
-        return Transform.rotate(
-          angle: _animation.value,
-          child: const Text('👋', style: TextStyle(fontSize: 24)),
-        );
-      },
-    );
-  }
-}
-
-class _PulseBadge extends StatefulWidget {
-  final String text;
-  const _PulseBadge({required this.text});
-
-  @override
-  State<_PulseBadge> createState() => _PulseBadgeState();
-}
-
-class _PulseBadgeState extends State<_PulseBadge> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(seconds: 2))..repeat(reverse: true);
-    _animation = Tween<double>(begin: 0.4, end: 1.0).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _animation,
-      builder: (context, child) {
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(8),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFFD67362).withOpacity(_animation.value * 0.3),
-                blurRadius: 8,
-                spreadRadius: _animation.value * 2,
+          return Container(
+            width: 140,
+            margin: const EdgeInsets.only(right: 12),
+            child: CustomCard(
+              padding: const EdgeInsets.all(12),
+              onTap: () {
+                if (isLocked) {
+                  PaywallModal.show(context);
+                } else {
+                  audioProvider.openPlaylist(playlist, context);
+                }
+              },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          playlist.title,
+                          style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.bold, fontSize: 13, color: textPrimary),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (isLocked)
+                        const Icon(Icons.lock_rounded, size: 14, color: AppColors.tanAccent),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${playlist.duration} • ${playlist.category}',
+                    style: TextStyle(fontSize: 11, color: textSecondary),
+                    maxLines: 1,
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: const [
+                      Icon(Icons.star_rounded, size: 14, color: Colors.amber),
+                      SizedBox(width: 4),
+                      Text('4.8', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
+                    ],
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: Text(
-            widget.text.toUpperCase(),
-            style: const TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.5,
-              color: Color(0xFFD67362),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
-}
 
-class _RingAnimatedPlayButton extends StatefulWidget {
-  const _RingAnimatedPlayButton();
+  // --- Widget 7: Today's Affirmation Card ---
+  Widget _buildTodaysAffirmationCard(
+    BuildContext context,
+    bool isGrowth,
+    Color primaryColor,
+    Color secondaryColor,
+    Color cardBgColor,
+    Color textPrimary,
+    Color textSecondary,
+    AppProvider appProvider,
+    AudioProvider audioProvider,
+  ) {
+    final quoteText = isGrowth
+        ? 'I am capable of handling whatever comes my way today.'
+        : 'This pain is real, and I honor it. I am worthy of healing.';
 
-  @override
-  State<_RingAnimatedPlayButton> createState() => _RingAnimatedPlayButtonState();
-}
-
-class _RingAnimatedPlayButtonState extends State<_RingAnimatedPlayButton> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(seconds: 2))..repeat();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return Stack(
-          alignment: Alignment.center,
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: const Color(0xFF4A3B32).withOpacity(1.0 - _controller.value),
-                  width: 2,
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            primaryColor.withOpacity(0.08),
+            secondaryColor.withOpacity(0.08),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: primaryColor.withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text('✨', style: TextStyle(fontSize: 20)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '"$quoteText"',
+                  style: TextStyle(
+                    fontFamily: 'Georgia',
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    height: 1.4,
+                    fontStyle: isGrowth ? FontStyle.normal : FontStyle.italic,
+                    color: textPrimary,
+                  ),
                 ),
               ),
-              transform: Matrix4.identity()..scale(1.0 + (_controller.value * 0.5)),
-              transformAlignment: Alignment.center,
-            ),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: const BoxDecoration(
-                color: Color(0xFF4A3B32),
-                shape: BoxShape.circle,
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton.icon(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Saved to Favorites! ❤️')),
+                  );
+                },
+                icon: const Icon(Icons.favorite_outline_rounded, size: 16),
+                label: const Text('Save', style: TextStyle(fontSize: 12)),
+                style: TextButton.styleFrom(foregroundColor: textSecondary),
               ),
-              child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 24),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _GlowingFireIcon extends StatefulWidget {
-  const _GlowingFireIcon();
-
-  @override
-  State<_GlowingFireIcon> createState() => _GlowingFireIconState();
-}
-
-class _GlowingFireIconState extends State<_GlowingFireIcon> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 1500))..repeat(reverse: true);
-    _animation = Tween<double>(begin: 0.6, end: 1.0).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _animation,
-      builder: (context, child) {
-        return Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFFFFF2D1),
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFFFFB74D).withOpacity(_animation.value * 0.4),
-                blurRadius: 15 * _animation.value,
-                spreadRadius: 2 * _animation.value,
+              TextButton.icon(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Affirmation shared! 📤')),
+                  );
+                },
+                icon: const Icon(Icons.share_outlined, size: 16),
+                label: const Text('Share', style: TextStyle(fontSize: 12)),
+                style: TextButton.styleFrom(foregroundColor: textSecondary),
+              ),
+              TextButton.icon(
+                onPressed: () {
+                  if (freePlaylists.isNotEmpty) {
+                    audioProvider.openPlaylist(freePlaylists.first, context);
+                  }
+                },
+                icon: const Icon(Icons.play_arrow_rounded, size: 18),
+                label: const Text('Listen', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                style: TextButton.styleFrom(foregroundColor: primaryColor),
               ),
             ],
           ),
-          child: const Icon(Icons.local_fire_department_rounded, color: Color(0xFFFF9800), size: 36),
-        );
-      },
-    );
-  }
-}
-
-class _FadeInSection extends StatefulWidget {
-  final Widget child;
-  final int delay;
-
-  const _FadeInSection({required this.child, required this.delay});
-
-  @override
-  State<_FadeInSection> createState() => _FadeInSectionState();
-}
-
-class _FadeInSectionState extends State<_FadeInSection> {
-  bool _isVisible = false;
-
-  @override
-  void initState() {
-    super.initState();
-    Future.delayed(Duration(milliseconds: widget.delay), () {
-      if (mounted) setState(() => _isVisible = true);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedOpacity(
-      duration: const Duration(milliseconds: 600),
-      opacity: _isVisible ? 1.0 : 0.0,
-      curve: Curves.easeOut,
-      child: AnimatedSlide(
-        duration: const Duration(milliseconds: 600),
-        offset: _isVisible ? Offset.zero : const Offset(0, 0.1),
-        curve: Curves.easeOut,
-        child: widget.child,
+        ],
       ),
     );
   }

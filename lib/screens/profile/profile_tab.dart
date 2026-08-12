@@ -188,6 +188,92 @@ class ProfileTab extends StatelessWidget {
                   ],
                 ),
               ),
+              const SizedBox(height: 16),
+
+              // App Mode Selector Card
+              CustomCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: const [
+                        Text(
+                          'App Experience Mode',
+                          style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.textPrimary),
+                        ),
+                        Icon(Icons.palette_outlined, color: AppColors.tanAccent, size: 20),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    const Text('Switch between Growth and Healing modes', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => appProvider.setAppMode(AppMode.growth),
+                            style: OutlinedButton.styleFrom(
+                              backgroundColor: appProvider.appModeSetting == AppMode.growth ? AppColors.growthPrimary : Colors.transparent,
+                              side: BorderSide(color: appProvider.appModeSetting == AppMode.growth ? AppColors.growthPrimary : AppColors.borderSoft),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                            ),
+                            child: Text(
+                              '🚀 Growth',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: appProvider.appModeSetting == AppMode.growth ? Colors.white : AppColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => appProvider.setAppMode(AppMode.healing),
+                            style: OutlinedButton.styleFrom(
+                              backgroundColor: appProvider.appModeSetting == AppMode.healing ? AppColors.healingPrimary : Colors.transparent,
+                              side: BorderSide(color: appProvider.appModeSetting == AppMode.healing ? AppColors.healingPrimary : AppColors.borderSoft),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                            ),
+                            child: Text(
+                              '💔 Healing',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: appProvider.appModeSetting == AppMode.healing ? Colors.white : AppColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => appProvider.setAppMode(AppMode.auto),
+                            style: OutlinedButton.styleFrom(
+                              backgroundColor: appProvider.appModeSetting == AppMode.auto ? AppColors.buttonDark : Colors.transparent,
+                              side: BorderSide(color: appProvider.appModeSetting == AppMode.auto ? AppColors.buttonDark : AppColors.borderSoft),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                            ),
+                            child: Text(
+                              '🔄 Auto',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: appProvider.appModeSetting == AppMode.auto ? Colors.white : AppColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
               const SizedBox(height: 20),
 
               // Settings List

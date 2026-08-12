@@ -4,12 +4,17 @@ import '../models/streak.dart';
 import '../models/user_recording.dart';
 import '../services/storage_service.dart';
 
+enum AppMode { growth, healing, auto }
+
 class AppProvider with ChangeNotifier {
   final StorageService _storageService = StorageService();
 
   bool _isPremium = false;
   bool _isOnboardingCompleted = false;
   int _currentNavIndex = 0;
+
+  AppMode _appModeSetting = AppMode.growth;
+  String _selectedMood = '';
 
   String _selectedGoal = 'Boost Confidence';
   String _selectedChallenge = 'Overthinking & Self-Doubt';
@@ -24,6 +29,20 @@ class AppProvider with ChangeNotifier {
   bool get isPremium => _isPremium;
   bool get isOnboardingCompleted => _isOnboardingCompleted;
   int get currentNavIndex => _currentNavIndex;
+
+  AppMode get appModeSetting => _appModeSetting;
+  String get selectedMood => _selectedMood;
+
+  /// Resolves active mode (handles 'auto' mode based on current time of day)
+  AppMode get activeAppMode {
+    if (_appModeSetting == AppMode.auto) {
+      final hour = DateTime.now().hour;
+      return (hour >= 6 && hour < 18) ? AppMode.growth : AppMode.healing;
+    }
+    return _appModeSetting;
+  }
+
+  bool get isGrowthMode => activeAppMode == AppMode.growth;
 
   String get selectedGoal => _selectedGoal;
   String get selectedChallenge => _selectedChallenge;
@@ -45,6 +64,17 @@ class AppProvider with ChangeNotifier {
     _isOnboardingCompleted = _storageService.getOnboardingStatus();
     _isPremium = _storageService.getPremiumStatus();
     
+    final modeStr = _storageService.getAppMode();
+    if (modeStr == 'healing') {
+      _appModeSetting = AppMode.healing;
+    } else if (modeStr == 'auto') {
+      _appModeSetting = AppMode.auto;
+    } else {
+      _appModeSetting = AppMode.growth;
+    }
+
+    _selectedMood = _storageService.getSelectedMood();
+
     final survey = _storageService.getSurveyAnswers();
     _selectedGoal = survey['goal']!;
     _selectedChallenge = survey['challenge']!;
@@ -56,6 +86,25 @@ class AppProvider with ChangeNotifier {
     _favoriteAffirmations = _storageService.getFavoriteAffirmations();
     _userRecordings = _storageService.getUserRecordings();
 
+    notifyListeners();
+  }
+
+  Future<void> setAppMode(AppMode mode) async {
+    _appModeSetting = mode;
+    String modeStr = 'growth';
+    if (mode == AppMode.healing) modeStr = 'healing';
+    if (mode == AppMode.auto) modeStr = 'auto';
+    await _storageService.setAppMode(modeStr);
+    notifyListeners();
+  }
+
+  Future<void> setSelectedMood(String mood) async {
+    if (_selectedMood == mood) {
+      _selectedMood = ''; // toggle off if tapped again
+    } else {
+      _selectedMood = mood;
+    }
+    await _storageService.setSelectedMood(_selectedMood);
     notifyListeners();
   }
 

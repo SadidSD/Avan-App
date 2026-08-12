@@ -56,4 +56,22 @@ class AppColors {
       Color(0xFFE2D6CC),
     ],
   );
+
+  // --- Growth Mode Colors ---
+  static const Color growthPrimary = Color(0xFF1A365D);
+  static const Color growthSecondary = Color(0xFF319795);
+  static const Color growthAccent = Color(0xFFD69E2E);
+  static const Color growthBackground = Color(0xFFFFFFFF);
+  static const Color growthTextPrimary = Color(0xFF1A202C);
+  static const Color growthTextSecondary = Color(0xFF4A5568);
+  static const Color growthCardBackground = Color(0xFFF7FAFC);
+
+  // --- Healing Mode Colors ---
+  static const Color healingPrimary = Color(0xFF6B46C1);
+  static const Color healingSecondary = Color(0xFFED64A6);
+  static const Color healingAccent = Color(0xFF9F7AEA);
+  static const Color healingBackground = Color(0xFFFDF7F0);
+  static const Color healingTextPrimary = Color(0xFF2D3748);
+  static const Color healingTextSecondary = Color(0xFF718096);
+  static const Color healingCardBackground = Color(0xFFFFFFFF);
 }

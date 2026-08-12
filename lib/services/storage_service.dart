@@ -75,6 +75,13 @@ class StorageService {
     await _prefs.setStringList('userRecordings', recsStr);
   }
 
+  // Mode & Mood
+  String getAppMode() => _prefs.getString('appMode') ?? 'growth';
+  Future<void> setAppMode(String mode) => _prefs.setString('appMode', mode);
+
+  String getSelectedMood() => _prefs.getString('selectedMood') ?? '';
+  Future<void> setSelectedMood(String mood) => _prefs.setString('selectedMood', mood);
+
   Future<void> clearAll() async {
     await _prefs.clear();
   }
