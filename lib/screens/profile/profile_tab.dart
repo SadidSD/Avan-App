@@ -192,7 +192,7 @@ class ProfileTab extends StatelessWidget {
 
               // Settings List
               _buildMenuItem(context, Icons.notifications_none_rounded, 'Reminders'),
-              _buildMenuItem(context, Icons.menu_book_rounded, 'Journal', onTap: () => appProvider.setNavIndex(3)),
+              _buildMenuItem(context, Icons.menu_book_rounded, 'Journal', onTap: () => appProvider.setNavIndex(2)),
               _buildMenuItem(context, Icons.favorite_border_rounded, 'Favorites', onTap: () => appProvider.setNavIndex(0)),
               _buildMenuItem(context, Icons.download_outlined, 'Downloads'),
               _buildMenuItem(

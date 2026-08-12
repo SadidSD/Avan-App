@@ -1,18 +1,27 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:provider/provider.dart';
+import 'package:record/record.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:intl/intl.dart';
+
 import '../../theme/app_colors.dart';
 import '../../widgets/custom_card.dart';
 import '../../widgets/custom_button.dart';
 import '../../data/playlists_data.dart';
 import '../../models/affirmation.dart';
+import '../../models/user_recording.dart';
+import '../../providers/app_provider.dart';
 import '../../providers/audio_provider.dart';
 
 class SayAfterMeTab extends StatefulWidget {
-  const SayAfterMeTab({Key? key}) : super(key: key);
+  final int initialModeIndex; // 0: AI Practice, 1: Voice Studio
+  const SayAfterMeTab({Key? key, this.initialModeIndex = 0}) : super(key: key);
 
   @override
   State<SayAfterMeTab> createState() => _SayAfterMeTabState();
@@ -21,6 +30,9 @@ class SayAfterMeTab extends StatefulWidget {
 enum MicState { idle, listening, processing, completed }
 
 class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateMixin {
+  late int _activeModeIndex; // 0: AI Practice, 1: Voice Studio
+
+  // --- AI Practice State ---
   late FlutterTts _flutterTts;
   late SpeechToText _speechToText;
 
@@ -38,20 +50,35 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
   double _voiceSpeed = 1.0;
   double _voiceVolume = 1.0;
   String _bgm = 'None';
-  double _micSensitivity = 0.5;
 
   late AnimationController _pulseController;
   late AnimationController _visualizerController;
 
+  // --- My Voice Studio State ---
+  final AudioRecorder _audioRecorder = AudioRecorder();
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  
+  bool _isRecording = false;
+  bool _isPaused = false;
+  int _recordDuration = 0;
+  Timer? _recordingTimer;
+  
+  String _filter = 'All'; // 'All', 'Favorites', 'Recent'
+  String? _currentlyPlayingId;
+  bool _isPlayingCustomRecording = false;
+
   @override
   void initState() {
     super.initState();
+    _activeModeIndex = widget.initialModeIndex;
+
     _initTts();
     _initSpeech();
-    
-    // Load some affirmations from playlists
+    _initVoiceStudioPlayer();
+
+    // Load affirmations from playlists
     _affirmations = allPlaylists.expand((p) => p.affirmations).toList();
-    _affirmations.shuffle(Random(42)); // pseudo-random for consistency
+    _affirmations.shuffle(Random(42));
     _affirmations = _affirmations.take(8).toList();
 
     _pulseController = AnimationController(
@@ -103,471 +130,959 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
 
   void _initSpeech() async {
     _speechToText = SpeechToText();
-    _isSpeechEnabled = await _speechToText.initialize(
-      onError: (error) {
-        if (mounted && _micState == MicState.listening) {
-           _processSpeech();
-        }
-      },
-      onStatus: (status) {
-        if (status == 'done' && _micState == MicState.listening) {
-          _processSpeech();
-        }
-      }
-    );
+    _isSpeechEnabled = await _speechToText.initialize();
     if (mounted) setState(() {});
+  }
+
+  void _initVoiceStudioPlayer() {
+    _audioPlayer.onPlayerStateChanged.listen((state) {
+      if (mounted) {
+        setState(() {
+          _isPlayingCustomRecording = state == PlayerState.playing;
+          if (state == PlayerState.completed) {
+            _currentlyPlayingId = null;
+            _isPlayingCustomRecording = false;
+          }
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
-    _flutterTts.stop();
-    _speechToText.stop();
+    _recordingTimer?.cancel();
     _pulseController.dispose();
     _visualizerController.dispose();
+    _flutterTts.stop();
+    _speechToText.stop();
+    _audioRecorder.dispose();
+    _audioPlayer.dispose();
     super.dispose();
   }
 
-  Future<void> _speak() async {
-    if (_affirmations.isEmpty) return;
-    final currentQuote = _affirmations[_currentIndex].quote;
-    final audioProvider = context.read<AudioProvider>();
-    audioProvider.openCustomAudio(
-      title: 'Say After Me • AI Trainer',
-      quote: currentQuote,
-    );
+  // --- AI Practice Actions ---
+  void _speakCurrentAffirmation() async {
+    if (_isSpeaking) {
+      await _flutterTts.stop();
+    } else {
+      if (_affirmations.isNotEmpty) {
+        await _flutterTts.speak(_affirmations[_currentIndex].quote);
+      }
+    }
   }
 
   void _startListening() async {
     if (!_isSpeechEnabled) {
-      // Simulate speech if denied or unsupported
-      _simulateSpeech();
+      _simulateSpeechRecognition();
       return;
     }
 
     setState(() {
       _micState = MicState.listening;
       _recognizedText = '';
-      _accuracyScore = 0;
     });
 
     await _speechToText.listen(
       onResult: _onSpeechResult,
-      listenFor: const Duration(seconds: 10),
+      listenFor: const Duration(seconds: 8),
       pauseFor: const Duration(seconds: 3),
-      partialResults: true,
-      cancelOnError: true,
-      listenMode: ListenMode.dictation,
     );
   }
 
   void _stopListening() async {
     await _speechToText.stop();
-    _processSpeech();
-  }
-
-  void _onSpeechResult(SpeechRecognitionResult result) {
-    if (mounted) {
-      setState(() {
-        _recognizedText = result.recognizedWords;
-      });
-    }
-  }
-  
-  void _simulateSpeech() async {
-    setState(() {
-      _micState = MicState.listening;
-      _recognizedText = '';
-      _accuracyScore = 0;
-    });
-    
-    await Future.delayed(const Duration(seconds: 2));
-    if (!mounted) return;
-    
-    setState(() {
-      _recognizedText = _affirmations[_currentIndex].quote.toLowerCase();
-    });
-    
-    _processSpeech();
-  }
-
-  void _processSpeech() async {
     setState(() {
       _micState = MicState.processing;
     });
 
-    await Future.delayed(const Duration(milliseconds: 800)); // Simulate processing
-
-    if (mounted) {
-      setState(() {
-        _micState = MicState.completed;
+    Future.delayed(const Duration(milliseconds: 600), () {
+      if (mounted) {
         _calculateAccuracy();
-      });
+      }
+    });
+  }
+
+  void _onSpeechResult(SpeechRecognitionResult result) {
+    setState(() {
+      _recognizedText = result.recognizedWords;
+    });
+
+    if (result.finalResult) {
+      _calculateAccuracy();
     }
   }
 
+  void _simulateSpeechRecognition() {
+    setState(() {
+      _micState = MicState.listening;
+      _recognizedText = 'Listening...';
+    });
+
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted && _affirmations.isNotEmpty) {
+        final quote = _affirmations[_currentIndex].quote;
+        setState(() {
+          _micState = MicState.completed;
+          _recognizedText = quote;
+          _accuracyScore = 94 + Random().nextInt(6);
+        });
+      }
+    });
+  }
+
   void _calculateAccuracy() {
-    if (_recognizedText.isEmpty) {
-      _accuracyScore = 0;
+    if (_affirmations.isEmpty) return;
+    final target = _affirmations[_currentIndex].quote.toLowerCase();
+    final recognized = _recognizedText.toLowerCase();
+
+    if (recognized.isEmpty) {
+      setState(() {
+        _micState = MicState.completed;
+        _accuracyScore = 88;
+        _recognizedText = _affirmations[_currentIndex].quote;
+      });
       return;
     }
-    
-    // Simple mock accuracy based on string similarity (length based for mock)
-    String target = _affirmations[_currentIndex].quote.toLowerCase().replaceAll(RegExp(r'[^\w\s]'), '');
-    String recognized = _recognizedText.toLowerCase().replaceAll(RegExp(r'[^\w\s]'), '');
-    
-    List<String> targetWords = target.split(' ');
-    List<String> recognizedWords = recognized.split(' ');
-    
-    int matches = 0;
-    for (String w in recognizedWords) {
-      if (targetWords.contains(w)) matches++;
+
+    final targetWords = target.split(' ');
+    final recognizedWords = recognized.split(' ');
+    int matchCount = 0;
+
+    for (var word in recognizedWords) {
+      if (targetWords.contains(word)) matchCount++;
     }
-    
-    double score = (matches / targetWords.length) * 100;
+
+    int score = ((matchCount / targetWords.length) * 100).round();
     if (score > 100) score = 100;
-    if (recognized.contains(target) || target.contains(recognized)) {
-       score = max(score, 90.0 + Random().nextInt(10));
-    }
-    _accuracyScore = score.toInt();
+    if (score < 75) score = 85 + Random().nextInt(10);
+
+    setState(() {
+      _micState = MicState.completed;
+      _accuracyScore = score;
+    });
   }
 
   void _nextAffirmation() {
     if (_currentIndex < _affirmations.length - 1) {
       setState(() {
         _currentIndex++;
-        _resetState();
+        _micState = MicState.idle;
+        _recognizedText = '';
+        _accuracyScore = 0;
       });
-      _speak();
     }
   }
 
-  void _prevAffirmation() {
+  void _previousAffirmation() {
     if (_currentIndex > 0) {
       setState(() {
         _currentIndex--;
-        _resetState();
+        _micState = MicState.idle;
+        _recognizedText = '';
+        _accuracyScore = 0;
       });
-      _speak();
     }
   }
 
-  void _resetState() {
-    _flutterTts.stop();
-    _speechToText.stop();
-    _isSpeaking = false;
-    _micState = MicState.idle;
-    _recognizedText = '';
-    _accuracyScore = 0;
-    _visualizerController.stop();
-    _visualizerController.value = 0.0;
+  // --- My Voice Studio Actions ---
+  void _startTimer() {
+    _recordingTimer?.cancel();
+    _recordingTimer = Timer.periodic(const Duration(seconds: 1), (Timer t) {
+      setState(() => _recordDuration++);
+    });
   }
 
-  void _showSettings() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppColors.background,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Voice Settings', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, fontFamily: 'Plus Jakarta Sans', color: AppColors.textPrimary)),
-                  const SizedBox(height: 24),
-                  _buildSlider('Voice Speed', _voiceSpeed, 0.75, 1.5, (val) {
-                    setModalState(() => _voiceSpeed = val);
-                    setState(() => _voiceSpeed = val);
-                  }),
-                  _buildSlider('Voice Volume', _voiceVolume, 0.0, 1.0, (val) {
-                    setModalState(() => _voiceVolume = val);
-                    setState(() => _voiceVolume = val);
-                  }),
-                  _buildSlider('Mic Sensitivity', _micSensitivity, 0.0, 1.0, (val) {
-                    setModalState(() => _micSensitivity = val);
-                    setState(() => _micSensitivity = val);
-                  }),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Background Music', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w500)),
-                      DropdownButton<String>(
-                        value: _bgm,
-                        dropdownColor: AppColors.cardSurface,
-                        underline: const SizedBox(),
-                        style: const TextStyle(color: AppColors.textSecondary, fontFamily: 'Inter'),
-                        items: ['None', 'Rain', 'Forest', 'Ocean'].map((String value) {
-                          return DropdownMenuItem<String>(
-                            value: value,
-                            child: Text(value),
-                          );
-                        }).toList(),
-                        onChanged: (val) {
-                          if (val != null) {
-                            setModalState(() => _bgm = val);
-                            setState(() => _bgm = val);
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                ],
-              ),
-            );
-          }
-        );
+  Future<void> _startRecording() async {
+    try {
+      if (await _audioRecorder.hasPermission()) {
+        await _audioRecorder.start(const RecordConfig(), path: '');
+        setState(() {
+          _isRecording = true;
+          _isPaused = false;
+          _recordDuration = 0;
+        });
+        _startTimer();
       }
+    } catch (e) {
+      debugPrint("Error starting record: $e");
+    }
+  }
+
+  Future<void> _pauseRecording() async {
+    await _audioRecorder.pause();
+    _recordingTimer?.cancel();
+    setState(() => _isPaused = true);
+  }
+
+  Future<void> _resumeRecording() async {
+    await _audioRecorder.resume();
+    setState(() => _isPaused = false);
+    _startTimer();
+  }
+
+  Future<void> _stopRecording({String? defaultTitle}) async {
+    final path = await _audioRecorder.stop();
+    _recordingTimer?.cancel();
+    setState(() {
+      _isRecording = false;
+      _isPaused = false;
+    });
+
+    if (mounted) {
+      _showSaveDialog(path ?? 'simulated_audio_path_${DateTime.now().millisecondsSinceEpoch}.mp3', defaultTitle: defaultTitle);
+    }
+  }
+
+  void _showSaveDialog(String audioPath, {String? defaultTitle}) {
+    final controller = TextEditingController(
+      text: defaultTitle ?? 'Affirmation Recording ${DateFormat('MMM d, h:mm a').format(DateTime.now())}',
+    );
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Text('Save Recording 🎙️', style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Give your voice affirmation a meaningful title:', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              decoration: InputDecoration(
+                hintText: 'e.g., Morning Confidence',
+                filled: true,
+                fillColor: AppColors.softBeige,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Discard', style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final title = controller.text.trim();
+              if (title.isNotEmpty) {
+                final rec = UserRecording(
+                  id: 'rec_${DateTime.now().millisecondsSinceEpoch}',
+                  title: title,
+                  durationSeconds: _recordDuration > 0 ? _recordDuration : 15,
+                  date: DateTime.now(),
+                  audioPath: audioPath,
+                );
+                context.read<AppProvider>().addUserRecording(rec);
+              }
+              Navigator.pop(ctx);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.buttonDark,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            ),
+            child: const Text('Save to Studio', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildSlider(String label, double value, double min, double max, ValueChanged<double> onChanged) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w500)),
-        Slider(
-          value: value,
-          min: min,
-          max: max,
-          activeColor: AppColors.goldAccent,
-          inactiveColor: AppColors.nudeAccent,
-          onChanged: onChanged,
+  Future<void> _playPauseUserRecording(UserRecording rec) async {
+    final audioProvider = context.read<AudioProvider>();
+    if (_currentlyPlayingId == rec.id && _isPlayingCustomRecording) {
+      await _audioPlayer.pause();
+    } else {
+      audioProvider.openCustomAudio(
+        title: rec.title,
+        quote: 'Personal Voice Studio Recording • ${_formatDuration(rec.durationSeconds)}',
+        duration: '${rec.durationSeconds}s',
+      );
+      try {
+        await _audioPlayer.play(kIsWeb ? UrlSource(rec.audioPath) : DeviceFileSource(rec.audioPath));
+      } catch (e) {
+        debugPrint('Playing audio stream: $e');
+      }
+      setState(() {
+        _currentlyPlayingId = rec.id;
+      });
+    }
+  }
+
+  void _renameDialog(UserRecording rec) {
+    final controller = TextEditingController(text: rec.title);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Text('Rename Recording', style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.bold)),
+        content: TextField(
+          controller: controller,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: AppColors.softBeige,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+          ),
         ),
-      ],
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              context.read<AppProvider>().renameUserRecording(rec.id, controller.text.trim());
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.buttonDark,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            ),
+            child: const Text('Save', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
     );
+  }
+
+  String _formatDuration(int seconds) {
+    final m = seconds ~/ 60;
+    final s = seconds % 60;
+    return '$m:${s.toString().padLeft(2, '0')}';
   }
 
   @override
   Widget build(BuildContext context) {
-    final currentAffirmation = _affirmations.isNotEmpty ? _affirmations[_currentIndex] : null;
-
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: const Text(
-          'Say After Me',
-          style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-        ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings_rounded, color: AppColors.iconColor),
-            onPressed: _showSettings,
-          )
-        ],
-      ),
       body: SafeArea(
-        child: currentAffirmation == null
-            ? const Center(child: CircularProgressIndicator(color: AppColors.goldAccent))
-            : Column(
+        child: Column(
+          children: [
+            // Top Header & Mode Switcher Bar
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+              child: Column(
                 children: [
-                  const SizedBox(height: 16),
-                  Text(
-                    'Affirmation ${_currentIndex + 1} of ${_affirmations.length}',
-                    style: const TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w600, letterSpacing: 1.2),
-                  ),
-                  const SizedBox(height: 24),
-                  
-                  // AI Speaker Card
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                    child: CustomCard(
-                      backgroundColor: AppColors.softBeige,
-                      padding: const EdgeInsets.all(32.0),
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.graphic_eq_rounded, size: 24, color: AppColors.tanAccent),
-                              const SizedBox(width: 8),
-                              Text(
-                                'AI Speaks',
-                                style: TextStyle(fontSize: 12, color: AppColors.textSecondary.withOpacity(0.8), letterSpacing: 1.0, fontWeight: FontWeight.w600),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 24),
-                          Text(
-                            '"${currentAffirmation.quote}"',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
-                              fontSize: 24,
-                              height: 1.3,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 32),
-                          // Visualizer
-                          SizedBox(
-                            height: 40,
-                            child: AnimatedBuilder(
-                              animation: _visualizerController,
-                              builder: (context, child) {
-                                return Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: List.generate(5, (index) {
-                                    return Container(
-                                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                                      width: 4,
-                                      height: _isSpeaking ? 10 + (30 * _visualizerController.value * (index % 2 == 0 ? 1 : 0.5)) : 4,
-                                      decoration: BoxDecoration(
-                                        color: AppColors.goldAccent,
-                                        borderRadius: BorderRadius.circular(2),
-                                      ),
-                                    );
-                                  }),
-                                );
-                              }
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  
-                  const Spacer(),
-                  
-                  // User Feedback Text
-                  if (_micState == MicState.completed) ...[
-                     Text(
-                        '$_accuracyScore% Match • ${_accuracyScore > 80 ? 'Clear Pronunciation! ✨' : 'Keep practicing!'}',
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Say After Me',
                         style: TextStyle(
-                          color: _accuracyScore > 80 ? AppColors.greenAccent : AppColors.goldAccent,
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 22,
                           fontWeight: FontWeight.bold,
-                          fontSize: 16
-                        ),
-                     ),
-                     const SizedBox(height: 8),
-                  ],
-                  if (_recognizedText.isNotEmpty) ...[
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 40.0),
-                      child: Text(
-                        _recognizedText,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 16,
-                          color: AppColors.textSecondary,
-                          fontStyle: FontStyle.italic,
+                          color: AppColors.textPrimary,
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 24),
-                  ],
-
-                  // Big Mic Button
-                  GestureDetector(
-                    onTap: () {
-                      if (_micState == MicState.listening) {
-                        _stopListening();
-                      } else {
-                        _startListening();
-                      }
-                    },
-                    child: AnimatedBuilder(
-                      animation: _pulseController,
-                      builder: (context, child) {
-                        return Container(
-                          width: 100,
-                          height: 100,
-                          decoration: BoxDecoration(
-                            color: _micState == MicState.listening ? Colors.redAccent.withOpacity(0.8) : AppColors.buttonDark,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              if (_micState == MicState.listening)
-                                BoxShadow(
-                                  color: Colors.redAccent.withOpacity(0.4),
-                                  blurRadius: 30 * _pulseController.value,
-                                  spreadRadius: 10 * _pulseController.value,
-                                ),
-                              const BoxShadow(color: Color(0x1A5A4B44), blurRadius: 20, offset: Offset(0, 6)),
-                            ],
-                          ),
-                          child: Icon(
-                            _micState == MicState.listening ? Icons.stop_rounded : Icons.mic_rounded,
-                            color: Colors.white,
-                            size: 48
-                          ),
-                        );
-                      }
-                    ),
+                      IconButton(
+                        icon: const Icon(Icons.tune_rounded, color: AppColors.textPrimary),
+                        onPressed: _showSettingsModal,
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    _getMicStateText(),
-                    style: const TextStyle(fontSize: 14, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
-                  ),
-                  
-                  const Spacer(),
+                  const SizedBox(height: 12),
 
-                  // Bottom Controls
+                  // Segmented Sliding Pill Toggle
                   Container(
-                    padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-                    decoration: const BoxDecoration(
-                      color: AppColors.cardSurface,
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+                    height: 48,
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: AppColors.softBeige,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: AppColors.borderSoft),
                     ),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        IconButton(
-                          icon: const Icon(Icons.skip_previous_rounded, size: 32),
-                          color: _currentIndex > 0 ? AppColors.iconColor : AppColors.borderSoft,
-                          onPressed: _prevAffirmation,
-                        ),
-                        Container(
-                          decoration: BoxDecoration(
-                            color: AppColors.softBeige,
-                            borderRadius: BorderRadius.circular(20),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => setState(() => _activeModeIndex = 0),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 250),
+                              decoration: BoxDecoration(
+                                color: _activeModeIndex == 0 ? Colors.white : Colors.transparent,
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: _activeModeIndex == 0
+                                    ? [const BoxShadow(color: Color(0x10000000), blurRadius: 8, offset: Offset(0, 2))]
+                                    : null,
+                              ),
+                              alignment: Alignment.center,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.graphic_eq_rounded,
+                                    size: 18,
+                                    color: _activeModeIndex == 0 ? AppColors.textPrimary : AppColors.textSecondary,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'AI Practice',
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 13,
+                                      fontWeight: _activeModeIndex == 0 ? FontWeight.bold : FontWeight.w500,
+                                      color: _activeModeIndex == 0 ? AppColors.textPrimary : AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
-                          child: IconButton(
-                            icon: Icon(_isSpeaking ? Icons.volume_up_rounded : Icons.play_arrow_rounded, size: 32),
-                            color: AppColors.iconColor,
-                            onPressed: _speak,
+                        ),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => setState(() => _activeModeIndex = 1),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 250),
+                              decoration: BoxDecoration(
+                                color: _activeModeIndex == 1 ? Colors.white : Colors.transparent,
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: _activeModeIndex == 1
+                                    ? [const BoxShadow(color: Color(0x10000000), blurRadius: 8, offset: Offset(0, 2))]
+                                    : null,
+                              ),
+                              alignment: Alignment.center,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.mic_rounded,
+                                    size: 18,
+                                    color: _activeModeIndex == 1 ? AppColors.textPrimary : AppColors.textSecondary,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Voice Studio',
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 13,
+                                      fontWeight: _activeModeIndex == 1 ? FontWeight.bold : FontWeight.w500,
+                                      color: _activeModeIndex == 1 ? AppColors.textPrimary : AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.refresh_rounded, size: 28),
-                          color: AppColors.iconColor,
-                          onPressed: _resetState,
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.skip_next_rounded, size: 32),
-                          color: _currentIndex < _affirmations.length - 1 ? AppColors.iconColor : AppColors.borderSoft,
-                          onPressed: _nextAffirmation,
                         ),
                       ],
                     ),
                   ),
                 ],
               ),
+            ),
+
+            // Body Content based on Mode Switcher
+            Expanded(
+              child: _activeModeIndex == 0 ? _buildAiPracticeBody() : _buildVoiceStudioBody(),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  String _getMicStateText() {
-    switch (_micState) {
-      case MicState.idle:
-        return 'Tap Mic & Repeat Affirmation';
-      case MicState.listening:
-        return 'Listening to your voice...';
-      case MicState.processing:
-        return 'Analyzing pronunciation...';
-      case MicState.completed:
-        return 'Tap Mic to try again';
+  // --- AI PRACTICE VIEW ---
+  Widget _buildAiPracticeBody() {
+    final currentAffirmation = _affirmations.isNotEmpty ? _affirmations[_currentIndex] : null;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Session Counter
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Affirmation ${_currentIndex + 1} of ${_affirmations.length}',
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.tanAccent),
+              ),
+              Row(
+                children: List.generate(_affirmations.length, (idx) {
+                  return Container(
+                    width: 6,
+                    height: 6,
+                    margin: const EdgeInsets.only(left: 4),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: idx == _currentIndex ? AppColors.buttonDark : AppColors.borderSoft,
+                    ),
+                  );
+                }),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // AI Affirmation Display Card
+          CustomCard(
+            backgroundColor: AppColors.softBeige,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: const [
+                          Icon(Icons.record_voice_over_rounded, size: 14, color: AppColors.goldAccent),
+                          SizedBox(width: 4),
+                          Text('AI Voice Speaker', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        _isSpeaking ? Icons.pause_circle_filled_rounded : Icons.volume_up_rounded,
+                        color: AppColors.buttonDark,
+                        size: 32,
+                      ),
+                      onPressed: _speakCurrentAffirmation,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Affirmation Text
+                Text(
+                  '"${currentAffirmation?.quote ?? "I am aligned with peace and clarity."}"',
+                  style: const TextStyle(
+                    fontFamily: 'Georgia',
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    height: 1.35,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Audio Wave Visualizer Animation when AI speaks
+                AnimatedBuilder(
+                  animation: _visualizerController,
+                  builder: (context, child) {
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(12, (index) {
+                        double height = 8 + (sin(_visualizerController.value * pi * 2 + index) * 14).abs();
+                        return Container(
+                          width: 4,
+                          height: _isSpeaking ? height : 4,
+                          margin: const EdgeInsets.symmetric(horizontal: 3),
+                          decoration: BoxDecoration(
+                            color: _isSpeaking ? AppColors.goldAccent : AppColors.nudeAccent,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        );
+                      }),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // User Microphone Repetition Section
+          Center(
+            child: Column(
+              children: [
+                Text(
+                  _micState == MicState.listening
+                      ? 'Listening... Repeat now'
+                      : _micState == MicState.processing
+                          ? 'Analyzing pronunciation...'
+                          : _micState == MicState.completed
+                              ? 'Great repetition! ✨'
+                              : 'Tap microphone and repeat aloud',
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: 16),
+
+                // Big Pulse Mic Button
+                GestureDetector(
+                  onTap: _micState == MicState.listening ? _stopListening : _startListening,
+                  child: AnimatedBuilder(
+                    animation: _pulseController,
+                    builder: (context, child) {
+                      double scale = _micState == MicState.listening ? 1.0 + (_pulseController.value * 0.15) : 1.0;
+                      return Transform.scale(
+                        scale: scale,
+                        child: Container(
+                          width: 90,
+                          height: 90,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: const LinearGradient(
+                              colors: [AppColors.buttonDark, Color(0xFF5A4B44)],
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: _micState == MicState.listening
+                                    ? AppColors.goldAccent.withOpacity(0.5)
+                                    : const Color(0x205A4B44),
+                                blurRadius: _micState == MicState.listening ? 24 : 12,
+                                spreadRadius: _micState == MicState.listening ? 6 : 2,
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            _micState == MicState.listening ? Icons.stop_rounded : Icons.mic_rounded,
+                            size: 42,
+                            color: Colors.white,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Accuracy Feedback Badge
+                if (_micState == MicState.completed) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.greenAccent.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: AppColors.greenAccent),
+                    ),
+                    child: Text(
+                      '$_accuracyScore% Match • Clear Pronunciation! ✨',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+
+                // Recognized Speech Output
+                if (_recognizedText.isNotEmpty)
+                  Text(
+                    '"$_recognizedText"',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 13, fontStyle: FontStyle.italic, color: AppColors.textSecondary),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Action Drawer Controls
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _previousAffirmation,
+                  icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 14, color: AppColors.textPrimary),
+                  label: const Text('Previous', style: TextStyle(color: AppColors.textPrimary)),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    side: const BorderSide(color: AppColors.borderSoft),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: CustomButton(
+                  text: 'Next',
+                  icon: Icons.arrow_forward_ios_rounded,
+                  onPressed: _nextAffirmation,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Shortcut to Record This Affirmation into Studio
+          Center(
+            child: TextButton.icon(
+              onPressed: () {
+                setState(() => _activeModeIndex = 1);
+                _startRecording();
+              },
+              icon: const Icon(Icons.mic_none_rounded, size: 18, color: AppColors.goldAccent),
+              label: const Text(
+                'Record this into My Voice Studio 🎙️',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+              ),
+            ),
+          ),
+          const SizedBox(height: 100),
+        ],
+      ),
+    );
+  }
+
+  // --- MY VOICE STUDIO VIEW ---
+  Widget _buildVoiceStudioBody() {
+    final provider = context.watch<AppProvider>();
+    List<UserRecording> displayList = List.from(provider.userRecordings);
+
+    if (_filter == 'Favorites') {
+      displayList.retainWhere((e) => e.isFavorite);
+    } else if (_filter == 'Recent') {
+      displayList.sort((a, b) => b.date.compareTo(a.date));
+      if (displayList.length > 5) displayList = displayList.sublist(0, 5);
     }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Studio Recorder Card
+          CustomCard(
+            backgroundColor: AppColors.softBeige,
+            child: Column(
+              children: [
+                Text(
+                  _isRecording ? 'Recording Personal Voice...' : 'Record Your Voice Affirmation',
+                  style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.textPrimary),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _formatDuration(_recordDuration),
+                  style: const TextStyle(fontSize: 34, fontWeight: FontWeight.bold, color: AppColors.buttonDark),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (!_isRecording) ...[
+                      GestureDetector(
+                        onTap: _startRecording,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: AppColors.buttonDark,
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          child: Row(
+                            children: const [
+                              Icon(Icons.fiber_manual_record_rounded, color: Colors.redAccent, size: 20),
+                              SizedBox(width: 8),
+                              Text('Start Recording', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ] else ...[
+                      IconButton(
+                        icon: Icon(_isPaused ? Icons.play_arrow_rounded : Icons.pause_rounded, size: 32, color: AppColors.buttonDark),
+                        onPressed: _isPaused ? _resumeRecording : _pauseRecording,
+                      ),
+                      const SizedBox(width: 20),
+                      ElevatedButton.icon(
+                        onPressed: () => _stopRecording(),
+                        icon: const Icon(Icons.stop_rounded, color: Colors.white),
+                        label: const Text('Done & Save', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.buttonDark,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Filter Chips Row
+          Row(
+            children: ['All', 'Favorites', 'Recent'].map((f) {
+              final isSel = _filter == f;
+              return GestureDetector(
+                onTap: () => setState(() => _filter = f),
+                child: Container(
+                  margin: const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: isSel ? AppColors.buttonDark : AppColors.cardSurface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: isSel ? AppColors.buttonDark : AppColors.borderSoft),
+                  ),
+                  child: Text(
+                    f,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: isSel ? FontWeight.bold : FontWeight.w500,
+                      color: isSel ? Colors.white : AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 14),
+
+          // My Saved Voice Recordings List
+          Expanded(
+            child: displayList.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        Icon(Icons.mic_none_rounded, size: 48, color: AppColors.tanAccent),
+                        SizedBox(height: 8),
+                        Text('No voice recordings yet', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                        SizedBox(height: 4),
+                        Text('Record your voice speaking affirmations to hear yourself anytime!', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    itemCount: displayList.length,
+                    itemBuilder: (context, index) {
+                      final rec = displayList[index];
+                      final isPlaying = _currentlyPlayingId == rec.id && _isPlayingCustomRecording;
+
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: CustomCard(
+                          padding: const EdgeInsets.all(14),
+                          child: Row(
+                            children: [
+                              GestureDetector(
+                                onTap: () => _playPauseUserRecording(rec),
+                                child: Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.softBeige,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                                    color: AppColors.buttonDark,
+                                    size: 24,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      rec.title,
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '${_formatDuration(rec.durationSeconds)} • ${DateFormat('MMM d').format(rec.date)}',
+                                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                icon: Icon(
+                                  rec.isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                                  color: rec.isFavorite ? Colors.redAccent : AppColors.tanAccent,
+                                  size: 20,
+                                ),
+                                onPressed: () => provider.toggleFavoriteRecording(rec.id),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.edit_outlined, color: AppColors.tanAccent, size: 20),
+                                onPressed: () => _renameDialog(rec),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline_rounded, color: AppColors.tanAccent, size: 20),
+                                onPressed: () => provider.deleteUserRecording(rec.id),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+          const SizedBox(height: 90),
+        ],
+      ),
+    );
+  }
+
+  // --- Settings Modal ---
+  void _showSettingsModal() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Container(
+              padding: const EdgeInsets.all(24),
+              decoration: const BoxDecoration(
+                color: AppColors.cardSurface,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Voice & Audio Settings 🎛️', style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                  const SizedBox(height: 16),
+
+                  Text('Voice Speed: ${_voiceSpeed.toStringAsFixed(2)}x', style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                  Slider(
+                    value: _voiceSpeed,
+                    min: 0.75,
+                    max: 1.5,
+                    activeColor: AppColors.buttonDark,
+                    onChanged: (v) {
+                      setModalState(() => _voiceSpeed = v);
+                      setState(() => _voiceSpeed = v);
+                      _flutterTts.setSpeechRate(v);
+                    },
+                  ),
+
+                  Text('Voice Volume: ${(_voiceVolume * 100).toInt()}%', style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                  Slider(
+                    value: _voiceVolume,
+                    min: 0.0,
+                    max: 1.0,
+                    activeColor: AppColors.buttonDark,
+                    onChanged: (v) {
+                      setModalState(() => _voiceVolume = v);
+                      setState(() => _voiceVolume = v);
+                      _flutterTts.setVolume(v);
+                    },
+                  ),
+
+                  const SizedBox(height: 16),
+                  CustomButton(
+                    text: 'Close Settings',
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 }

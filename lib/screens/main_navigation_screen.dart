@@ -19,7 +19,6 @@ class MainNavigationScreen extends StatelessWidget {
   final List<Widget> _tabs = [
     const HomeTab(),
     const SayAfterMeTab(),
-    const MyVoiceTab(),
     const JournalTab(),
     const VisionBoardTab(),
     const ProfileTab(),
@@ -28,7 +27,7 @@ class MainNavigationScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final appProvider = Provider.of<AppProvider>(context);
-    final int currentIndex = appProvider.currentNavIndex > 5 ? 0 : appProvider.currentNavIndex;
+    final int currentIndex = appProvider.currentNavIndex > 4 ? 0 : appProvider.currentNavIndex;
 
     return Scaffold(
       extendBody: true,
@@ -95,10 +94,9 @@ class MainNavigationScreen extends StatelessWidget {
                   children: [
                     _buildNavItem(context, 0, currentIndex, appProvider, Icons.home_outlined, Icons.home_rounded, 'Playlist'),
                     _buildNavItem(context, 1, currentIndex, appProvider, Icons.mic_none_outlined, Icons.mic_rounded, 'Say After'),
-                    _buildNavItem(context, 2, currentIndex, appProvider, Icons.record_voice_over_outlined, Icons.record_voice_over_rounded, 'Voice'),
-                    _buildNavItem(context, 3, currentIndex, appProvider, Icons.menu_book_outlined, Icons.menu_book_rounded, 'Journal'),
-                    _buildNavItem(context, 4, currentIndex, appProvider, Icons.dashboard_outlined, Icons.dashboard_rounded, 'Vision'),
-                    _buildNavItem(context, 5, currentIndex, appProvider, Icons.person_outline_rounded, Icons.person_rounded, 'Profile'),
+                    _buildNavItem(context, 2, currentIndex, appProvider, Icons.menu_book_outlined, Icons.menu_book_rounded, 'Journal'),
+                    _buildNavItem(context, 3, currentIndex, appProvider, Icons.dashboard_outlined, Icons.dashboard_rounded, 'Vision'),
+                    _buildNavItem(context, 4, currentIndex, appProvider, Icons.person_outline_rounded, Icons.person_rounded, 'Profile'),
                   ],
                 ),
               ),
@@ -116,7 +114,7 @@ class MainNavigationScreen extends StatelessWidget {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () {
-          if ([1, 2, 4].contains(index) && !appProvider.isPremium) {
+          if ([1, 3].contains(index) && !appProvider.isPremium) {
             PaywallModal.show(context);
             return;
           }
