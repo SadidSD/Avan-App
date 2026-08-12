@@ -203,22 +203,7 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                     ),
                     const SizedBox(height: 28),
 
-                    // --- 4. QUICK ACTIONS ---
-                    Text(
-                      'QUICK ACTIONS',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.1,
-                        color: textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildQuickActionsGrid(context, appProvider, cardBgColor, primaryColor),
-                    const SizedBox(height: 28),
-
-                    // --- 5. SEARCH / SITUATION DISCOVERY ---
+                    // --- 4. SEARCH / SITUATION DISCOVERY ---
                     Text(
                       '🔍 WHAT\'S YOUR SITUATION?',
                       style: TextStyle(
@@ -532,81 +517,7 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
     );
   }
 
-  // --- Widget 4: Quick Actions Grid ---
-  Widget _buildQuickActionsGrid(BuildContext context, AppProvider appProvider, Color cardBgColor, Color primaryColor) {
-    final actions = [
-      {'icon': '🎧', 'label': 'Listen', 'premium': false, 'tab': 0},
-      {'icon': '🗣️', 'label': 'Repeat After', 'premium': true, 'tab': 1},
-      {'icon': '📝', 'label': 'Write Journal', 'premium': false, 'tab': 2},
-      {'icon': '🖼️', 'label': 'Vision Board', 'premium': true, 'tab': 3},
-    ];
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: actions.map((act) {
-        final isPremium = act['premium'] == true;
-        final tabIndex = act['tab'] as int;
-
-        return Expanded(
-          child: GestureDetector(
-            onTap: () {
-              if (isPremium && !appProvider.isPremium) {
-                PaywallModal.show(context);
-              } else {
-                appProvider.setNavIndex(tabIndex);
-              }
-            },
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(
-                color: cardBgColor,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isPremium ? Colors.amber.shade400 : AppColors.borderSoft.withOpacity(0.5),
-                  width: isPremium ? 1.5 : 1.0,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  Text(act['icon'] as String, style: const TextStyle(fontSize: 24)),
-                  const SizedBox(height: 4),
-                  Text(
-                    act['label'] as String,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontFamily: 'Inter', fontSize: 10, fontWeight: FontWeight.w600),
-                  ),
-                  if (isPremium) ...[
-                    const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                      decoration: BoxDecoration(
-                        color: Colors.amber.shade100,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        'PREMIUM',
-                        style: TextStyle(fontSize: 7, fontWeight: FontWeight.bold, color: Colors.amber.shade800),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  // --- Widget 5: Situation Search Section ---
+  // --- Widget 4: Situation Search Section ---
   Widget _buildSituationSearchSection(
     BuildContext context,
     bool isGrowth,
