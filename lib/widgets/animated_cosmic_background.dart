@@ -2,8 +2,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
-/// Animated floating orb background for the cosmic Stella-inspired aesthetic.
-/// Renders 3 slow-moving glowing orbs that oscillate using sin/cos.
+/// Animated floating orb background for the warm light Stella-inspired aesthetic.
+/// Renders 3 slow-moving glowing pastel orbs that oscillate using sin/cos.
 class AnimatedCosmicBackground extends StatefulWidget {
   final bool isGrowth;
   final Widget child;
@@ -66,10 +66,10 @@ class _AnimatedCosmicBackgroundState extends State<AnimatedCosmicBackground>
     return AnimatedBuilder(
       animation: Listenable.merge([_orbController, _modeAnimation]),
       builder: (context, child) {
-        final growthColor1 = const Color(0xFF0F1B4C);
-        final growthColor2 = const Color(0xFF060D2E);
-        final healingColor1 = const Color(0xFF1A0A2E);
-        final healingColor2 = const Color(0xFF0D0618);
+        final growthColor1 = const Color(0xFFF9F6F0);
+        final growthColor2 = const Color(0xFFE6F4F1);
+        final healingColor1 = const Color(0xFFFDF7F0);
+        final healingColor2 = const Color(0xFFFDF0F5);
 
         final t = _modeAnimation.value;
         final fromC1 = _wasGrowth ? growthColor1 : healingColor1;
@@ -81,8 +81,8 @@ class _AnimatedCosmicBackgroundState extends State<AnimatedCosmicBackground>
         final bgColor2 = Color.lerp(fromC2, toC2, t) ?? toC2;
 
         final orbColor = widget.isGrowth
-            ? AppColors.growthAccent.withOpacity(0.08)
-            : AppColors.healingAccent.withOpacity(0.08);
+            ? AppColors.growthAccent.withOpacity(0.14)
+            : AppColors.healingAccent.withOpacity(0.14);
 
         return Stack(
           children: [
@@ -94,7 +94,7 @@ class _AnimatedCosmicBackgroundState extends State<AnimatedCosmicBackground>
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [bgColor1, AppColors.background],
+                    colors: [bgColor1, bgColor2],
                   ),
                 ),
               ),
@@ -103,17 +103,17 @@ class _AnimatedCosmicBackgroundState extends State<AnimatedCosmicBackground>
             Positioned(
               top: _orbY(0.15, 0.08, 0.0),
               left: _orbX(0.2, 0.06, 0.0),
-              child: _buildOrb(180, orbColor),
+              child: _buildOrb(220, orbColor),
             ),
             Positioned(
               top: _orbY(0.5, 0.06, 0.33),
               right: _orbX(0.1, 0.05, 0.33),
-              child: _buildOrb(140, orbColor.withOpacity(0.06)),
+              child: _buildOrb(180, orbColor.withOpacity(0.10)),
             ),
             Positioned(
               bottom: _orbY(0.1, 0.05, 0.66),
               left: _orbX(0.35, 0.04, 0.66),
-              child: _buildOrb(120, orbColor.withOpacity(0.05)),
+              child: _buildOrb(150, orbColor.withOpacity(0.08)),
             ),
             // Content on top
             child!,

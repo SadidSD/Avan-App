@@ -27,7 +27,7 @@ class AvanApp extends StatelessWidget {
           final appContent = MaterialApp(
             title: 'AVAN - Mindset & Affirmation App',
             debugShowCheckedModeBanner: false,
-            theme: AppTheme.darkTheme,
+            theme: AppTheme.lightTheme,
             home: appProvider.isOnboardingCompleted
                 ? MainNavigationScreen()
                 : const OnboardingCarousel(),

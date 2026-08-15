@@ -4,17 +4,16 @@ import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
 class AppTheme {
-  static ThemeData get darkTheme {
+  static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
-      brightness: Brightness.dark,
+      brightness: Brightness.light,
       scaffoldBackgroundColor: AppColors.background,
-      colorScheme: const ColorScheme.dark(
-        background: AppColors.background,
+      colorScheme: const ColorScheme.light(
         surface: AppColors.surface,
         primary: AppColors.growthAccent,
         secondary: AppColors.healingAccent,
-        onPrimary: AppColors.background,
+        onPrimary: Colors.white,
         onSurface: AppColors.textPrimary,
         outline: AppColors.border,
       ),
@@ -114,7 +113,7 @@ class AppTheme {
         ),
       ),
       cardTheme: CardThemeData(
-        color: AppColors.surfaceElevated,
+        color: AppColors.surface,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20.0),
@@ -125,7 +124,7 @@ class AppTheme {
         backgroundColor: AppColors.background,
         elevation: 0,
         scrolledUnderElevation: 0,
-        systemOverlayStyle: SystemUiOverlayStyle.light,
+        systemOverlayStyle: SystemUiOverlayStyle.dark,
         iconTheme: const IconThemeData(color: AppColors.textPrimary),
         titleTextStyle: GoogleFonts.inter(
           fontSize: 18,
@@ -134,13 +133,13 @@ class AppTheme {
         ),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: Color(0xFF0D0D1A),
+        backgroundColor: AppColors.background,
         selectedItemColor: AppColors.growthAccent,
         unselectedItemColor: AppColors.textMuted,
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.surfaceElevated,
+        fillColor: AppColors.surface,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: AppColors.border),
@@ -159,12 +158,12 @@ class AppTheme {
       iconTheme: const IconThemeData(color: AppColors.textSecondary, size: 22),
       dividerColor: AppColors.border,
       dialogTheme: DialogThemeData(
-        backgroundColor: AppColors.surfaceElevated,
+        backgroundColor: AppColors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       ),
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: AppColors.surfaceElevated,
-        contentTextStyle: GoogleFonts.inter(color: AppColors.textPrimary),
+        backgroundColor: AppColors.buttonDark,
+        contentTextStyle: GoogleFonts.inter(color: Colors.white),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         behavior: SnackBarBehavior.floating,
       ),
@@ -175,12 +174,11 @@ class AppTheme {
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) return AppColors.growthGlow;
-          return AppColors.surface;
+          return AppColors.surfaceElevated;
         }),
       ),
     );
   }
 
-  // Keep backward compat alias
-  static ThemeData get lightTheme => darkTheme;
+  static ThemeData get darkTheme => lightTheme;
 }

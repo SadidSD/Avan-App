@@ -575,9 +575,16 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
         width: 148,
         margin: const EdgeInsets.only(right: 14),
         decoration: BoxDecoration(
-          color: AppColors.surfaceElevated,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: AppColors.border),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0A4A3E37),
+              blurRadius: 10,
+              offset: Offset(0, 3),
+            ),
+          ],
         ),
         padding: const EdgeInsets.all(14),
         child: Column(
@@ -765,9 +772,16 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
               margin: EdgeInsets.only(right: a['navIndex'] == 3 ? 0 : 10),
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: AppColors.surfaceElevated,
+                color: AppColors.surface,
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(color: AppColors.border),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x0A4A3E37),
+                    blurRadius: 10,
+                    offset: Offset(0, 3),
+                  ),
+                ],
               ),
               child: Column(
                 children: [

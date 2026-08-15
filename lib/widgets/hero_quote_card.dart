@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 
 /// A premium glassmorphism quote card with Cormorant Garamond text,
-/// animated shimmer border, and mode-aware styling.
+/// animated shimmer border, and mode-aware warm light styling.
 class HeroQuoteCard extends StatefulWidget {
   final String quote;
   final bool isGrowth;
@@ -61,6 +61,12 @@ class _HeroQuoteCardState extends State<HeroQuoteCard>
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
+                color: const Color(0x0C4A3E37),
+                blurRadius: 24,
+                spreadRadius: 0,
+                offset: const Offset(0, 8),
+              ),
+              BoxShadow(
                 color: accent.withOpacity(0.12),
                 blurRadius: 32,
                 spreadRadius: -4,
@@ -79,7 +85,7 @@ class _HeroQuoteCardState extends State<HeroQuoteCard>
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
                     color: accent.withOpacity(
-                      0.15 + 0.1 * _shimmerController.value,
+                      0.2 + 0.15 * _shimmerController.value,
                     ),
                     width: 1.0,
                   ),
@@ -99,8 +105,8 @@ class _HeroQuoteCardState extends State<HeroQuoteCard>
             style: GoogleFonts.cormorantGaramond(
               fontSize: 60,
               color: widget.isGrowth
-                  ? AppColors.growthAccent.withOpacity(0.5)
-                  : AppColors.healingAccent.withOpacity(0.5),
+                  ? AppColors.growthAccent.withOpacity(0.6)
+                  : AppColors.healingAccent.withOpacity(0.6),
               height: 0.5,
             ),
           ),
@@ -109,11 +115,11 @@ class _HeroQuoteCardState extends State<HeroQuoteCard>
           Text(
             widget.quote,
             style: GoogleFonts.cormorantGaramond(
-              fontSize: 22,
-              fontWeight: FontWeight.w500,
+              fontSize: 23,
+              fontWeight: FontWeight.w600,
               fontStyle: FontStyle.italic,
               color: AppColors.textPrimary,
-              height: 1.55,
+              height: 1.5,
             ),
           ),
           const SizedBox(height: 20),
@@ -143,24 +149,24 @@ class _HeroQuoteCardState extends State<HeroQuoteCard>
                   ),
                   decoration: BoxDecoration(
                     color: widget.isGrowth
-                        ? AppColors.growthAccent.withOpacity(0.15)
-                        : AppColors.healingAccent.withOpacity(0.15),
+                        ? AppColors.growthAccent
+                        : AppColors.healingAccent,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: widget.isGrowth
-                          ? AppColors.growthAccent.withOpacity(0.4)
-                          : AppColors.healingAccent.withOpacity(0.4),
-                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: accent.withOpacity(0.3),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.play_arrow_rounded,
                         size: 16,
-                        color: widget.isGrowth
-                            ? AppColors.growthAccent
-                            : AppColors.healingAccent,
+                        color: Colors.white,
                       ),
                       const SizedBox(width: 4),
                       Text(
@@ -168,9 +174,7 @@ class _HeroQuoteCardState extends State<HeroQuoteCard>
                         style: GoogleFonts.inter(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
-                          color: widget.isGrowth
-                              ? AppColors.growthAccent
-                              : AppColors.healingAccent,
+                          color: Colors.white,
                         ),
                       ),
                     ],
@@ -187,12 +191,12 @@ class _HeroQuoteCardState extends State<HeroQuoteCard>
   Widget _actionButton({required IconData icon, required String label, VoidCallback? onTap}) {
     return TextButton.icon(
       onPressed: onTap,
-      icon: Icon(icon, size: 15, color: AppColors.textMuted),
+      icon: Icon(icon, size: 15, color: AppColors.textSecondary),
       label: Text(
         label,
         style: GoogleFonts.inter(
           fontSize: 11,
-          color: AppColors.textMuted,
+          color: AppColors.textSecondary,
         ),
       ),
       style: TextButton.styleFrom(

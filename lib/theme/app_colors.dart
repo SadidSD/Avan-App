@@ -1,56 +1,55 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // === SHARED FOUNDATION (Stella-inspired dark cosmic base) ===
-  static const Color background = Color(0xFF0A0A12);       // Near-black cosmic dark
-  static const Color surface = Color(0xFF12121F);           // Slightly lighter dark surface
-  static const Color surfaceElevated = Color(0xFF1A1A2E);   // Cards, modals
-  static const Color border = Color(0x14FFFFFF);            // rgba(255,255,255,0.08)
-  static const Color borderBright = Color(0x26FFFFFF);      // rgba(255,255,255,0.15)
+  // === SHARED WARM LIGHT FOUNDATION (Original AVAN palette + Stella structure) ===
+  static const Color background = Color(0xFFF9F6F0);       // Warm paper off-white
+  static const Color surface = Color(0xFFFFFFFF);          // Pure white card background
+  static const Color surfaceElevated = Color(0xFFEFE9E2);  // Soft warm beige
+  static const Color border = Color(0x33C4B0A0);           // Subtle warm tan border
+  static const Color borderBright = Color(0x66C4B0A0);     // Clearer tan border
 
-  // Typography
-  static const Color textPrimary = Color(0xFFF0EDFF);       // Soft warm white
-  static const Color textSecondary = Color(0xFF8A85A0);     // Muted lavender-grey
-  static const Color textMuted = Color(0xFF5A5570);         // Very muted
+  // Typography (Warm Espresso & Taupe)
+  static const Color textPrimary = Color(0xFF4A3E37);      // Rich deep espresso brown
+  static const Color textSecondary = Color(0xFF8C7F77);    // Sophisticated warm taupe
+  static const Color textMuted = Color(0xFFA89B92);        // Soft muted taupe
 
-  // Glass effects
-  static const Color glassOverlay = Color(0x1AFFFFFF);      // 10% white overlay
-  static const Color glassBorder = Color(0x14FFFFFF);       // 8% white border
-  static const Color glassBorderBright = Color(0x40FFFFFF); // 25% white border
+  // Glass effects (Light frosted glass)
+  static const Color glassOverlay = Color(0xD8FFFFFF);     // 85% white frosted overlay
+  static const Color glassBorder = Color(0x66C4B0A0);      // Soft tan edge
+  static const Color glassBorderBright = Color(0xB3C4B0A0);
 
-  // Legacy aliases (keep for compatibility with existing widgets)
+  // Legacy aliases
   static const Color cardSurface = surface;
   static const Color softBeige = surfaceElevated;
-  static const Color nudeAccent = Color(0xFF2A2A3E);
-  static const Color tanAccent = Color(0xFF8A85A0);
+  static const Color nudeAccent = Color(0xFFE2D6CC);
+  static const Color tanAccent = Color(0xFFC4B0A0);
   static const Color borderSoft = border;
-  static const Color buttonDark = Color(0xFF1A1A2E);
+  static const Color buttonDark = Color(0xFF322822);
   static const Color iconColor = textPrimary;
-  static const Color goldAccent = Color(0xFFFFD700);
-  static const Color greenAccent = Color(0xFF00E5CC);
-  static const Color sleepDark = Color(0xFF060D2E);
-  static const Color glowAccent = Color(0x4000E5CC);
+  static const Color goldAccent = Color(0xFFCBA167);
+  static const Color greenAccent = Color(0xFF319795);
+  static const Color sleepDark = Color(0xFF151C26);
+  static const Color glowAccent = Color(0x33CBA167);
 
-  // === GROWTH MODE — Deep Sapphire + Electric Teal ===
-  static const Color growthPrimary = Color(0xFF0F1B4C);        // Deep sapphire
-  static const Color growthAccent = Color(0xFF00E5CC);         // Electric teal
-  static const Color growthAccentSoft = Color(0x4000E5CC);     // Teal at 25% opacity
-  static const Color growthGlow = Color(0x2600E5CC);           // Teal glow 15%
-  static const Color growthCard = Color(0x990F1B4C);           // Dark navy glass 60%
-  static const Color growthStreak = Color(0xFFFFD700);         // Gold
-  static const Color growthTextPrimary = Color(0xFFF0EDFF);    // Shared soft white
-  static const Color growthTextSecondary = Color(0xFF8A85A0);  // Shared muted
-  static const Color growthBackground = background;            // Same cosmic dark
-  static const Color growthCardBackground = surfaceElevated;   // Same elevated surface
-  // Legacy
+  // === GROWTH MODE — Warm Off-white to Teal Mist ===
+  static const Color growthPrimary = Color(0xFF1A365D);        // Sapphire header text accent
+  static const Color growthAccent = Color(0xFF319795);         // Deep Teal accent
+  static const Color growthAccentSoft = Color(0x26319795);     // Teal at 15% opacity
+  static const Color growthGlow = Color(0x20319795);           // Soft teal glow
+  static const Color growthCard = Color(0xFFFFFFFF);           // Clean white card
+  static const Color growthStreak = Color(0xFFD69E2E);         // Warm Gold
+  static const Color growthTextPrimary = textPrimary;
+  static const Color growthTextSecondary = textSecondary;
+  static const Color growthBackground = background;
+  static const Color growthCardBackground = surface;
   static const Color growthSecondary = growthAccent;
 
   static const LinearGradient growthGradient = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
     colors: [
-      Color(0xFF060D2E), // Midnight blue
-      Color(0xFF0A0A12), // Cosmic dark
+      Color(0xFFF9F6F0), // Warm off-white
+      Color(0xFFE6F4F1), // Soft teal mist
     ],
   );
 
@@ -58,31 +57,30 @@ class AppColors {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
-      Color(0x260F1B4C),
-      Color(0x1A00E5CC),
+      Color(0xFFFFFFFF),
+      Color(0xFFF0F9F8),
     ],
   );
 
-  // === HEALING MODE — Deep Violet + Rose Quartz ===
-  static const Color healingPrimary = Color(0xFF1A0A2E);       // Deep violet
-  static const Color healingAccent = Color(0xFFFF7BAC);        // Rose quartz
-  static const Color healingAccentSoft = Color(0x40FF7BAC);    // Rose at 25% opacity
-  static const Color healingGlow = Color(0x26FF7BAC);          // Rose glow 15%
-  static const Color healingCard = Color(0x991A0A2E);          // Dark plum glass 60%
-  static const Color healingStreak = Color(0xFFC9B8FF);        // Lavender
-  static const Color healingTextPrimary = Color(0xFFF0EDFF);   // Shared soft white
-  static const Color healingTextSecondary = Color(0xFF8A85A0); // Shared muted
-  static const Color healingBackground = background;           // Same cosmic dark
-  static const Color healingCardBackground = surfaceElevated;  // Same elevated surface
-  // Legacy
+  // === HEALING MODE — Warm Off-white to Rose Quartz Mist ===
+  static const Color healingPrimary = Color(0xFF6B46C1);       // Soft Violet header accent
+  static const Color healingAccent = Color(0xFFED64A6);        // Rose Quartz accent
+  static const Color healingAccentSoft = Color(0x26ED64A6);    // Rose at 15% opacity
+  static const Color healingGlow = Color(0x20ED64A6);          // Soft rose glow
+  static const Color healingCard = Color(0xFFFFFFFF);          // Clean white card
+  static const Color healingStreak = Color(0xFF9F7AEA);        // Lavender
+  static const Color healingTextPrimary = textPrimary;
+  static const Color healingTextSecondary = textSecondary;
+  static const Color healingBackground = Color(0xFFFDF7F0);    // Warm gentle off-white
+  static const Color healingCardBackground = surface;
   static const Color healingSecondary = healingAccent;
 
   static const LinearGradient healingGradient = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
     colors: [
-      Color(0xFF0D0618), // Dark plum
-      Color(0xFF0A0A12), // Cosmic dark
+      Color(0xFFFDF7F0), // Gentle warm off-white
+      Color(0xFFFDF0F5), // Soft rose mist
     ],
   );
 
@@ -90,8 +88,8 @@ class AppColors {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
-      Color(0x261A0A2E),
-      Color(0x1AFF7BAC),
+      Color(0xFFFFFFFF),
+      Color(0xFFFCF2F6),
     ],
   );
 
@@ -99,19 +97,19 @@ class AppColors {
   static const LinearGradient primaryGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF0F1B4C), Color(0xFF1A0A2E)],
+    colors: [Color(0xFF4A3E37), Color(0xFF322822)],
   );
 
   static const LinearGradient heroGradient = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    colors: [Color(0xFF0A0A12), Color(0xFF12121F)],
+    colors: [Color(0xFFF9F6F0), Color(0xFFEFE9E2)],
   );
 
   static const LinearGradient progressGradient = LinearGradient(
     begin: Alignment.centerLeft,
     end: Alignment.centerRight,
-    colors: [Color(0xFF00E5CC), Color(0xFF0F1B4C)],
+    colors: [Color(0xFFCBA167), Color(0xFFE2D6CC)],
   );
 
   // === HELPERS ===

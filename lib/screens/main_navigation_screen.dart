@@ -9,7 +9,6 @@ import '../widgets/paywall_modal.dart';
 import 'home/home_tab.dart';
 import 'profile/profile_tab.dart';
 import 'say_after_me/say_after_me_tab.dart';
-
 import 'journal/journal_tab.dart';
 import 'vision_board/vision_board_tab.dart';
 
@@ -64,11 +63,11 @@ class MainNavigationScreen extends StatelessWidget {
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(context).padding.bottom,
           ),
-          decoration: const BoxDecoration(
-            color: Color(0xFF0D0D1A),
-            border: Border(
+          decoration: BoxDecoration(
+            color: AppColors.surface.withOpacity(0.92),
+            border: const Border(
               top: BorderSide(
-                color: Color(0x14FFFFFF), 
+                color: AppColors.border, 
                 width: 1,
               ),
             ),
@@ -117,12 +116,12 @@ class MainNavigationScreen extends StatelessWidget {
               curve: Curves.easeOutCubic,
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
               decoration: BoxDecoration(
-                color: isSelected ? accentColor.withOpacity(0.15) : Colors.transparent,
+                color: isSelected ? accentColor.withOpacity(0.12) : Colors.transparent,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Icon(
                 isSelected ? activeIcon : icon,
-                color: isSelected ? accentColor : AppColors.textMuted,
+                color: isSelected ? accentColor : AppColors.textSecondary,
                 size: 22,
               ),
             ),
@@ -137,7 +136,7 @@ class MainNavigationScreen extends StatelessWidget {
                 fontSize: 9,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                 letterSpacing: 0.2,
-                color: isSelected ? accentColor : AppColors.textMuted,
+                color: isSelected ? accentColor : AppColors.textSecondary,
               ),
             ),
           ],

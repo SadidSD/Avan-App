@@ -2,8 +2,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
-/// A glassmorphism card with backdrop blur, semi-transparent surface,
-/// thin glowing border, and optional outer glow shadow.
+/// A glassmorphism card with backdrop blur, light white surface,
+/// thin warm border, and soft warm shadow.
 class GlassCard extends StatefulWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
@@ -58,8 +58,8 @@ class _GlassCardState extends State<GlassCard>
   @override
   Widget build(BuildContext context) {
     final accent = widget.accentColor ?? AppColors.growthAccent;
-    final borderColor = accent.withOpacity(0.2);
-    final glowColor = accent.withOpacity(0.15 * widget.glowIntensity);
+    final borderColor = accent.withOpacity(0.25);
+    final glowColor = accent.withOpacity(0.12 * widget.glowIntensity);
 
     return GestureDetector(
       onTapDown: widget.onTap != null
@@ -95,7 +95,13 @@ class _GlassCardState extends State<GlassCard>
                       spreadRadius: -2,
                     ),
                   ]
-                : null,
+                : const [
+                    BoxShadow(
+                      color: Color(0x0A4A3E37),
+                      blurRadius: 16,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(widget.borderRadius),
@@ -108,11 +114,11 @@ class _GlassCardState extends State<GlassCard>
                 decoration: BoxDecoration(
                   gradient: widget.gradient,
                   color: widget.gradient == null
-                      ? AppColors.surfaceElevated.withOpacity(0.75)
+                      ? AppColors.surface.withOpacity(0.9)
                       : null,
                   borderRadius: BorderRadius.circular(widget.borderRadius),
                   border: Border.all(
-                    color: borderColor,
+                    color: widget.gradient == null ? AppColors.border : borderColor,
                     width: 1.0,
                   ),
                 ),

@@ -3,8 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../providers/app_provider.dart';
 import '../theme/app_colors.dart';
 
-/// Animated pill toggle between Growth and Healing modes.
-/// Sliding indicator animates between two sides with a color transition.
+/// Animated pill toggle between Growth and Healing modes in warm light styling.
+/// Sliding white indicator card animates between two sides with mode accent highlights.
 class ModeTogglePill extends StatefulWidget {
   final AppMode currentMode;
   final ValueChanged<AppMode> onModeChanged;
@@ -70,15 +70,15 @@ class _ModeTogglePillState extends State<ModeTogglePill>
       builder: (context, child) {
         final accent = _colorAnimation.value ?? AppColors.growthAccent;
         return Container(
-          height: 44,
+          height: 46,
           decoration: BoxDecoration(
             color: AppColors.surfaceElevated,
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(23),
             border: Border.all(color: AppColors.border),
           ),
           child: Stack(
             children: [
-              // Sliding indicator
+              // Sliding white card indicator
               AnimatedAlign(
                 duration: const Duration(milliseconds: 350),
                 curve: Curves.easeInOutCubic,
@@ -90,10 +90,17 @@ class _ModeTogglePillState extends State<ModeTogglePill>
                   child: Container(
                     margin: const EdgeInsets.all(3),
                     decoration: BoxDecoration(
-                      color: accent.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(19),
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0x104A3E37),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                       border: Border.all(
-                        color: accent.withOpacity(0.4),
+                        color: accent.withOpacity(0.3),
                         width: 1,
                       ),
                     ),
@@ -110,7 +117,7 @@ class _ModeTogglePillState extends State<ModeTogglePill>
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text('\uD83D\uDE80', style: const TextStyle(fontSize: 14)),
+                            const Text('\uD83D\uDE80', style: TextStyle(fontSize: 14)),
                             const SizedBox(width: 6),
                             Text(
                               'Growth',
@@ -121,7 +128,7 @@ class _ModeTogglePillState extends State<ModeTogglePill>
                                     : FontWeight.w500,
                                 color: widget.currentMode == AppMode.growth
                                     ? AppColors.growthAccent
-                                    : AppColors.textMuted,
+                                    : AppColors.textSecondary,
                               ),
                             ),
                           ],
@@ -136,7 +143,7 @@ class _ModeTogglePillState extends State<ModeTogglePill>
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text('\uD83D\uDC9A', style: const TextStyle(fontSize: 14)),
+                            const Text('\uD83D\uDC9A', style: TextStyle(fontSize: 14)),
                             const SizedBox(width: 6),
                             Text(
                               'Healing',
@@ -147,7 +154,7 @@ class _ModeTogglePillState extends State<ModeTogglePill>
                                     : FontWeight.w500,
                                 color: widget.currentMode == AppMode.healing
                                     ? AppColors.healingAccent
-                                    : AppColors.textMuted,
+                                    : AppColors.textSecondary,
                               ),
                             ),
                           ],
