@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../models/journal_entry.dart';
 import '../../providers/app_provider.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_text_styles.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_card.dart';
 
@@ -40,7 +41,7 @@ class _JournalTabState extends State<JournalTab> {
         centerTitle: true,
       ),
       floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: AppColors.buttonDark,
+        backgroundColor: AppColors.accentForMode(appProvider.isGrowthMode),
         onPressed: () => _showAddEntryDialog(context, appProvider),
         icon: const Icon(Icons.add_rounded, color: Colors.white),
         label: const Text('New Entry', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
@@ -54,9 +55,9 @@ class _JournalTabState extends State<JournalTab> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Reflections & Mood Tracker',
-                    style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                  Text(
+                    'REFLECTIONS & MOOD TRACKER',
+                    style: AppTextStyles.sectionTitle,
                   ),
                   IconButton(
                     icon: Icon(
@@ -82,7 +83,7 @@ class _JournalTabState extends State<JournalTab> {
                   hintText: 'Search entries...',
                   prefixIcon: const Icon(Icons.search_rounded, color: AppColors.textSecondary),
                   filled: true,
-                  fillColor: AppColors.cardSurface,
+                  fillColor: AppColors.surfaceElevated,
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
                 ),
               ),
@@ -104,6 +105,7 @@ class _JournalTabState extends State<JournalTab> {
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 12.0),
                             child: CustomCard(
+                              backgroundColor: AppColors.surfaceElevated,
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -121,8 +123,8 @@ class _JournalTabState extends State<JournalTab> {
                                         children: [
                                           Chip(
                                             label: Text(entry.mood, style: const TextStyle(fontSize: 11, color: AppColors.textPrimary)),
-                                            backgroundColor: AppColors.softBeige,
-                                            side: BorderSide.none,
+                                            backgroundColor: AppColors.surface,
+                                            side: const BorderSide(color: AppColors.border),
                                           ),
                                           const SizedBox(width: 8),
                                           GestureDetector(
@@ -213,7 +215,7 @@ class _JournalTabState extends State<JournalTab> {
                       decoration: InputDecoration(
                         hintText: 'Title',
                         filled: true,
-                        fillColor: AppColors.cardSurface,
+                        fillColor: AppColors.surfaceElevated,
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
                       ),
                     ),
@@ -224,7 +226,7 @@ class _JournalTabState extends State<JournalTab> {
                       decoration: InputDecoration(
                         hintText: 'Write your thoughts...',
                         filled: true,
-                        fillColor: AppColors.cardSurface,
+                        fillColor: AppColors.surfaceElevated,
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
                       ),
                     ),
@@ -250,10 +252,10 @@ class _JournalTabState extends State<JournalTab> {
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                                 decoration: BoxDecoration(
-                                  color: isSelected ? AppColors.buttonDark : AppColors.cardSurface,
+                                  color: isSelected ? AppColors.accentForMode(appProvider.isGrowthMode) : AppColors.surfaceElevated,
                                   borderRadius: BorderRadius.circular(20),
                                   border: Border.all(
-                                    color: isSelected ? AppColors.buttonDark : AppColors.borderSoft,
+                                    color: isSelected ? AppColors.accentForMode(appProvider.isGrowthMode) : AppColors.border,
                                   ),
                                 ),
                                 child: Row(

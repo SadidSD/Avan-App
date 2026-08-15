@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/audio_provider.dart';
+import '../providers/app_provider.dart';
 import '../theme/app_colors.dart';
 import '../screens/player/player_screen.dart';
 
@@ -33,6 +34,7 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> with SingleTickerProvid
   @override
   Widget build(BuildContext context) {
     final audioProvider = Provider.of<AudioProvider>(context);
+    final appProvider = Provider.of<AppProvider>(context);
     final playlist = audioProvider.currentPlaylist;
 
     if (playlist == null) {
@@ -63,7 +65,7 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> with SingleTickerProvid
           filter: ImageFilter.blur(sigmaX: 20.0, sigmaY: 20.0),
           child: Container(
             decoration: BoxDecoration(
-              color: AppColors.glassOverlay,
+              color: AppColors.surface.withOpacity(0.9),
               border: Border.all(color: AppColors.glassBorder, width: 1.0),
             ),
             child: InkWell(
@@ -87,10 +89,10 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> with SingleTickerProvid
                           height: 2.0,
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
-                              colors: const [
-                                AppColors.goldAccent,
-                                AppColors.nudeAccent,
-                                AppColors.goldAccent,
+                              colors: [
+                                AppColors.accentForMode(appProvider.isGrowthMode).withOpacity(0.3),
+                                AppColors.accentForMode(appProvider.isGrowthMode),
+                                AppColors.accentForMode(appProvider.isGrowthMode).withOpacity(0.3),
                               ],
                               stops: [
                                 0.0,
@@ -131,7 +133,7 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> with SingleTickerProvid
                                 return Container(
                                   width: 44,
                                   height: 44,
-                                  color: AppColors.nudeAccent,
+                                  color: AppColors.surfaceElevated,
                                   child: const Icon(Icons.spa, color: AppColors.textPrimary),
                                 );
                               },
@@ -180,7 +182,7 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> with SingleTickerProvid
                               audioProvider.isPlaying
                                   ? Icons.pause_circle_filled_rounded
                                   : Icons.play_circle_fill_rounded,
-                              color: AppColors.buttonDark,
+                              color: AppColors.accentForMode(appProvider.isGrowthMode),
                               size: 38,
                             ),
                             onPressed: () {

@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_provider.dart';
 import '../../theme/app_colors.dart';
-import '../../widgets/custom_button.dart';
+import '../../theme/app_text_styles.dart';
+
 import '../../widgets/custom_card.dart';
 import '../../widgets/paywall_modal.dart';
 import '../widgets_preview/widgets_tab.dart';
@@ -47,12 +48,13 @@ class ProfileTab extends StatelessWidget {
                     Container(
                       width: 84,
                       height: 84,
-                      decoration: const BoxDecoration(
-                        color: AppColors.softBeige,
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceElevated,
                         shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.border),
                       ),
                       child: const Center(
-                        child: Icon(Icons.person_outline_rounded, size: 44, color: AppColors.textPrimary),
+                        child: Icon(Icons.person_outline_rounded, size: 44, color: AppColors.textSecondary),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -73,7 +75,7 @@ class ProfileTab extends StatelessWidget {
                     const SizedBox(height: 12),
                     OutlinedButton(
                       style: OutlinedButton.styleFrom(
-                        backgroundColor: AppColors.buttonDark,
+                        backgroundColor: AppColors.accentForMode(appProvider.isGrowthMode),
                         foregroundColor: Colors.white,
                         side: const BorderSide(color: Colors.transparent),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -88,17 +90,13 @@ class ProfileTab extends StatelessWidget {
               const SizedBox(height: 28),
 
               // Streak & Rewards Card
-              const Text(
-                'Streak & Rewards',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
+              Text(
+                'STREAK & REWARDS',
+                style: AppTextStyles.sectionTitle,
               ),
               const SizedBox(height: 12),
               CustomCard(
+                backgroundColor: AppColors.surfaceElevated,
                 child: Column(
                   children: [
                     Row(
@@ -142,8 +140,8 @@ class ProfileTab extends StatelessWidget {
                     const SizedBox(height: 16),
                     LinearProgressIndicator(
                       value: appProvider.streakData.weeklyProgress,
-                      backgroundColor: AppColors.nudeAccent,
-                      color: AppColors.buttonDark,
+                      backgroundColor: AppColors.surface,
+                      color: AppColors.accentForMode(appProvider.isGrowthMode),
                       minHeight: 6,
                       borderRadius: BorderRadius.circular(3),
                     ),
@@ -165,7 +163,7 @@ class ProfileTab extends StatelessWidget {
 
               // Demo Subscription Switcher
               CustomCard(
-                backgroundColor: AppColors.softBeige,
+                backgroundColor: AppColors.surfaceElevated,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -182,7 +180,7 @@ class ProfileTab extends StatelessWidget {
                     ),
                     Switch(
                       value: appProvider.isPremium,
-                      activeColor: AppColors.buttonDark,
+                      activeColor: AppColors.accentForMode(appProvider.isGrowthMode),
                       onChanged: (val) => appProvider.togglePremium(),
                     ),
                   ],
@@ -192,17 +190,18 @@ class ProfileTab extends StatelessWidget {
 
               // App Mode Selector Card
               CustomCard(
+                backgroundColor: AppColors.surfaceElevated,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: const [
+                      children: [
                         Text(
-                          'App Experience Mode',
-                          style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.textPrimary),
+                          'APP EXPERIENCE MODE',
+                          style: AppTextStyles.sectionTitle,
                         ),
-                        Icon(Icons.palette_outlined, color: AppColors.tanAccent, size: 20),
+                        const Icon(Icons.palette_outlined, color: AppColors.textSecondary, size: 20),
                       ],
                     ),
                     const SizedBox(height: 4),
@@ -254,8 +253,8 @@ class ProfileTab extends StatelessWidget {
                           child: OutlinedButton(
                             onPressed: () => appProvider.setAppMode(AppMode.auto),
                             style: OutlinedButton.styleFrom(
-                              backgroundColor: appProvider.appModeSetting == AppMode.auto ? AppColors.buttonDark : Colors.transparent,
-                              side: BorderSide(color: appProvider.appModeSetting == AppMode.auto ? AppColors.buttonDark : AppColors.borderSoft),
+                              backgroundColor: appProvider.appModeSetting == AppMode.auto ? AppColors.accentForMode(appProvider.isGrowthMode) : Colors.transparent,
+                              side: BorderSide(color: appProvider.appModeSetting == AppMode.auto ? AppColors.accentForMode(appProvider.isGrowthMode) : AppColors.borderSoft),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                               padding: const EdgeInsets.symmetric(vertical: 8),
                             ),
@@ -348,6 +347,7 @@ class ProfileTab extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
       child: CustomCard(
+        backgroundColor: AppColors.surfaceElevated,
         onTap: onTap ?? () {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -359,7 +359,7 @@ class ProfileTab extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           children: [
-            Icon(icon, size: 20, color: AppColors.textPrimary),
+            Icon(icon, size: 20, color: AppColors.textSecondary),
             const SizedBox(width: 14),
             Expanded(
               child: Text(
@@ -367,7 +367,7 @@ class ProfileTab extends StatelessWidget {
                 style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 15, color: AppColors.textPrimary),
               ),
             ),
-            const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.tanAccent),
+            const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.textSecondary),
           ],
         ),
       ),

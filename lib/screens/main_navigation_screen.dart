@@ -9,7 +9,7 @@ import '../widgets/paywall_modal.dart';
 import 'home/home_tab.dart';
 import 'profile/profile_tab.dart';
 import 'say_after_me/say_after_me_tab.dart';
-import 'my_voice/my_voice_tab.dart';
+
 import 'journal/journal_tab.dart';
 import 'vision_board/vision_board_tab.dart';
 
@@ -56,6 +56,7 @@ class MainNavigationScreen extends StatelessWidget {
   }
 
   Widget _buildCustomNavBar(BuildContext context, int currentIndex, AppProvider appProvider) {
+    final isGrowth = appProvider.isGrowthMode;
     return ClipRRect(
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 16.0, sigmaY: 16.0),
@@ -63,40 +64,27 @@ class MainNavigationScreen extends StatelessWidget {
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(context).padding.bottom,
           ),
-          decoration: BoxDecoration(
-            color: AppColors.cardSurface.withOpacity(0.6),
-            border: const Border(
+          decoration: const BoxDecoration(
+            color: Color(0xFF0D0D1A),
+            border: Border(
               top: BorderSide(
-                color: Colors.transparent, 
-                width: 0,
+                color: Color(0x14FFFFFF), 
+                width: 1,
               ),
             ),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Thin gradient line at the top
-              Container(
-                height: 1.5,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.transparent,
-                      AppColors.goldAccent.withOpacity(0.5),
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
-              ),
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 6.0),
                 child: Row(
                   children: [
-                    _buildNavItem(context, 0, currentIndex, appProvider, Icons.home_outlined, Icons.home_rounded, 'Playlist'),
-                    _buildNavItem(context, 1, currentIndex, appProvider, Icons.mic_none_outlined, Icons.mic_rounded, 'Say After'),
-                    _buildNavItem(context, 2, currentIndex, appProvider, Icons.menu_book_outlined, Icons.menu_book_rounded, 'Journal'),
-                    _buildNavItem(context, 3, currentIndex, appProvider, Icons.dashboard_outlined, Icons.dashboard_rounded, 'Vision'),
-                    _buildNavItem(context, 4, currentIndex, appProvider, Icons.person_outline_rounded, Icons.person_rounded, 'Profile'),
+                    _buildNavItem(context, 0, currentIndex, appProvider, Icons.home_outlined, Icons.home_rounded, 'Playlist', isGrowth),
+                    _buildNavItem(context, 1, currentIndex, appProvider, Icons.mic_none_outlined, Icons.mic_rounded, 'Say After', isGrowth),
+                    _buildNavItem(context, 2, currentIndex, appProvider, Icons.menu_book_outlined, Icons.menu_book_rounded, 'Journal', isGrowth),
+                    _buildNavItem(context, 3, currentIndex, appProvider, Icons.dashboard_outlined, Icons.dashboard_rounded, 'Vision', isGrowth),
+                    _buildNavItem(context, 4, currentIndex, appProvider, Icons.person_outline_rounded, Icons.person_rounded, 'Profile', isGrowth),
                   ],
                 ),
               ),
@@ -107,8 +95,9 @@ class MainNavigationScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildNavItem(BuildContext context, int index, int currentIndex, AppProvider appProvider, IconData icon, IconData activeIcon, String label) {
+  Widget _buildNavItem(BuildContext context, int index, int currentIndex, AppProvider appProvider, IconData icon, IconData activeIcon, String label, bool isGrowth) {
     final bool isSelected = currentIndex == index;
+    final accentColor = AppColors.accentForMode(isGrowth);
 
     return Expanded(
       child: GestureDetector(
@@ -128,21 +117,12 @@ class MainNavigationScreen extends StatelessWidget {
               curve: Curves.easeOutCubic,
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
               decoration: BoxDecoration(
-                gradient: isSelected
-                    ? LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          AppColors.goldAccent,
-                          AppColors.goldAccent.withOpacity(0.7),
-                        ],
-                      )
-                    : null,
+                color: isSelected ? accentColor.withOpacity(0.15) : Colors.transparent,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Icon(
                 isSelected ? activeIcon : icon,
-                color: isSelected ? Colors.white : AppColors.tanAccent.withOpacity(0.8),
+                color: isSelected ? accentColor : AppColors.textMuted,
                 size: 22,
               ),
             ),
@@ -157,7 +137,7 @@ class MainNavigationScreen extends StatelessWidget {
                 fontSize: 9,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                 letterSpacing: 0.2,
-                color: isSelected ? AppColors.textPrimary : AppColors.tanAccent,
+                color: isSelected ? accentColor : AppColors.textMuted,
               ),
             ),
           ],

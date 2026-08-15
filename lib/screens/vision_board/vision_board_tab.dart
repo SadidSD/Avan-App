@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../providers/app_provider.dart';
 import '../../theme/app_colors.dart';
 
 class VisionBoardTab extends StatelessWidget {
@@ -140,6 +141,7 @@ class VisionBoardContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<VisionBoardState>();
+    final appProvider = context.watch<AppProvider>();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -170,8 +172,8 @@ class VisionBoardContent extends StatelessWidget {
                     selected: {state.showSavedBoards},
                     onSelectionChanged: (val) => state.toggleSavedBoards(val.first),
                     style: SegmentedButton.styleFrom(
-                      backgroundColor: AppColors.cardSurface,
-                      selectedBackgroundColor: AppColors.buttonDark,
+                      backgroundColor: AppColors.surfaceElevated,
+                      selectedBackgroundColor: AppColors.accentForMode(appProvider.isGrowthMode),
                       selectedForegroundColor: Colors.white,
                       foregroundColor: AppColors.textPrimary,
                       shape: RoundedRectangleBorder(
@@ -205,7 +207,7 @@ class SavedBoardsView extends StatelessWidget {
         return Card(
           margin: const EdgeInsets.only(bottom: 16),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-          color: AppColors.cardSurface,
+          color: AppColors.surfaceElevated,
           elevation: 0,
           child: ListTile(
             contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -259,10 +261,10 @@ class ActiveBoardView extends StatelessWidget {
                 onSelected: (val) {
                   if (val) state.setTemplate(t);
                 },
-                selectedColor: AppColors.buttonDark,
-                backgroundColor: AppColors.cardSurface,
+                selectedColor: AppColors.accentForMode(context.watch<AppProvider>().isGrowthMode),
+                backgroundColor: AppColors.surfaceElevated,
                 side: BorderSide(
-                  color: isSelected ? Colors.transparent : AppColors.borderSoft,
+                  color: isSelected ? Colors.transparent : AppColors.border,
                 ),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               );
@@ -301,7 +303,7 @@ class ActiveBoardView extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(20),
           decoration: const BoxDecoration(
-            color: AppColors.cardSurface,
+            color: AppColors.surfaceElevated,
             borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
             boxShadow: [
               BoxShadow(
@@ -318,6 +320,7 @@ class ActiveBoardView extends StatelessWidget {
                 context: context,
                 icon: Icons.add_rounded,
                 label: 'Add Block',
+                iconColor: AppColors.accentForMode(context.read<AppProvider>().isGrowthMode),
                 onTap: () => state.addBlock(),
               ),
               _buildActionBtn(
@@ -351,6 +354,7 @@ class ActiveBoardView extends StatelessWidget {
     required IconData icon,
     required String label,
     required VoidCallback onTap,
+    Color? iconColor,
   }) {
     return InkWell(
       onTap: onTap,
@@ -360,7 +364,7 @@ class ActiveBoardView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: AppColors.iconColor),
+            Icon(icon, color: iconColor ?? AppColors.iconColor),
             const SizedBox(height: 4),
             Text(
               label,
@@ -532,7 +536,7 @@ class _EditGoalDialogState extends State<EditGoalDialog> {
                 labelText: 'Goal Title',
                 labelStyle: const TextStyle(fontFamily: 'Inter', color: AppColors.textSecondary),
                 filled: true,
-                fillColor: AppColors.cardSurface,
+                fillColor: AppColors.surfaceElevated,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
               ),
               style: const TextStyle(fontFamily: 'Inter', color: AppColors.textPrimary),
@@ -544,7 +548,7 @@ class _EditGoalDialogState extends State<EditGoalDialog> {
                 labelText: 'Affirmative Quote',
                 labelStyle: const TextStyle(fontFamily: 'Inter', color: AppColors.textSecondary),
                 filled: true,
-                fillColor: AppColors.cardSurface,
+                fillColor: AppColors.surfaceElevated,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
               ),
               style: const TextStyle(fontFamily: 'Inter', color: AppColors.textPrimary),
@@ -560,8 +564,8 @@ class _EditGoalDialogState extends State<EditGoalDialog> {
                 return ChoiceChip(
                   label: Text(c, style: TextStyle(fontFamily: 'Inter', fontSize: 12, color: isSelected ? Colors.white : AppColors.textPrimary)),
                   selected: isSelected,
-                  selectedColor: AppColors.goldAccent,
-                  backgroundColor: AppColors.cardSurface,
+                  selectedColor: AppColors.accentForMode(context.watch<AppProvider>().isGrowthMode),
+                  backgroundColor: AppColors.surfaceElevated,
                   onSelected: (val) {
                     if (val) setState(() => _category = c);
                   },
@@ -635,7 +639,7 @@ class _EditGoalDialogState extends State<EditGoalDialog> {
                       Navigator.pop(context);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.buttonDark,
+                      backgroundColor: AppColors.accentForMode(context.read<AppProvider>().isGrowthMode),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),

@@ -1,10 +1,14 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../providers/app_provider.dart';
 import '../../providers/audio_provider.dart';
 import '../../theme/app_colors.dart';
-import '../../widgets/custom_card.dart';
+import '../../theme/app_text_styles.dart';
+import '../../widgets/glass_card.dart';
+import '../../widgets/animated_cosmic_background.dart';
+import '../../widgets/hero_quote_card.dart';
+import '../../widgets/mode_toggle_pill.dart';
 import '../../widgets/paywall_modal.dart';
 import '../../data/playlists_data.dart';
 import '../../models/playlist.dart';
@@ -17,393 +21,378 @@ class HomeTab extends StatefulWidget {
 }
 
 class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
-  late AnimationController _fadeController;
+  late AnimationController _entryController;
+  late Animation<double> _entryAnimation;
   final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _fadeController = AnimationController(
+    _entryController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 400),
-    )..forward();
+      duration: const Duration(milliseconds: 600),
+    );
+    _entryAnimation = CurvedAnimation(
+      parent: _entryController,
+      curve: Curves.easeOutCubic,
+    );
+    _entryController.forward();
   }
 
   @override
   void dispose() {
-    _fadeController.dispose();
+    _entryController.dispose();
     _searchController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final appProvider = Provider.of<AppProvider>(context);
-    final audioProvider = Provider.of<AudioProvider>(context);
-
+    final appProvider = context.watch<AppProvider>();
+    final audioProvider = context.watch<AudioProvider>();
     final isGrowth = appProvider.isGrowthMode;
+    final accent = AppColors.accentForMode(isGrowth);
+    final accentSoft = AppColors.accentSoftForMode(isGrowth);
+    final streakColor = AppColors.streakColorForMode(isGrowth);
     final hour = DateTime.now().hour;
+    final greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
+    final greetingEmoji = isGrowth ? '🌅' : '🌙';
 
-    // Theme tokens based on mode
-    final primaryColor = isGrowth ? AppColors.growthPrimary : AppColors.healingPrimary;
-    final secondaryColor = isGrowth ? AppColors.growthSecondary : AppColors.healingSecondary;
-    final accentColor = isGrowth ? AppColors.growthAccent : AppColors.healingAccent;
-    final backgroundColor = isGrowth ? AppColors.growthBackground : AppColors.healingBackground;
-    final cardBgColor = isGrowth ? AppColors.growthCardBackground : AppColors.healingCardBackground;
-    final textPrimary = isGrowth ? AppColors.growthTextPrimary : AppColors.healingTextPrimary;
-    final textSecondary = isGrowth ? AppColors.growthTextSecondary : AppColors.healingTextSecondary;
+    // Mode-specific content
+    final heroQuote = isGrowth
+        ? 'You are built for this. Every challenge is shaping you.'
+        : 'You are held. You are safe. Healing takes time, and that is okay.';
+    final moodPrompt = isGrowth ? 'How is your energy today?' : 'How is your heart today?';
+    final streakLabel = isGrowth ? '🔥 Day Streak' : '💚 Healing Streak';
 
-    String greeting;
-    if (hour < 12) {
-      greeting = 'Good Morning';
-    } else if (hour < 17) {
-      greeting = 'Good Afternoon';
-    } else {
-      greeting = 'Good Evening';
-    }
+    // Playlists for current mode
+    final recommendedPlaylists = isGrowth
+        ? freePlaylists.take(4).toList()
+        : (premiumPlaylists.take(4).toList());
 
-    final userName = 'Alex';
+    return AnimatedCosmicBackground(
+      isGrowth: isGrowth,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
+          child: FadeTransition(
+            opacity: _entryAnimation,
+            child: CustomScrollView(
+              physics: const BouncingScrollPhysics(),
+              slivers: [
+                // --- HEADER ---
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                    child: _buildHeader(
+                      appProvider, accent, streakColor, greeting, greetingEmoji, streakLabel,
+                    ),
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 20)),
 
-    return Scaffold(
-      backgroundColor: backgroundColor,
-      body: SafeArea(
-        child: AnimatedBuilder(
-          animation: _fadeController,
-          builder: (context, child) {
-            return FadeTransition(
-              opacity: _fadeController,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // --- 1. HEADER SECTION ---
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                // --- MODE TOGGLE PILL ---
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: ModeTogglePill(
+                      currentMode: appProvider.appModeSetting,
+                      onModeChanged: (mode) {
+                        appProvider.setAppMode(mode);
+                        _entryController.forward(from: 0.4);
+                      },
+                    ),
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 28)),
+
+                // --- TODAY'S AFFIRMATION HERO CARD ---
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${isGrowth ? '🌅' : '🌙'} $greeting, $userName!',
-                                style: TextStyle(
-                                  fontFamily: 'Inter',
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                  color: textPrimary,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              Row(
-                                children: [
-                                  Text(
-                                    isGrowth ? '🔥' : '💚',
-                                    style: const TextStyle(fontSize: 14),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    isGrowth
-                                        ? '${appProvider.streakData.currentStreak}-Day Streak'
-                                        : '${appProvider.streakData.currentStreak}-Day Healing Streak',
-                                    style: TextStyle(
-                                      fontFamily: 'Inter',
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: textSecondary,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Text(
-                                    '⏱️ 12 min today',
-                                    style: TextStyle(
-                                      fontFamily: 'Inter',
-                                      fontSize: 13,
-                                      color: textSecondary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
+                        Text(
+                          isGrowth ? 'TODAY\'S AFFIRMATION' : 'TODAY\'S HEALING WORD',
+                          style: AppTextStyles.sectionTitle,
                         ),
-                        Row(
+                        const SizedBox(height: 12),
+                        HeroQuoteCard(
+                          quote: heroQuote,
+                          isGrowth: isGrowth,
+                          onListen: () {
+                            if (freePlaylists.isNotEmpty) {
+                              audioProvider.openPlaylist(freePlaylists.first, context);
+                            }
+                          },
+                          onFavorite: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Saved to Favorites ✨',
+                                    style: GoogleFonts.inter(color: AppColors.textPrimary)),
+                                backgroundColor: AppColors.surfaceElevated,
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                            );
+                          },
+                          onShare: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Affirmation shared! 📤',
+                                    style: GoogleFonts.inter(color: AppColors.textPrimary)),
+                                backgroundColor: AppColors.surfaceElevated,
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 28)),
+
+                // --- MOOD CHECK-IN ---
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(moodPrompt.toUpperCase(), style: AppTextStyles.sectionTitle),
+                        const SizedBox(height: 14),
+                        _buildMoodRow(appProvider, accent),
+                      ],
+                    ),
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 28)),
+
+                // --- PERSONALIZED PLAYLIST ---
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('YOUR PERSONALIZED PLAYLIST', style: AppTextStyles.sectionTitle),
+                        const SizedBox(height: 14),
+                        _buildPersonalizedCard(appProvider, audioProvider, accent, accentSoft, isGrowth),
+                      ],
+                    ),
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 28)),
+
+                // --- SITUATION SEARCH ---
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('WHAT\'S YOUR SITUATION?', style: AppTextStyles.sectionTitle),
+                        const SizedBox(height: 14),
+                        _buildSituationSection(isGrowth, accent, audioProvider),
+                      ],
+                    ),
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 28)),
+
+                // --- RECOMMENDED PLAYLISTS ---
+                SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Stack(
-                              children: [
-                                IconButton(
-                                  icon: Icon(Icons.notifications_outlined, color: textPrimary, size: 24),
-                                  onPressed: () {},
+                            Text('RECOMMENDED FOR YOU', style: AppTextStyles.sectionTitle),
+                            GestureDetector(
+                              onTap: () {},
+                              child: Text(
+                                'See All',
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: accent,
                                 ),
-                                Positioned(
-                                  right: 10,
-                                  top: 10,
-                                  child: Container(
-                                    width: 8,
-                                    height: 8,
-                                    decoration: const BoxDecoration(
-                                      color: Colors.redAccent,
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            IconButton(
-                              icon: Icon(Icons.settings_outlined, color: textPrimary, size: 24),
-                              onPressed: () => appProvider.setNavIndex(4), // Go to Profile
+                              ),
                             ),
                           ],
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-
-                    // --- Mode Switcher Banner ---
-                    _buildModeToggleBar(appProvider, primaryColor, textPrimary, textSecondary),
-                    const SizedBox(height: 24),
-
-                    // --- 2. MOOD CHECK-IN ---
-                    Text(
-                      'HOW ARE YOU FEELING TODAY?',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.1,
-                        color: textSecondary,
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildMoodCheckinRow(appProvider, primaryColor, cardBgColor, textSecondary),
-                    const SizedBox(height: 28),
-
-                    // --- 3. YOUR PERSONALIZED PLAYLIST ---
-                    Text(
-                      'YOUR PERSONALIZED PLAYLIST',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.1,
-                        color: textSecondary,
+                      const SizedBox(height: 14),
+                      SizedBox(
+                        height: 160,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          itemCount: recommendedPlaylists.length,
+                          itemBuilder: (context, i) {
+                            final playlist = recommendedPlaylists[i];
+                            final isLocked = playlist.isPremium && !appProvider.isPremium;
+                            return _buildPlaylistCard(
+                              playlist, isLocked, accent, accentSoft, appProvider, audioProvider, context,
+                            );
+                          },
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildPersonalizedPlaylistCard(
-                      context,
-                      isGrowth,
-                      primaryColor,
-                      secondaryColor,
-                      cardBgColor,
-                      textPrimary,
-                      textSecondary,
-                      audioProvider,
-                    ),
-                    const SizedBox(height: 28),
+                    ],
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 28)),
 
-                    // --- 4. SEARCH / SITUATION DISCOVERY ---
-                    Text(
-                      '🔍 WHAT\'S YOUR SITUATION?',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.1,
-                        color: textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildSituationSearchSection(context, isGrowth, cardBgColor, textPrimary, textSecondary, audioProvider),
-                    const SizedBox(height: 28),
+                // --- STREAK & PROGRESS ---
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: _buildStreakCard(appProvider, accent, streakColor, isGrowth),
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 28)),
 
-                    // --- 6. RECOMMENDED FOR YOU ---
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                // --- QUICK ACTIONS ---
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'RECOMMENDED FOR YOU',
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.1,
-                            color: textSecondary,
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () {},
-                          child: Text(
-                            'View All',
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: primaryColor,
-                            ),
-                          ),
-                        ),
+                        Text('EXPLORE', style: AppTextStyles.sectionTitle),
+                        const SizedBox(height: 14),
+                        _buildQuickActions(appProvider, accent, accentSoft, isGrowth),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    _buildRecommendedList(context, isGrowth, cardBgColor, textPrimary, textSecondary, audioProvider, appProvider),
-                    const SizedBox(height: 28),
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 120)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
-                    // --- 7. TODAY'S AFFIRMATION ---
-                    Text(
-                      'TODAY\'S AFFIRMATION',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.1,
-                        color: textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildTodaysAffirmationCard(
-                      context,
-                      isGrowth,
-                      primaryColor,
-                      secondaryColor,
-                      cardBgColor,
-                      textPrimary,
-                      textSecondary,
-                      appProvider,
-                      audioProvider,
-                    ),
-                    const SizedBox(height: 100), // Spacing for player bar & bottom nav
-                  ],
+  // --- HEADER ---
+  Widget _buildHeader(AppProvider appProvider, Color accent, Color streakColor, String greeting, String greetingEmoji, String streakLabel) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '$greetingEmoji $greeting',
+                style: GoogleFonts.inter(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
                 ),
               ),
-            );
-          },
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  Text(
+                    streakLabel,
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: streakColor,
+                    ),
+                  ),
+                  Text(
+                    '  •  ${appProvider.streakData.currentStreak} days',
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      color: AppColors.textMuted,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
-      ),
+        Stack(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.notifications_outlined,
+                  color: AppColors.textSecondary, size: 24),
+              onPressed: () {},
+            ),
+            Positioned(
+              right: 10,
+              top: 10,
+              child: Container(
+                width: 7,
+                height: 7,
+                decoration: BoxDecoration(
+                  color: accent,
+                  shape: BoxShape.circle,
+                  boxShadow: [BoxShadow(color: accent.withOpacity(0.5), blurRadius: 4)],
+                ),
+              ),
+            ),
+          ],
+        ),
+        IconButton(
+          icon: const Icon(Icons.person_outline_rounded,
+              color: AppColors.textSecondary, size: 24),
+          onPressed: () => appProvider.setNavIndex(4),
+        ),
+      ],
     );
   }
 
-  // --- Widget 1: Mode Switcher Bar ---
-  Widget _buildModeToggleBar(AppProvider appProvider, Color primaryColor, Color textPrimary, Color textSecondary) {
-    final mode = appProvider.appModeSetting;
-
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: AppColors.borderSoft.withOpacity(0.4),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildModeTab(
-              label: '🚀 Growth',
-              isSelected: mode == AppMode.growth,
-              onTap: () {
-                appProvider.setAppMode(AppMode.growth);
-                _fadeController.forward(from: 0);
-              },
-            ),
-          ),
-          Expanded(
-            child: _buildModeTab(
-              label: '💔 Healing',
-              isSelected: mode == AppMode.healing,
-              onTap: () {
-                appProvider.setAppMode(AppMode.healing);
-                _fadeController.forward(from: 0);
-              },
-            ),
-          ),
-          Expanded(
-            child: _buildModeTab(
-              label: '🔄 Auto',
-              isSelected: mode == AppMode.auto,
-              onTap: () {
-                appProvider.setAppMode(AppMode.auto);
-                _fadeController.forward(from: 0);
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildModeTab({required String label, required bool isSelected, required VoidCallback onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: isSelected
-              ? [const BoxShadow(color: Color(0x10000000), blurRadius: 6, offset: Offset(0, 2))]
-              : null,
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          label,
-          style: TextStyle(
-            fontFamily: 'Inter',
-            fontSize: 12,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-            color: isSelected ? AppColors.buttonDark : AppColors.textSecondary,
-          ),
-        ),
-      ),
-    );
-  }
-
-  // --- Widget 2: Mood Check-in Row ---
-  Widget _buildMoodCheckinRow(AppProvider appProvider, Color primaryColor, Color cardBgColor, Color textSecondary) {
-    final selectedMood = appProvider.selectedMood;
+  // --- MOOD ROW ---
+  Widget _buildMoodRow(AppProvider appProvider, Color accent) {
     final moods = [
-      {'emoji': '😊', 'label': 'Happy'},
-      {'emoji': '😐', 'label': 'Neutral'},
-      {'emoji': '😔', 'label': 'Sad'},
-      {'emoji': '😨', 'label': 'Anxious'},
+      {'emoji': '🔥', 'label': 'Fired up'},
       {'emoji': '😌', 'label': 'Calm'},
-      {'emoji': '🤔', 'label': 'Thoughtful'},
+      {'emoji': '😔', 'label': 'Low'},
+      {'emoji': '😨', 'label': 'Anxious'},
+      {'emoji': '💪', 'label': 'Strong'},
+      {'emoji': '🕊️', 'label': 'At peace'},
     ];
-
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: moods.map((mood) {
-        final emoji = mood['emoji']!;
-        final label = mood['label']!;
-        final isSelected = selectedMood == emoji;
-
+      children: moods.map((m) {
+        final isSelected = appProvider.selectedMood == m['emoji'];
         return GestureDetector(
-          onTap: () => appProvider.setSelectedMood(emoji),
+          onTap: () => appProvider.setSelectedMood(m['emoji']!),
           child: Column(
             children: [
               AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.all(8),
+                duration: const Duration(milliseconds: 250),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: isSelected ? primaryColor.withOpacity(0.18) : cardBgColor,
+                  color: isSelected ? accent.withOpacity(0.15) : AppColors.surfaceElevated,
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: isSelected ? primaryColor : AppColors.borderSoft.withOpacity(0.5),
-                    width: isSelected ? 2 : 1,
+                    color: isSelected ? accent.withOpacity(0.5) : AppColors.border,
+                    width: isSelected ? 1.5 : 1.0,
                   ),
+                  boxShadow: isSelected
+                      ? [BoxShadow(color: accent.withOpacity(0.2), blurRadius: 10)]
+                      : null,
                 ),
-                child: Text(
-                  emoji,
-                  style: TextStyle(fontSize: isSelected ? 26 : 22),
-                ),
+                child: Text(m['emoji']!, style: TextStyle(fontSize: isSelected ? 22 : 18)),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 5),
               Text(
-                label,
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 10,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w400,
-                  color: isSelected ? primaryColor : textSecondary,
+                m['label']!,
+                style: GoogleFonts.inter(
+                  fontSize: 9,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
+                  color: isSelected ? accent : AppColors.textMuted,
                 ),
               ),
             ],
@@ -413,363 +402,399 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
     );
   }
 
-  // --- Widget 3: Personalized Playlist Card ---
-  Widget _buildPersonalizedPlaylistCard(
-    BuildContext context,
-    bool isGrowth,
-    Color primaryColor,
-    Color secondaryColor,
-    Color cardBgColor,
-    Color textPrimary,
-    Color textSecondary,
-    AudioProvider audioProvider,
-  ) {
-    final playlistTitle = isGrowth ? 'Unshakeable Confidence' : 'Healing Your Heart';
-    final playlistDesc = isGrowth
-        ? 'Based on your goal: Build Confidence'
-        : 'Based on your situation: Healing from breakup';
-    final durationStr = isGrowth ? '7 min' : '10 min';
-    final iconEmoji = isGrowth ? '🎯' : '💔';
+  // --- PERSONALIZED PLAYLIST CARD ---
+  Widget _buildPersonalizedCard(AppProvider appProvider, AudioProvider audioProvider,
+      Color accent, Color accentSoft, bool isGrowth) {
+    final title = isGrowth ? 'Unshakeable Confidence' : 'Healing Your Heart';
+    final desc = isGrowth
+        ? 'Curated for focus & achievement'
+        : 'Gentle affirmations for your healing journey';
+    final emoji = isGrowth ? '🎯' : '💔';
+    final targetPlaylist = isGrowth
+        ? freePlaylists.firstWhere((p) => p.id.contains('energy'), orElse: () => freePlaylists.first)
+        : freePlaylists.firstWhere((p) => p.id.contains('calm'), orElse: () => freePlaylists.first);
 
-    final targetPlaylist = freePlaylists.firstWhere(
-      (p) => isGrowth ? p.id.contains('confidence') || p.id.contains('energy') : p.id.contains('sleep') || p.id.contains('calm'),
-      orElse: () => freePlaylists.first,
-    );
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: cardBgColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: primaryColor.withOpacity(0.15)),
-        boxShadow: [
-          BoxShadow(
-            color: primaryColor.withOpacity(0.06),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+    return GlassCard(
+      accentColor: accent,
+      glowIntensity: 0.6,
+      gradient: AppColors.cardGradientForMode(isGrowth),
       child: Row(
         children: [
           Container(
-            width: 52,
-            height: 52,
+            width: 56,
+            height: 56,
             decoration: BoxDecoration(
-              color: primaryColor.withOpacity(0.12),
+              color: accent.withOpacity(0.12),
               borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: accent.withOpacity(0.25)),
             ),
-            child: Center(
-              child: Text(iconEmoji, style: const TextStyle(fontSize: 26)),
-            ),
+            child: Center(child: Text(emoji, style: const TextStyle(fontSize: 28))),
           ),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  playlistTitle,
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  playlistDesc,
-                  style: TextStyle(fontFamily: 'Inter', fontSize: 12, color: textSecondary),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                Text(title, style: AppTextStyles.cardTitle),
+                const SizedBox(height: 3),
+                Text(desc,
+                    style: AppTextStyles.cardSubtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 6),
                 Row(
                   children: [
-                    const Icon(Icons.timer_outlined, size: 13, color: Colors.grey),
+                    Icon(Icons.headphones_outlined, size: 12, color: AppColors.textMuted),
                     const SizedBox(width: 4),
-                    Text(durationStr, style: const TextStyle(fontSize: 11, color: Colors.grey)),
-                    const SizedBox(width: 12),
-                    const Icon(Icons.mic_outlined, size: 13, color: Colors.grey),
+                    Text('${targetPlaylist.affirmations.length} affirmations',
+                        style: AppTextStyles.bodySmall),
+                    const SizedBox(width: 10),
+                    Icon(Icons.timer_outlined, size: 12, color: AppColors.textMuted),
                     const SizedBox(width: 4),
-                    const Text('12 affirmations', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                    Text(targetPlaylist.duration, style: AppTextStyles.bodySmall),
                   ],
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 8),
-          ElevatedButton(
-            onPressed: () => audioProvider.openPlaylist(targetPlaylist, context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: primaryColor,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          const SizedBox(width: 12),
+          GestureDetector(
+            onTap: () => audioProvider.openPlaylist(targetPlaylist, context),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: accent.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: accent.withOpacity(0.4)),
+                boxShadow: [BoxShadow(color: accent.withOpacity(0.2), blurRadius: 12)],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.play_arrow_rounded, size: 18, color: accent),
+                  const SizedBox(width: 4),
+                  Text('Play', style: GoogleFonts.inter(
+                    fontSize: 13, fontWeight: FontWeight.w700, color: accent)),
+                ],
+              ),
             ),
-            child: const Text('▶ Play', style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.bold, fontSize: 13)),
           ),
         ],
       ),
     );
   }
 
-  // --- Widget 4: Situation Search Section ---
-  Widget _buildSituationSearchSection(
-    BuildContext context,
-    bool isGrowth,
-    Color cardBgColor,
-    Color textPrimary,
-    Color textSecondary,
-    AudioProvider audioProvider,
-  ) {
-    final growthSituations = [
-      {'icon': '💼', 'text': 'I Have A Job Interview'},
-      {'icon': '📚', 'text': 'I Have An Exam Tomorrow'},
-      {'icon': '🚀', 'text': 'I Need To Build Confidence'},
-    ];
+  // --- SITUATION SECTION ---
+  Widget _buildSituationSection(bool isGrowth, Color accent, AudioProvider audioProvider) {
+    final situations = isGrowth
+        ? [
+            {'icon': '💼', 'text': 'I Have A Job Interview'},
+            {'icon': '📚', 'text': 'I Have An Exam Tomorrow'},
+            {'icon': '🚀', 'text': 'I Need To Build Confidence'},
+          ]
+        : [
+            {'icon': '💔', 'text': 'I\'m Going Through A Breakup'},
+            {'icon': '🕊️', 'text': 'I\'m Grieving A Loss'},
+            {'icon': '😰', 'text': 'I\'m Feeling Overwhelmed'},
+          ];
 
-    final healingSituations = [
-      {'icon': '💔', 'text': 'I\'m Going Through A Breakup'},
-      {'icon': '🕊️', 'text': 'I\'m Grieving A Loss'},
-      {'icon': '😰', 'text': 'I Can\'t Fall Asleep'},
-    ];
-
-    final list = isGrowth ? growthSituations : healingSituations;
-
-    return Column(
-      children: [
-        // Search Input Bar
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-          decoration: BoxDecoration(
-            color: cardBgColor,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.borderSoft),
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.search_rounded, color: Colors.grey, size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: TextField(
-                  controller: _searchController,
-                  decoration: const InputDecoration(
-                    hintText: 'Search playlists by situation...',
-                    hintStyle: TextStyle(fontSize: 13, color: Colors.grey),
-                    border: InputBorder.none,
+    return GlassCard(
+      accentColor: accent,
+      padding: const EdgeInsets.all(4),
+      child: Column(
+        children: [
+          // Search bar
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+            child: Row(
+              children: [
+                Icon(Icons.search_rounded, color: AppColors.textMuted, size: 18),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    style: GoogleFonts.inter(fontSize: 14, color: AppColors.textPrimary),
+                    decoration: InputDecoration(
+                      hintText: 'Describe your situation...',
+                      hintStyle: GoogleFonts.inter(fontSize: 14, color: AppColors.textMuted),
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 10),
-
-        // Popular List Items
-        Column(
-          children: list.map((sit) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: InkWell(
-                onTap: () {
-                  final target = freePlaylists.first;
-                  audioProvider.openPlaylist(target, context);
-                },
-                borderRadius: BorderRadius.circular(10),
-                child: Padding(
-                  padding: const EdgeInsets.all(6.0),
-                  child: Row(
-                    children: [
-                      Text(sit['icon']!, style: const TextStyle(fontSize: 16)),
-                      const SizedBox(width: 10),
-                      Text(
-                        sit['text']!,
-                        style: TextStyle(fontFamily: 'Inter', fontSize: 13, fontWeight: FontWeight.w500, color: textPrimary),
-                      ),
-                      const Spacer(),
-                      const Icon(Icons.arrow_forward_ios_rounded, size: 12, color: Colors.grey),
-                    ],
-                  ),
+          Divider(color: AppColors.border, height: 1),
+          // Situation items
+          ...situations.map((s) {
+            return InkWell(
+              onTap: () {
+                final p = freePlaylists.first;
+                audioProvider.openPlaylist(p, context);
+              },
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                child: Row(
+                  children: [
+                    Text(s['icon']!, style: const TextStyle(fontSize: 18)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(s['text']!,
+                          style: GoogleFonts.inter(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.textPrimary)),
+                    ),
+                    Icon(Icons.arrow_forward_ios_rounded,
+                        size: 11, color: AppColors.textMuted),
+                  ],
                 ),
               ),
             );
           }).toList(),
-        ),
-      ],
-    );
-  }
-
-  // --- Widget 6: Recommended List ---
-  Widget _buildRecommendedList(
-    BuildContext context,
-    bool isGrowth,
-    Color cardBgColor,
-    Color textPrimary,
-    Color textSecondary,
-    AudioProvider audioProvider,
-    AppProvider appProvider,
-  ) {
-    final items = isGrowth ? freePlaylists : premiumPlaylists.take(4).toList();
-
-    return SizedBox(
-      height: 110,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: items.length,
-        itemBuilder: (context, index) {
-          final playlist = items[index];
-          final isLocked = playlist.isPremium && !appProvider.isPremium;
-
-          return Container(
-            width: 140,
-            margin: const EdgeInsets.only(right: 12),
-            child: CustomCard(
-              padding: const EdgeInsets.all(12),
-              onTap: () {
-                if (isLocked) {
-                  PaywallModal.show(context);
-                } else {
-                  audioProvider.openPlaylist(playlist, context);
-                }
-              },
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          playlist.title,
-                          style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.bold, fontSize: 13, color: textPrimary),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (isLocked)
-                        const Icon(Icons.lock_rounded, size: 14, color: AppColors.tanAccent),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${playlist.duration} • ${playlist.category}',
-                    style: TextStyle(fontSize: 11, color: textSecondary),
-                    maxLines: 1,
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: const [
-                      Icon(Icons.star_rounded, size: 14, color: Colors.amber),
-                      SizedBox(width: 4),
-                      Text('4.8', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
+        ],
       ),
     );
   }
 
-  // --- Widget 7: Today's Affirmation Card ---
-  Widget _buildTodaysAffirmationCard(
-    BuildContext context,
-    bool isGrowth,
-    Color primaryColor,
-    Color secondaryColor,
-    Color cardBgColor,
-    Color textPrimary,
-    Color textSecondary,
-    AppProvider appProvider,
-    AudioProvider audioProvider,
-  ) {
-    final quoteText = isGrowth
-        ? 'I am capable of handling whatever comes my way today.'
-        : 'This pain is real, and I honor it. I am worthy of healing.';
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            primaryColor.withOpacity(0.08),
-            secondaryColor.withOpacity(0.08),
+  // --- PLAYLIST CARD ---
+  Widget _buildPlaylistCard(Playlist playlist, bool isLocked, Color accent, Color accentSoft,
+      AppProvider appProvider, AudioProvider audioProvider, BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        if (isLocked) {
+          PaywallModal.show(context);
+        } else {
+          audioProvider.openPlaylist(playlist, context);
+        }
+      },
+      child: Container(
+        width: 148,
+        margin: const EdgeInsets.only(right: 14),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceElevated,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.border),
+        ),
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: accent.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(Icons.self_improvement_rounded, size: 18, color: accent),
+                ),
+                if (isLocked)
+                  Icon(Icons.lock_rounded, size: 14, color: AppColors.textMuted)
+                else
+                  Icon(Icons.play_circle_rounded, size: 20, color: accent),
+              ],
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  playlist.title,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  '${playlist.duration} · ${playlist.affirmations.length} tracks',
+                  style: AppTextStyles.bodySmall,
+                ),
+              ],
+            ),
           ],
         ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: primaryColor.withOpacity(0.2)),
       ),
+    );
+  }
+
+  // --- STREAK CARD ---
+  Widget _buildStreakCard(AppProvider appProvider, Color accent, Color streakColor, bool isGrowth) {
+    final streak = appProvider.streakData;
+    return GlassCard(
+      accentColor: accent,
+      glowIntensity: 0.4,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('✨', style: TextStyle(fontSize: 20)),
-              const SizedBox(width: 8),
-              Expanded(
+              Text('YOUR PROGRESS', style: AppTextStyles.sectionTitle),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: streakColor.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: streakColor.withOpacity(0.3)),
+                ),
                 child: Text(
-                  '"$quoteText"',
-                  style: TextStyle(
-                    fontFamily: 'Georgia',
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    height: 1.4,
-                    fontStyle: isGrowth ? FontStyle.normal : FontStyle.italic,
-                    color: textPrimary,
+                  '${streak.currentStreak} days',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: streakColor,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
           Row(
-            mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              TextButton.icon(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Saved to Favorites! ❤️')),
-                  );
-                },
-                icon: const Icon(Icons.favorite_outline_rounded, size: 16),
-                label: const Text('Save', style: TextStyle(fontSize: 12)),
-                style: TextButton.styleFrom(foregroundColor: textSecondary),
-              ),
-              TextButton.icon(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Affirmation shared! 📤')),
-                  );
-                },
-                icon: const Icon(Icons.share_outlined, size: 16),
-                label: const Text('Share', style: TextStyle(fontSize: 12)),
-                style: TextButton.styleFrom(foregroundColor: textSecondary),
-              ),
-              TextButton.icon(
-                onPressed: () {
-                  if (freePlaylists.isNotEmpty) {
-                    audioProvider.openPlaylist(freePlaylists.first, context);
-                  }
-                },
-                icon: const Icon(Icons.play_arrow_rounded, size: 18),
-                label: const Text('Listen', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                style: TextButton.styleFrom(foregroundColor: primaryColor),
-              ),
+              _statItem('${streak.currentStreak}', isGrowth ? '🔥 Streak' : '💚 Streak', accent),
+              _divider(),
+              _statItem('${streak.longestStreak}', 'Best', accent),
+              _divider(),
+              _statItem('${streak.totalListeningDays}', 'Total Days', accent),
             ],
+          ),
+          const SizedBox(height: 16),
+          // Weekly dots
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(7, (i) {
+              // weeklyProgress is 0.0–1.0 representing fraction of week completed
+              final daysThisWeek = (streak.weeklyProgress * 7).round();
+              final isActive = i < daysThisWeek;
+              return Column(
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isActive ? accent.withOpacity(0.15) : AppColors.surface,
+                      border: Border.all(
+                        color: isActive ? accent.withOpacity(0.5) : AppColors.border,
+                        width: isActive ? 1.5 : 1.0,
+                      ),
+                      boxShadow: isActive
+                          ? [BoxShadow(color: accent.withOpacity(0.2), blurRadius: 8)]
+                          : null,
+                    ),
+                    child: Center(
+                      child: isActive
+                          ? Icon(Icons.check_rounded, size: 14, color: accent)
+                          : null,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    ['M', 'T', 'W', 'T', 'F', 'S', 'S'][i],
+                    style: GoogleFonts.inter(
+                      fontSize: 10,
+                      color: isActive ? accent : AppColors.textMuted,
+                      fontWeight: isActive ? FontWeight.w700 : FontWeight.w400,
+                    ),
+                  ),
+                ],
+              );
+            }),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _statItem(String value, String label, Color accent) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(value,
+              style: GoogleFonts.inter(
+                  fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+          const SizedBox(height: 2),
+          Text(label, style: AppTextStyles.bodySmall),
+        ],
+      ),
+    );
+  }
+
+  Widget _divider() {
+    return Container(width: 1, height: 36, color: AppColors.border);
+  }
+
+  // --- QUICK ACTIONS ---
+  Widget _buildQuickActions(AppProvider appProvider, Color accent, Color accentSoft, bool isGrowth) {
+    final actions = [
+      {
+        'icon': Icons.menu_book_rounded,
+        'label': isGrowth ? 'Journal' : 'Reflection',
+        'desc': isGrowth ? 'Track your wins' : 'Write your feelings',
+        'navIndex': 2,
+      },
+      {
+        'icon': Icons.mic_rounded,
+        'label': 'Say After Me',
+        'desc': isGrowth ? 'Speak it into existence' : 'Affirm your healing',
+        'navIndex': 1,
+      },
+      {
+        'icon': Icons.dashboard_rounded,
+        'label': 'Vision Board',
+        'desc': isGrowth ? 'Visualize your goals' : 'Visualize recovery',
+        'navIndex': 3,
+      },
+    ];
+    return Row(
+      children: actions.map((a) {
+        return Expanded(
+          child: GestureDetector(
+            onTap: () => appProvider.setNavIndex(a['navIndex'] as int),
+            child: Container(
+              margin: EdgeInsets.only(right: a['navIndex'] == 3 ? 0 : 10),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceElevated,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Column(
+                children: [
+                  Icon(a['icon'] as IconData, color: accent, size: 22),
+                  const SizedBox(height: 8),
+                  Text(
+                    a['label'] as String,
+                    style: GoogleFonts.inter(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    a['desc'] as String,
+                    style: AppTextStyles.bodySmall,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 }

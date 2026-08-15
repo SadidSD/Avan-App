@@ -492,9 +492,9 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
                     height: 48,
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                      color: AppColors.softBeige,
+                      color: AppColors.surfaceElevated,
                       borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: AppColors.borderSoft),
+                      border: Border.all(color: AppColors.border),
                     ),
                     child: Row(
                       children: [
@@ -504,7 +504,7 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 250),
                               decoration: BoxDecoration(
-                                color: _activeModeIndex == 0 ? Colors.white : Colors.transparent,
+                                color: _activeModeIndex == 0 ? AppColors.accentForMode(context.watch<AppProvider>().isGrowthMode) : Colors.transparent,
                                 borderRadius: BorderRadius.circular(20),
                                 boxShadow: _activeModeIndex == 0
                                     ? [const BoxShadow(color: Color(0x10000000), blurRadius: 8, offset: Offset(0, 2))]
@@ -517,7 +517,7 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
                                   Icon(
                                     Icons.graphic_eq_rounded,
                                     size: 18,
-                                    color: _activeModeIndex == 0 ? AppColors.textPrimary : AppColors.textSecondary,
+                                    color: _activeModeIndex == 0 ? Colors.white : AppColors.textSecondary,
                                   ),
                                   const SizedBox(width: 6),
                                   Text(
@@ -526,7 +526,7 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
                                       fontFamily: 'Inter',
                                       fontSize: 13,
                                       fontWeight: _activeModeIndex == 0 ? FontWeight.bold : FontWeight.w500,
-                                      color: _activeModeIndex == 0 ? AppColors.textPrimary : AppColors.textSecondary,
+                                      color: _activeModeIndex == 0 ? Colors.white : AppColors.textSecondary,
                                     ),
                                   ),
                                 ],
@@ -540,7 +540,7 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 250),
                               decoration: BoxDecoration(
-                                color: _activeModeIndex == 1 ? Colors.white : Colors.transparent,
+                                color: _activeModeIndex == 1 ? AppColors.accentForMode(context.watch<AppProvider>().isGrowthMode) : Colors.transparent,
                                 borderRadius: BorderRadius.circular(20),
                                 boxShadow: _activeModeIndex == 1
                                     ? [const BoxShadow(color: Color(0x10000000), blurRadius: 8, offset: Offset(0, 2))]
@@ -553,7 +553,7 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
                                   Icon(
                                     Icons.mic_rounded,
                                     size: 18,
-                                    color: _activeModeIndex == 1 ? AppColors.textPrimary : AppColors.textSecondary,
+                                    color: _activeModeIndex == 1 ? Colors.white : AppColors.textSecondary,
                                   ),
                                   const SizedBox(width: 6),
                                   Text(
@@ -562,7 +562,7 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
                                       fontFamily: 'Inter',
                                       fontSize: 13,
                                       fontWeight: _activeModeIndex == 1 ? FontWeight.bold : FontWeight.w500,
-                                      color: _activeModeIndex == 1 ? AppColors.textPrimary : AppColors.textSecondary,
+                                      color: _activeModeIndex == 1 ? Colors.white : AppColors.textSecondary,
                                     ),
                                   ),
                                 ],
@@ -602,7 +602,7 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
             children: [
               Text(
                 'Affirmation ${_currentIndex + 1} of ${_affirmations.length}',
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.tanAccent),
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
               ),
               Row(
                 children: List.generate(_affirmations.length, (idx) {
@@ -612,7 +612,7 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
                     margin: const EdgeInsets.only(left: 4),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: idx == _currentIndex ? AppColors.buttonDark : AppColors.borderSoft,
+                      color: idx == _currentIndex ? AppColors.accentForMode(context.watch<AppProvider>().isGrowthMode) : AppColors.border,
                     ),
                   );
                 }),
@@ -623,7 +623,7 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
 
           // AI Affirmation Display Card
           CustomCard(
-            backgroundColor: AppColors.softBeige,
+            backgroundColor: AppColors.surfaceElevated,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -633,12 +633,12 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: AppColors.background,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
                         children: const [
-                          Icon(Icons.record_voice_over_rounded, size: 14, color: AppColors.goldAccent),
+                          Icon(Icons.record_voice_over_rounded, size: 14, color: AppColors.textSecondary),
                           SizedBox(width: 4),
                           Text('AI Voice Speaker', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
                         ],
@@ -647,7 +647,7 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
                     IconButton(
                       icon: Icon(
                         _isSpeaking ? Icons.pause_circle_filled_rounded : Icons.volume_up_rounded,
-                        color: AppColors.buttonDark,
+                        color: AppColors.accentForMode(context.read<AppProvider>().isGrowthMode),
                         size: 32,
                       ),
                       onPressed: _speakCurrentAffirmation,
@@ -682,7 +682,7 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
                           height: _isSpeaking ? height : 4,
                           margin: const EdgeInsets.symmetric(horizontal: 3),
                           decoration: BoxDecoration(
-                            color: _isSpeaking ? AppColors.goldAccent : AppColors.nudeAccent,
+                            color: _isSpeaking ? AppColors.accentForMode(context.read<AppProvider>().isGrowthMode) : AppColors.surface,
                             borderRadius: BorderRadius.circular(2),
                           ),
                         );
@@ -725,13 +725,11 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
                           height: 90,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            gradient: const LinearGradient(
-                              colors: [AppColors.buttonDark, Color(0xFF5A4B44)],
-                            ),
+                            color: AppColors.accentForMode(context.read<AppProvider>().isGrowthMode),
                             boxShadow: [
                               BoxShadow(
                                 color: _micState == MicState.listening
-                                    ? AppColors.goldAccent.withOpacity(0.5)
+                                    ? AppColors.accentForMode(context.read<AppProvider>().isGrowthMode).withOpacity(0.4)
                                     : const Color(0x205A4B44),
                                 blurRadius: _micState == MicState.listening ? 24 : 12,
                                 spreadRadius: _micState == MicState.listening ? 6 : 2,
@@ -755,9 +753,9 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
-                      color: AppColors.greenAccent.withOpacity(0.15),
+                      color: AppColors.accentForMode(context.read<AppProvider>().isGrowthMode).withOpacity(0.15),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: AppColors.greenAccent),
+                      border: Border.all(color: AppColors.accentForMode(context.read<AppProvider>().isGrowthMode)),
                     ),
                     child: Text(
                       '$_accuracyScore% Match • Clear Pronunciation! ✨',
@@ -793,7 +791,7 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
                   label: const Text('Previous', style: TextStyle(color: AppColors.textPrimary)),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    side: const BorderSide(color: AppColors.borderSoft),
+                    side: const BorderSide(color: AppColors.border),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                   ),
                 ),
@@ -817,7 +815,7 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
                 setState(() => _activeModeIndex = 1);
                 _startRecording();
               },
-              icon: const Icon(Icons.mic_none_rounded, size: 18, color: AppColors.goldAccent),
+              icon: Icon(Icons.mic_none_rounded, size: 18, color: AppColors.accentForMode(context.read<AppProvider>().isGrowthMode)),
               label: const Text(
                 'Record this into My Voice Studio 🎙️',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
@@ -849,7 +847,7 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
         children: [
           // Studio Recorder Card
           CustomCard(
-            backgroundColor: AppColors.softBeige,
+            backgroundColor: AppColors.surfaceElevated,
             child: Column(
               children: [
                 Text(
@@ -859,7 +857,7 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
                 const SizedBox(height: 8),
                 Text(
                   _formatDuration(_recordDuration),
-                  style: const TextStyle(fontSize: 34, fontWeight: FontWeight.bold, color: AppColors.buttonDark),
+                  style: TextStyle(fontSize: 34, fontWeight: FontWeight.bold, color: AppColors.accentForMode(provider.isGrowthMode)),
                 ),
                 const SizedBox(height: 16),
                 Row(
@@ -871,12 +869,12 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                           decoration: BoxDecoration(
-                            color: AppColors.buttonDark,
+                            color: AppColors.accentForMode(provider.isGrowthMode),
                             borderRadius: BorderRadius.circular(24),
                           ),
                           child: Row(
                             children: const [
-                              Icon(Icons.fiber_manual_record_rounded, color: Colors.redAccent, size: 20),
+                              Icon(Icons.fiber_manual_record_rounded, color: Colors.white, size: 20),
                               SizedBox(width: 8),
                               Text('Start Recording', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                             ],
@@ -885,7 +883,7 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
                       ),
                     ] else ...[
                       IconButton(
-                        icon: Icon(_isPaused ? Icons.play_arrow_rounded : Icons.pause_rounded, size: 32, color: AppColors.buttonDark),
+                        icon: Icon(_isPaused ? Icons.play_arrow_rounded : Icons.pause_rounded, size: 32, color: AppColors.accentForMode(provider.isGrowthMode)),
                         onPressed: _isPaused ? _resumeRecording : _pauseRecording,
                       ),
                       const SizedBox(width: 20),
@@ -894,7 +892,7 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
                         icon: const Icon(Icons.stop_rounded, color: Colors.white),
                         label: const Text('Done & Save', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.buttonDark,
+                          backgroundColor: AppColors.accentForMode(provider.isGrowthMode),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                         ),
@@ -917,9 +915,9 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
                   margin: const EdgeInsets.only(right: 8),
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                   decoration: BoxDecoration(
-                    color: isSel ? AppColors.buttonDark : AppColors.cardSurface,
+                    color: isSel ? AppColors.accentForMode(provider.isGrowthMode) : AppColors.surfaceElevated,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: isSel ? AppColors.buttonDark : AppColors.borderSoft),
+                    border: Border.all(color: isSel ? AppColors.accentForMode(provider.isGrowthMode) : AppColors.border),
                   ),
                   child: Text(
                     f,
@@ -942,7 +940,7 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: const [
-                        Icon(Icons.mic_none_rounded, size: 48, color: AppColors.tanAccent),
+                        Icon(Icons.mic_none_rounded, size: 48, color: AppColors.textSecondary),
                         SizedBox(height: 8),
                         Text('No voice recordings yet', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
                         SizedBox(height: 4),
@@ -967,12 +965,12 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
                                 child: Container(
                                   padding: const EdgeInsets.all(10),
                                   decoration: const BoxDecoration(
-                                    color: AppColors.softBeige,
+                                    color: AppColors.surfaceElevated,
                                     shape: BoxShape.circle,
                                   ),
                                   child: Icon(
                                     isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                                    color: AppColors.buttonDark,
+                                    color: AppColors.accentForMode(provider.isGrowthMode),
                                     size: 24,
                                   ),
                                 ),
@@ -1051,7 +1049,8 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
                     value: _voiceSpeed,
                     min: 0.75,
                     max: 1.5,
-                    activeColor: AppColors.buttonDark,
+                    activeColor: AppColors.accentForMode(context.read<AppProvider>().isGrowthMode),
+                    inactiveColor: AppColors.surface,
                     onChanged: (v) {
                       setModalState(() => _voiceSpeed = v);
                       setState(() => _voiceSpeed = v);
@@ -1064,7 +1063,8 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
                     value: _voiceVolume,
                     min: 0.0,
                     max: 1.0,
-                    activeColor: AppColors.buttonDark,
+                    activeColor: AppColors.accentForMode(context.read<AppProvider>().isGrowthMode),
+                    inactiveColor: AppColors.surface,
                     onChanged: (v) {
                       setModalState(() => _voiceVolume = v);
                       setState(() => _voiceVolume = v);
