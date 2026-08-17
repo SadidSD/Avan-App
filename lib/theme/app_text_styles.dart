@@ -45,6 +45,13 @@ class AppTextStyles {
         letterSpacing: 1.2,
       );
 
+  static TextStyle get sectionHeader => GoogleFonts.inter(
+        fontSize: 18,
+        fontWeight: FontWeight.w700,
+        color: AppColors.textPrimary,
+        height: 1.3,
+      );
+
   static TextStyle get cardTitle => GoogleFonts.inter(
         fontSize: 16,
         fontWeight: FontWeight.w700,
@@ -101,6 +108,33 @@ class AppTextStyles {
         fontSize: 13,
         fontWeight: FontWeight.w600,
         color: AppColors.textSecondary,
+      );
+
+  static TextStyle get searchHint => GoogleFonts.inter(
+        fontSize: 15,
+        fontWeight: FontWeight.w400,
+        color: AppColors.textMuted,
+      );
+
+  static TextStyle get premiumCta => GoogleFonts.inter(
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+        color: AppColors.goldAccent,
+        letterSpacing: 0.2,
+      );
+
+  static TextStyle get affirmationCardQuote => GoogleFonts.inter(
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
+        color: AppColors.textPrimary,
+        height: 1.4,
+      );
+
+  static TextStyle get durationBadge => GoogleFonts.inter(
+        fontSize: 10,
+        fontWeight: FontWeight.w600,
+        color: AppColors.textPrimary,
+        letterSpacing: 0.3,
       );
 
   // === ACCENT-COLORED HELPERS ===

@@ -1,11 +1,10 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/app_provider.dart';
 import '../theme/app_colors.dart';
 
-/// Animated pill toggle between Growth and Healing modes in warm light styling.
-/// Sliding white indicator card animates between two sides with mode accent highlights.
-class ModeTogglePill extends StatefulWidget {
+class ModeTogglePill extends StatelessWidget {
   final AppMode currentMode;
   final ValueChanged<AppMode> onModeChanged;
 
@@ -16,158 +15,96 @@ class ModeTogglePill extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<ModeTogglePill> createState() => _ModeTogglePillState();
-}
-
-class _ModeTogglePillState extends State<ModeTogglePill>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _slideController;
-  late Animation<double> _slideAnimation;
-  late Animation<Color?> _colorAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _slideController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 350),
-    );
-    _slideAnimation = CurvedAnimation(
-      parent: _slideController,
-      curve: Curves.easeInOutCubic,
-    );
-    _colorAnimation = ColorTween(
-      begin: AppColors.growthAccent,
-      end: AppColors.healingAccent,
-    ).animate(_slideAnimation);
-    if (widget.currentMode == AppMode.healing) {
-      _slideController.value = 1.0;
-    }
-  }
-
-  @override
-  void didUpdateWidget(ModeTogglePill oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.currentMode != widget.currentMode) {
-      if (widget.currentMode == AppMode.growth) {
-        _slideController.reverse();
-      } else if (widget.currentMode == AppMode.healing) {
-        _slideController.forward();
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    _slideController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _slideController,
-      builder: (context, child) {
-        final accent = _colorAnimation.value ?? AppColors.growthAccent;
-        return Container(
-          height: 46,
-          decoration: BoxDecoration(
-            color: AppColors.surfaceElevated,
-            borderRadius: BorderRadius.circular(23),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Stack(
-            children: [
-              // Sliding white card indicator
-              AnimatedAlign(
-                duration: const Duration(milliseconds: 350),
-                curve: Curves.easeInOutCubic,
-                alignment: widget.currentMode == AppMode.growth
-                    ? Alignment.centerLeft
-                    : Alignment.centerRight,
-                child: FractionallySizedBox(
-                  widthFactor: 0.5,
-                  child: Container(
-                    margin: const EdgeInsets.all(3),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0x104A3E37),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                      border: Border.all(
-                        color: accent.withOpacity(0.3),
-                        width: 1,
+    final bool isGrowth = currentMode == AppMode.growth;
+    final Color activeAccent = isGrowth ? AppColors.growthAccent : AppColors.healingAccent;
+
+    return GestureDetector(
+      onTap: () {
+        onModeChanged(isGrowth ? AppMode.healing : AppMode.growth);
+      },
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18.0),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+          child: Container(
+            height: 36.0,
+            width: 180.0,
+            decoration: BoxDecoration(
+              color: const Color(0x1AFFDDBE),
+              borderRadius: BorderRadius.circular(18.0),
+              border: Border.all(color: const Color(0x1AFFFFFF)),
+            ),
+            child: Stack(
+              children: [
+                AnimatedAlign(
+                  duration: const Duration(milliseconds: 350),
+                  curve: Curves.easeInOutCubic,
+                  alignment: isGrowth ? Alignment.centerLeft : Alignment.centerRight,
+                  child: FractionallySizedBox(
+                    widthFactor: 0.5,
+                    child: TweenAnimationBuilder<Color?>(
+                      tween: ColorTween(
+                        begin: activeAccent,
+                        end: activeAccent,
                       ),
+                      duration: const Duration(milliseconds: 350),
+                      builder: (context, color, child) {
+                        return Container(
+                          margin: const EdgeInsets.all(3.0),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceSolid,
+                            borderRadius: BorderRadius.circular(15.0),
+                            border: Border.all(
+                              color: color ?? Colors.transparent,
+                              width: 1.0,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: (color ?? Colors.transparent).withOpacity(0.3),
+                                blurRadius: 6.0,
+                                spreadRadius: 1.0,
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ),
-              ),
-              // Labels row
-              Row(
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => widget.onModeChanged(AppMode.growth),
+                Row(
+                  children: [
+                    Expanded(
                       child: Center(
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text('\uD83D\uDE80', style: TextStyle(fontSize: 14)),
-                            const SizedBox(width: 6),
-                            Text(
-                              'Growth',
-                              style: GoogleFonts.inter(
-                                fontSize: 13,
-                                fontWeight: widget.currentMode == AppMode.growth
-                                    ? FontWeight.w700
-                                    : FontWeight.w500,
-                                color: widget.currentMode == AppMode.growth
-                                    ? AppColors.growthAccent
-                                    : AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
+                        child: Text(
+                          '🌿 Growth',
+                          style: GoogleFonts.inter(
+                            fontSize: 12.0,
+                            fontWeight: isGrowth ? FontWeight.w600 : FontWeight.w500,
+                            color: isGrowth ? AppColors.growthAccent : AppColors.textMuted,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => widget.onModeChanged(AppMode.healing),
+                    Expanded(
                       child: Center(
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text('\uD83D\uDC9A', style: TextStyle(fontSize: 14)),
-                            const SizedBox(width: 6),
-                            Text(
-                              'Healing',
-                              style: GoogleFonts.inter(
-                                fontSize: 13,
-                                fontWeight: widget.currentMode == AppMode.healing
-                                    ? FontWeight.w700
-                                    : FontWeight.w500,
-                                color: widget.currentMode == AppMode.healing
-                                    ? AppColors.healingAccent
-                                    : AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
+                        child: Text(
+                          '🌊 Healing',
+                          style: GoogleFonts.inter(
+                            fontSize: 12.0,
+                            fontWeight: !isGrowth ? FontWeight.w600 : FontWeight.w500,
+                            color: !isGrowth ? AppColors.healingAccent : AppColors.textMuted,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }

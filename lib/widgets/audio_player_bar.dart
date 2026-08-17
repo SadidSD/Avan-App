@@ -13,7 +13,8 @@ class AudioPlayerBar extends StatefulWidget {
   State<AudioPlayerBar> createState() => _AudioPlayerBarState();
 }
 
-class _AudioPlayerBarState extends State<AudioPlayerBar> with SingleTickerProviderStateMixin {
+class _AudioPlayerBarState extends State<AudioPlayerBar>
+    with SingleTickerProviderStateMixin {
   late AnimationController _progressController;
 
   @override
@@ -65,7 +66,7 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> with SingleTickerProvid
           filter: ImageFilter.blur(sigmaX: 20.0, sigmaY: 20.0),
           child: Container(
             decoration: BoxDecoration(
-              color: AppColors.surface.withOpacity(0.9),
+              color: AppColors.surfaceSolid.withOpacity(0.92),
               border: Border.all(color: AppColors.glassBorder, width: 1.0),
             ),
             child: InkWell(
@@ -90,9 +91,14 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> with SingleTickerProvid
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               colors: [
-                                AppColors.accentForMode(appProvider.isGrowthMode).withOpacity(0.3),
-                                AppColors.accentForMode(appProvider.isGrowthMode),
-                                AppColors.accentForMode(appProvider.isGrowthMode).withOpacity(0.3),
+                                AppColors.accentForMode(
+                                        appProvider.isGrowthMode)
+                                    .withOpacity(0.3),
+                                AppColors.accentForMode(
+                                    appProvider.isGrowthMode),
+                                AppColors.accentForMode(
+                                        appProvider.isGrowthMode)
+                                    .withOpacity(0.3),
                               ],
                               stops: [
                                 0.0,
@@ -106,7 +112,8 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> with SingleTickerProvid
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16.0, vertical: 10.0),
                     child: Row(
                       children: [
                         // Rounded album art with subtle ring/glow
@@ -120,7 +127,9 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> with SingleTickerProvid
                                 spreadRadius: -2,
                               ),
                             ],
-                            border: Border.all(color: AppColors.goldAccent.withOpacity(0.3), width: 1.5),
+                            border: Border.all(
+                                color: AppColors.goldAccent.withOpacity(0.3),
+                                width: 1.5),
                           ),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(18.5),
@@ -134,7 +143,8 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> with SingleTickerProvid
                                   width: 44,
                                   height: 44,
                                   color: AppColors.surfaceElevated,
-                                  child: const Icon(Icons.spa, color: AppColors.textPrimary),
+                                  child: const Icon(Icons.spa,
+                                      color: AppColors.textPrimary),
                                 );
                               },
                             ),
@@ -173,8 +183,10 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> with SingleTickerProvid
                         ),
                         AnimatedSwitcher(
                           duration: const Duration(milliseconds: 300),
-                          transitionBuilder: (Widget child, Animation<double> animation) {
-                            return ScaleTransition(scale: animation, child: child);
+                          transitionBuilder:
+                              (Widget child, Animation<double> animation) {
+                            return ScaleTransition(
+                                scale: animation, child: child);
                           },
                           child: IconButton(
                             key: ValueKey<bool>(audioProvider.isPlaying),
@@ -182,7 +194,8 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> with SingleTickerProvid
                               audioProvider.isPlaying
                                   ? Icons.pause_circle_filled_rounded
                                   : Icons.play_circle_fill_rounded,
-                              color: AppColors.accentForMode(appProvider.isGrowthMode),
+                              color: AppColors.accentForMode(
+                                  appProvider.isGrowthMode),
                               size: 38,
                             ),
                             onPressed: () {

@@ -27,7 +27,7 @@ class PaywallModal extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(28.0),
       decoration: const BoxDecoration(
-        color: AppColors.background,
+        color: AppColors.surfaceSolid,
         borderRadius: BorderRadius.vertical(top: Radius.circular(32.0)),
       ),
       child: Column(
@@ -37,12 +37,13 @@ class PaywallModal extends StatelessWidget {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: AppColors.tanAccent,
+              color: AppColors.textMuted,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
           const SizedBox(height: 24),
-          const Icon(Icons.workspace_premium_rounded, size: 56, color: AppColors.goldAccent),
+          const Icon(Icons.workspace_premium_rounded,
+              size: 56, color: AppColors.goldAccent),
           const SizedBox(height: 16),
           const Text(
             'Unlock AVAN Premium ✨',
@@ -64,10 +65,12 @@ class PaywallModal extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
-          
+
           // Button 1: Demo Premium Unlock
           CustomButton(
             text: 'Try Free for 7 Days (Demo Unlock)',
+            backgroundColor: AppColors.goldAccent,
+            textColor: AppColors.surfaceSolid,
             onPressed: () {
               if (!appProvider.isPremium) {
                 appProvider.togglePremium();
@@ -86,13 +89,14 @@ class PaywallModal extends StatelessWidget {
           // Button 2: Continue with Free Features
           TextButton(
             onPressed: () {
-              appProvider.setNavIndex(0); // Switch to Free Playlist / Home Dashboard
+              appProvider
+                  .setNavIndex(0); // Switch to Free Playlist / Home Dashboard
               Navigator.pop(context);
             },
             child: const Text(
               'Continue with Free Features',
               style: TextStyle(
-                color: AppColors.buttonDark,
+                color: AppColors.textSecondary,
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
                 decoration: TextDecoration.underline,

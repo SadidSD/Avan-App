@@ -26,7 +26,8 @@ class MainNavigationScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final appProvider = Provider.of<AppProvider>(context);
-    final int currentIndex = appProvider.currentNavIndex > 4 ? 0 : appProvider.currentNavIndex;
+    final int currentIndex =
+        appProvider.currentNavIndex > 4 ? 0 : appProvider.currentNavIndex;
 
     return Scaffold(
       extendBody: true,
@@ -54,7 +55,8 @@ class MainNavigationScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildCustomNavBar(BuildContext context, int currentIndex, AppProvider appProvider) {
+  Widget _buildCustomNavBar(
+      BuildContext context, int currentIndex, AppProvider appProvider) {
     final isGrowth = appProvider.isGrowthMode;
     return ClipRRect(
       child: BackdropFilter(
@@ -64,10 +66,10 @@ class MainNavigationScreen extends StatelessWidget {
             bottom: MediaQuery.of(context).padding.bottom,
           ),
           decoration: BoxDecoration(
-            color: AppColors.surface.withOpacity(0.92),
+            color: const Color(0xEB1A110D),
             border: const Border(
               top: BorderSide(
-                color: AppColors.border, 
+                color: AppColors.border,
                 width: 1,
               ),
             ),
@@ -79,11 +81,51 @@ class MainNavigationScreen extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 6.0),
                 child: Row(
                   children: [
-                    _buildNavItem(context, 0, currentIndex, appProvider, Icons.home_outlined, Icons.home_rounded, 'Playlist', isGrowth),
-                    _buildNavItem(context, 1, currentIndex, appProvider, Icons.mic_none_outlined, Icons.mic_rounded, 'Say After', isGrowth),
-                    _buildNavItem(context, 2, currentIndex, appProvider, Icons.menu_book_outlined, Icons.menu_book_rounded, 'Journal', isGrowth),
-                    _buildNavItem(context, 3, currentIndex, appProvider, Icons.dashboard_outlined, Icons.dashboard_rounded, 'Vision', isGrowth),
-                    _buildNavItem(context, 4, currentIndex, appProvider, Icons.person_outline_rounded, Icons.person_rounded, 'Profile', isGrowth),
+                    _buildNavItem(
+                        context,
+                        0,
+                        currentIndex,
+                        appProvider,
+                        Icons.home_outlined,
+                        Icons.home_rounded,
+                        'Playlist',
+                        isGrowth),
+                    _buildNavItem(
+                        context,
+                        1,
+                        currentIndex,
+                        appProvider,
+                        Icons.mic_none_outlined,
+                        Icons.mic_rounded,
+                        'Say After',
+                        isGrowth),
+                    _buildNavItem(
+                        context,
+                        2,
+                        currentIndex,
+                        appProvider,
+                        Icons.menu_book_outlined,
+                        Icons.menu_book_rounded,
+                        'Journal',
+                        isGrowth),
+                    _buildNavItem(
+                        context,
+                        3,
+                        currentIndex,
+                        appProvider,
+                        Icons.dashboard_outlined,
+                        Icons.dashboard_rounded,
+                        'Vision',
+                        isGrowth),
+                    _buildNavItem(
+                        context,
+                        4,
+                        currentIndex,
+                        appProvider,
+                        Icons.person_outline_rounded,
+                        Icons.person_rounded,
+                        'Profile',
+                        isGrowth),
                   ],
                 ),
               ),
@@ -94,7 +136,15 @@ class MainNavigationScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildNavItem(BuildContext context, int index, int currentIndex, AppProvider appProvider, IconData icon, IconData activeIcon, String label, bool isGrowth) {
+  Widget _buildNavItem(
+      BuildContext context,
+      int index,
+      int currentIndex,
+      AppProvider appProvider,
+      IconData icon,
+      IconData activeIcon,
+      String label,
+      bool isGrowth) {
     final bool isSelected = currentIndex == index;
     final accentColor = AppColors.accentForMode(isGrowth);
 
@@ -116,12 +166,14 @@ class MainNavigationScreen extends StatelessWidget {
               curve: Curves.easeOutCubic,
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
               decoration: BoxDecoration(
-                color: isSelected ? accentColor.withOpacity(0.12) : Colors.transparent,
+                color: isSelected
+                    ? accentColor.withOpacity(0.12)
+                    : Colors.transparent,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Icon(
                 isSelected ? activeIcon : icon,
-                color: isSelected ? accentColor : AppColors.textSecondary,
+                color: isSelected ? accentColor : AppColors.textMuted,
                 size: 22,
               ),
             ),
@@ -136,7 +188,7 @@ class MainNavigationScreen extends StatelessWidget {
                 fontSize: 9,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                 letterSpacing: 0.2,
-                color: isSelected ? accentColor : AppColors.textSecondary,
+                color: isSelected ? accentColor : AppColors.textMuted,
               ),
             ),
           ],
