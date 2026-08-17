@@ -66,9 +66,10 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
   Widget build(BuildContext context) {
     final appProvider = Provider.of<AppProvider>(context);
     final audioProvider = Provider.of<AudioProvider>(context, listen: false);
-    
+
     final bool isGrowth = appProvider.isGrowthMode;
-    final Color accent = isGrowth ? AppColors.growthAccent : AppColors.healingAccent;
+    final Color accent =
+        isGrowth ? AppColors.growthAccent : AppColors.healingAccent;
     final bool isPremium = appProvider.isPremium;
 
     // Build Favorites List
@@ -76,7 +77,8 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
     for (var playlist in allPlaylists) {
       for (var aff in playlist.affirmations) {
         if (appProvider.favoriteAffirmations.contains(aff.id)) {
-          if (_searchQuery.isEmpty || aff.quote.toLowerCase().contains(_searchQuery.toLowerCase())) {
+          if (_searchQuery.isEmpty ||
+              aff.quote.toLowerCase().contains(_searchQuery.toLowerCase())) {
             favoriteItems.add({
               'affirmation': aff,
               'playlist': playlist,
@@ -99,11 +101,13 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
         }
       }
       justForYouItems.shuffle();
-      if (justForYouItems.length > 8) justForYouItems = justForYouItems.sublist(0, 8);
+      if (justForYouItems.length > 8) {
+        justForYouItems = justForYouItems.sublist(0, 8);
+      }
     } else {
       for (var playlist in premiumPlaylists) {
-        if (playlist.category == 'Anxiety Relief' || 
-            playlist.category == 'Self Love' || 
+        if (playlist.category == 'Anxiety Relief' ||
+            playlist.category == 'Self Love' ||
             playlist.category == 'Calm Mind') {
           for (var aff in playlist.affirmations) {
             justForYouItems.add({
@@ -114,7 +118,9 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
         }
       }
       justForYouItems.shuffle();
-      if (justForYouItems.length > 8) justForYouItems = justForYouItems.sublist(0, 8);
+      if (justForYouItems.length > 8) {
+        justForYouItems = justForYouItems.sublist(0, 8);
+      }
     }
 
     if (_searchQuery.isNotEmpty) {
@@ -124,16 +130,19 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
       }).toList();
     }
 
-    // Build Explored Playlists
-    List<Playlist> exploredPlaylists = allPlaylists;
+    // Filter Playlists
+    List<Playlist> displayedPlaylists = allPlaylists;
     if (_searchQuery.isNotEmpty) {
-      exploredPlaylists = exploredPlaylists.where((p) => 
-        p.title.toLowerCase().contains(_searchQuery.toLowerCase())
-      ).toList();
+      displayedPlaylists = allPlaylists.where((p) {
+        final matchesTitle =
+            p.title.toLowerCase().contains(_searchQuery.toLowerCase());
+        final matchesAffirmation = p.affirmations.any((a) =>
+            a.quote.toLowerCase().contains(_searchQuery.toLowerCase()));
+        return matchesTitle || matchesAffirmation;
+      }).toList();
     }
 
     final double screenWidth = MediaQuery.of(context).size.width;
-    final double cardWidth = (screenWidth - 52) / 2;
 
     return AnimatedCosmicBackground(
       mode: appProvider.appModeSetting,
@@ -143,11 +152,13 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
           child: FadeTransition(
             opacity: _entryAnimation,
             child: CustomScrollView(
+              physics: const BouncingScrollPhysics(),
               slivers: [
-                // Top Bar
+                // 1. Top Bar
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.only(left: 20, right: 20, top: 16),
+                    padding:
+                        const EdgeInsets.only(left: 20, right: 20, top: 16),
                     child: Row(
                       children: [
                         Text(
@@ -171,10 +182,11 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                   ),
                 ),
 
-                // Search Bar
+                // 2. Search Bar
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.only(left: 20, right: 20, top: 16),
+                    padding:
+                        const EdgeInsets.only(left: 20, right: 20, top: 16),
                     child: LiquidGlassSearchBar(
                       onChanged: (query) {
                         setState(() => _searchQuery = query);
@@ -184,10 +196,11 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                   ),
                 ),
 
-                // Favorites Section
+                // 3. Favorites Section
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.only(left: 20, right: 20, top: 24),
+                    padding:
+                        const EdgeInsets.only(left: 20, right: 20, top: 24),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -232,11 +245,13 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                                       quote: aff.quote,
                                       playlistName: playlist.title,
                                       imagePath: playlist.imagePath,
-                                      durationMinutes: _getAffirmationDuration(playlist),
+                                      durationMinutes:
+                                          _getAffirmationDuration(playlist),
                                       isFavorite: true,
                                       accentColor: accent,
                                       onTap: () {
-                                        audioProvider.openPlaylist(playlist, context);
+                                        audioProvider.openPlaylist(
+                                            playlist, context);
                                       },
                                       onFavoriteToggle: () {
                                         appProvider.toggleFavorite(aff.id);
@@ -252,10 +267,11 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                   ),
                 ),
 
-                // Just for You Section
+                // 4. Just for You Section
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.only(left: 20, right: 20, top: 24),
+                    padding:
+                        const EdgeInsets.only(left: 20, right: 20, top: 24),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -286,11 +302,15 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                                       quote: aff.quote,
                                       playlistName: playlist.title,
                                       imagePath: playlist.imagePath,
-                                      durationMinutes: _getAffirmationDuration(playlist),
-                                      isFavorite: appProvider.favoriteAffirmations.contains(aff.id),
+                                      durationMinutes:
+                                          _getAffirmationDuration(playlist),
+                                      isFavorite: appProvider
+                                          .favoriteAffirmations
+                                          .contains(aff.id),
                                       accentColor: accent,
                                       onTap: () {
-                                        audioProvider.openPlaylist(playlist, context);
+                                        audioProvider.openPlaylist(
+                                            playlist, context);
                                       },
                                       onFavoriteToggle: () {
                                         appProvider.toggleFavorite(aff.id);
@@ -306,121 +326,154 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                   ),
                 ),
 
-                // Premium CTA
+                // 5. Premium CTA Banner
                 if (!isPremium)
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.only(left: 20, right: 20, top: 24),
+                      padding:
+                          const EdgeInsets.only(left: 20, right: 20, top: 24),
                       child: PremiumCtaBanner(
                         onTap: () => PaywallModal.show(context),
                       ),
                     ),
                   ),
 
-                // Explore Playlists Section
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 20, right: 20, top: 24, bottom: 14),
-                    child: Row(
-                      children: [
-                        Text(
-                          '📚 Explore Playlists',
-                          style: AppTextStyles.sectionHeader,
-                        ),
-                        const Spacer(),
-                        Text(
-                          'See All',
-                          style: AppTextStyles.modeLabel(accent),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  sliver: SliverToBoxAdapter(
-                    child: Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
-                      children: exploredPlaylists.map((playlist) {
-                        return GestureDetector(
-                          onTap: () {
-                            if (playlist.isPremium && !isPremium) {
-                              PaywallModal.show(context);
-                            } else {
-                              audioProvider.openPlaylist(playlist, context);
-                            }
-                          },
-                          child: SizedBox(
-                            width: cardWidth,
-                            child: GlassCard(
-                              accentColor: accent,
-                              padding: const EdgeInsets.all(8),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(12),
-                                    child: SizedBox(
-                                      height: 100,
-                                      width: double.infinity,
-                                      child: Image.asset(
-                                        playlist.imagePath,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) => Container(
-                                          color: Colors.white10,
-                                          child: const Icon(Icons.image, color: Colors.white24),
+                // 6. Other Playlist Sections (Each with Playlist Title + Horizontal Affirmation Cards)
+                ...displayedPlaylists.map((playlist) {
+                  // If searching, filter affirmations matching the search query within this playlist
+                  final affirmations = _searchQuery.isEmpty
+                      ? playlist.affirmations
+                      : playlist.affirmations
+                          .where((a) => a.quote
+                              .toLowerCase()
+                              .contains(_searchQuery.toLowerCase()))
+                          .toList();
+
+                  if (affirmations.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
+
+                  return SliverToBoxAdapter(
+                    child: Padding(
+                      padding:
+                          const EdgeInsets.only(left: 20, right: 20, top: 26),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Playlist Header Row
+                          Row(
+                            children: [
+                              Text(
+                                playlist.title,
+                                style: AppTextStyles.sectionHeader,
+                              ),
+                              if (playlist.isPremium) ...[
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color:
+                                        AppColors.goldAccent.withOpacity(0.15),
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(
+                                        color: AppColors.goldAccent
+                                            .withOpacity(0.3)),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: const [
+                                      Icon(Icons.lock_rounded,
+                                          size: 10,
+                                          color: AppColors.goldAccent),
+                                      SizedBox(width: 3),
+                                      Text(
+                                        'PRO',
+                                        style: TextStyle(
+                                          fontFamily: 'Inter',
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.goldAccent,
+                                          letterSpacing: 0.5,
                                         ),
                                       ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                              const Spacer(),
+                              GestureDetector(
+                                onTap: () {
+                                  if (playlist.isPremium && !isPremium) {
+                                    PaywallModal.show(context);
+                                  } else {
+                                    audioProvider.openPlaylist(
+                                        playlist, context);
+                                  }
+                                },
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.play_circle_fill_rounded,
+                                      size: 16,
+                                      color: accent,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Play All',
+                                      style: AppTextStyles.modeLabel(accent),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+                          // Horizontal Carousel of Affirmation Cards for this Playlist
+                          SizedBox(
+                            height: 210,
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: affirmations.length,
+                              itemBuilder: (context, index) {
+                                final aff = affirmations[index];
+                                return Padding(
+                                  padding: const EdgeInsets.only(right: 12),
+                                  child: SizedBox(
+                                    width: screenWidth * 0.7,
+                                    child: AffirmationCard(
+                                      quote: aff.quote,
+                                      playlistName: playlist.title,
+                                      imagePath: playlist.imagePath,
+                                      durationMinutes:
+                                          _getAffirmationDuration(playlist),
+                                      isFavorite: appProvider
+                                          .favoriteAffirmations
+                                          .contains(aff.id),
+                                      accentColor: accent,
+                                      onTap: () {
+                                        if (playlist.isPremium && !isPremium) {
+                                          PaywallModal.show(context);
+                                        } else {
+                                          audioProvider.openPlaylist(
+                                              playlist, context);
+                                        }
+                                      },
+                                      onFavoriteToggle: () {
+                                        appProvider.toggleFavorite(aff.id);
+                                      },
                                     ),
                                   ),
-                                  const SizedBox(height: 10),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          playlist.title,
-                                          style: AppTextStyles.cardTitle,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                      if (playlist.isPremium)
-                                        Padding(
-                                          padding: const EdgeInsets.only(left: 4),
-                                          child: Icon(
-                                            Icons.lock_rounded,
-                                            size: 14,
-                                            color: AppColors.goldAccent,
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Row(
-                                    children: [
-                                      Text(
-                                        '${playlist.affirmations.length} affirmations',
-                                        style: AppTextStyles.bodySmall,
-                                      ),
-                                      const Spacer(),
-                                      Text(
-                                        playlist.duration,
-                                        style: AppTextStyles.bodySmall,
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
+                                );
+                              },
                             ),
                           ),
-                        );
-                      }).toList(),
+                        ],
+                      ),
                     ),
-                  ),
-                ),
+                  );
+                }).toList(),
 
-                // Bottom Spacer
+                // Bottom Spacer for floating nav bar
                 const SliverToBoxAdapter(
                   child: SizedBox(height: 140),
                 ),
