@@ -10,7 +10,7 @@ final List<Playlist> allPlaylists = [
     title: 'Morning Energy',
     duration: '10 min',
     category: 'Morning Energy',
-    imagePath: 'assets/images/featured_meditation.jpg',
+    imagePath: 'assets/images/onboarding_archway_sun.jpg',
     isPremium: false,
     affirmations: [
       Affirmation(id: 'aff_me_1', quote: 'I wake up today with strength in my heart and clarity in my mind.', category: 'Morning Energy'),
@@ -28,7 +28,7 @@ final List<Playlist> allPlaylists = [
     title: 'Deep Focus',
     duration: '15 min',
     category: 'Deep Focus',
-    imagePath: 'assets/images/featured_meditation.jpg',
+    imagePath: 'assets/images/sleep_story_night.jpg',
     isPremium: false,
     affirmations: [
       Affirmation(id: 'aff_df_1', quote: 'My mind is a laser, cutting through distractions and focusing on what matters.', category: 'Deep Focus'),
@@ -46,7 +46,7 @@ final List<Playlist> allPlaylists = [
     title: 'Better Sleep',
     duration: '20 min',
     category: 'Better Sleep',
-    imagePath: 'assets/images/featured_meditation.jpg',
+    imagePath: 'assets/images/onboarding_moon_clouds.jpg',
     isPremium: false,
     affirmations: [
       Affirmation(id: 'aff_bs_1', quote: 'I release the events of the day and prepare my mind for deep, restorative rest.', category: 'Better Sleep'),
@@ -86,7 +86,7 @@ final List<Playlist> allPlaylists = [
     title: 'Confidence',
     duration: '12 min',
     category: 'Confidence',
-    imagePath: 'assets/images/featured_meditation.jpg',
+    imagePath: 'assets/images/onboarding_archway_sun.jpg',
     isPremium: true,
     affirmations: [
       Affirmation(id: 'aff_cf_1', quote: 'I believe in my abilities and trust my intuition completely.', category: 'Confidence'),
@@ -104,7 +104,7 @@ final List<Playlist> allPlaylists = [
     title: 'Self Love',
     duration: '15 min',
     category: 'Self Love',
-    imagePath: 'assets/images/featured_meditation.jpg',
+    imagePath: 'assets/images/onboarding_girl_profile.jpg',
     isPremium: true,
     affirmations: [
       Affirmation(id: 'aff_sl_1', quote: 'I accept myself unconditionally, embracing all my flaws and perfections.', category: 'Self Love'),
@@ -122,7 +122,7 @@ final List<Playlist> allPlaylists = [
     title: 'Anxiety Relief',
     duration: '10 min',
     category: 'Anxiety Relief',
-    imagePath: 'assets/images/featured_meditation.jpg',
+    imagePath: 'assets/images/onboarding_moon_clouds.jpg',
     isPremium: true,
     affirmations: [
       Affirmation(id: 'aff_ar_1', quote: 'I acknowledge my anxious thoughts and gently let them go.', category: 'Anxiety Relief'),
@@ -140,7 +140,7 @@ final List<Playlist> allPlaylists = [
     title: 'Wealth & Abundance',
     duration: '12 min',
     category: 'Wealth & Abundance',
-    imagePath: 'assets/images/featured_meditation.jpg',
+    imagePath: 'assets/images/onboarding_archway_sun.jpg',
     isPremium: true,
     affirmations: [
       Affirmation(id: 'aff_wa_1', quote: 'I am open and receptive to all the wealth the universe has to offer.', category: 'Wealth & Abundance'),
@@ -176,7 +176,7 @@ final List<Playlist> allPlaylists = [
     title: 'Success',
     duration: '15 min',
     category: 'Success',
-    imagePath: 'assets/images/featured_meditation.jpg',
+    imagePath: 'assets/images/onboarding_archway_sun.jpg',
     isPremium: true,
     affirmations: [
       Affirmation(id: 'aff_sc_1', quote: 'I am meant for greatness, and success is my natural state of being.', category: 'Success'),
@@ -212,7 +212,7 @@ final List<Playlist> allPlaylists = [
     title: 'Productivity',
     duration: '12 min',
     category: 'Productivity',
-    imagePath: 'assets/images/featured_meditation.jpg',
+    imagePath: 'assets/images/sleep_story_night.jpg',
     isPremium: true,
     affirmations: [
       Affirmation(id: 'aff_pr_1', quote: 'I manage my time efficiently and accomplish my tasks with ease.', category: 'Productivity'),
@@ -230,7 +230,7 @@ final List<Playlist> allPlaylists = [
     title: 'Relationships',
     duration: '15 min',
     category: 'Relationships',
-    imagePath: 'assets/images/featured_meditation.jpg',
+    imagePath: 'assets/images/onboarding_girl_profile.jpg',
     isPremium: true,
     affirmations: [
       Affirmation(id: 'aff_re_1', quote: 'I attract healthy, loving, and supportive relationships into my life.', category: 'Relationships'),
