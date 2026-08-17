@@ -29,6 +29,8 @@ class MainNavigationScreen extends StatelessWidget {
     final int currentIndex =
         appProvider.currentNavIndex > 4 ? 0 : appProvider.currentNavIndex;
 
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+
     return Scaffold(
       extendBody: true,
       backgroundColor: AppColors.background,
@@ -38,17 +40,17 @@ class MainNavigationScreen extends StatelessWidget {
             index: currentIndex,
             children: _tabs,
           ),
-          const Positioned(
+          Positioned(
             left: 0,
             right: 0,
-            bottom: 80,
-            child: AudioPlayerBar(),
+            bottom: 85 + bottomPadding,
+            child: const AudioPlayerBar(),
           ),
           Positioned(
             left: 0,
             right: 0,
             bottom: 0,
-            child: _buildCustomNavBar(context, currentIndex, appProvider),
+            child: _buildCustomNavBar(context, currentIndex, appProvider, bottomPadding),
           ),
         ],
       ),
@@ -56,95 +58,114 @@ class MainNavigationScreen extends StatelessWidget {
   }
 
   Widget _buildCustomNavBar(
-      BuildContext context, int currentIndex, AppProvider appProvider) {
+      BuildContext context, int currentIndex, AppProvider appProvider, double bottomPadding) {
     final isGrowth = appProvider.isGrowthMode;
-    return ClipRRect(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16.0, sigmaY: 16.0),
+    final accent = AppColors.accentForMode(isGrowth);
+
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 0, 24, 14),
         child: Container(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).padding.bottom,
-          ),
           decoration: BoxDecoration(
-            color: const Color(0xEB1A110D),
-            border: const Border(
-              top: BorderSide(
-                color: AppColors.border,
-                width: 1,
+            borderRadius: BorderRadius.circular(40),
+            boxShadow: [
+              const BoxShadow(
+                color: Color(0x66000000),
+                blurRadius: 28,
+                spreadRadius: 2,
+                offset: Offset(0, 10),
               ),
-            ),
+              BoxShadow(
+                color: accent.withOpacity(0.12),
+                blurRadius: 20,
+                spreadRadius: -2,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6.0),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(40),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 20.0, sigmaY: 20.0),
+              child: Container(
+                height: 64,
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xE61A110D),
+                  borderRadius: BorderRadius.circular(40),
+                  border: Border.all(
+                    color: AppColors.borderBright,
+                    width: 1.2,
+                  ),
+                ),
                 child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     _buildNavItem(
-                        context,
-                        0,
-                        currentIndex,
-                        appProvider,
-                        Icons.home_outlined,
-                        Icons.home_rounded,
-                        'Playlist',
-                        isGrowth),
+                      context: context,
+                      index: 0,
+                      currentIndex: currentIndex,
+                      appProvider: appProvider,
+                      icon: Icons.home_outlined,
+                      activeIcon: Icons.home_rounded,
+                      isGrowth: isGrowth,
+                    ),
                     _buildNavItem(
-                        context,
-                        1,
-                        currentIndex,
-                        appProvider,
-                        Icons.mic_none_outlined,
-                        Icons.mic_rounded,
-                        'Say After',
-                        isGrowth),
+                      context: context,
+                      index: 1,
+                      currentIndex: currentIndex,
+                      appProvider: appProvider,
+                      icon: Icons.headphones_outlined,
+                      activeIcon: Icons.headphones_rounded,
+                      isGrowth: isGrowth,
+                    ),
                     _buildNavItem(
-                        context,
-                        2,
-                        currentIndex,
-                        appProvider,
-                        Icons.menu_book_outlined,
-                        Icons.menu_book_rounded,
-                        'Journal',
-                        isGrowth),
+                      context: context,
+                      index: 2,
+                      currentIndex: currentIndex,
+                      appProvider: appProvider,
+                      icon: Icons.favorite_border_rounded,
+                      activeIcon: Icons.favorite_rounded,
+                      isGrowth: isGrowth,
+                    ),
                     _buildNavItem(
-                        context,
-                        3,
-                        currentIndex,
-                        appProvider,
-                        Icons.dashboard_outlined,
-                        Icons.dashboard_rounded,
-                        'Vision',
-                        isGrowth),
+                      context: context,
+                      index: 3,
+                      currentIndex: currentIndex,
+                      appProvider: appProvider,
+                      icon: Icons.dashboard_outlined,
+                      activeIcon: Icons.dashboard_rounded,
+                      isGrowth: isGrowth,
+                    ),
                     _buildNavItem(
-                        context,
-                        4,
-                        currentIndex,
-                        appProvider,
-                        Icons.person_outline_rounded,
-                        Icons.person_rounded,
-                        'Profile',
-                        isGrowth),
+                      context: context,
+                      index: 4,
+                      currentIndex: currentIndex,
+                      appProvider: appProvider,
+                      icon: Icons.person_outline_rounded,
+                      activeIcon: Icons.person_rounded,
+                      isGrowth: isGrowth,
+                    ),
                   ],
                 ),
               ),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildNavItem(
-      BuildContext context,
-      int index,
-      int currentIndex,
-      AppProvider appProvider,
-      IconData icon,
-      IconData activeIcon,
-      String label,
-      bool isGrowth) {
+  Widget _buildNavItem({
+    required BuildContext context,
+    required int index,
+    required int currentIndex,
+    required AppProvider appProvider,
+    required IconData icon,
+    required IconData activeIcon,
+    required bool isGrowth,
+  }) {
     final bool isSelected = currentIndex == index;
     final accentColor = AppColors.accentForMode(isGrowth);
 
@@ -158,40 +179,29 @@ class MainNavigationScreen extends StatelessWidget {
           }
           appProvider.setNavIndex(index);
         },
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeOutCubic,
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? accentColor.withOpacity(0.12)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Icon(
-                isSelected ? activeIcon : icon,
-                color: isSelected ? accentColor : AppColors.textMuted,
-                size: 22,
-              ),
+        child: Center(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 280),
+            curve: Curves.easeOutCubic,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? accentColor.withOpacity(0.16)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(24),
+              border: isSelected
+                  ? Border.all(
+                      color: accentColor.withOpacity(0.35),
+                      width: 1,
+                    )
+                  : null,
             ),
-            const SizedBox(height: 3),
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 9,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                letterSpacing: 0.2,
-                color: isSelected ? accentColor : AppColors.textMuted,
-              ),
+            child: Icon(
+              isSelected ? activeIcon : icon,
+              color: isSelected ? accentColor : AppColors.textMuted,
+              size: 24,
             ),
-          ],
+          ),
         ),
       ),
     );
