@@ -22,8 +22,8 @@ class AudioEngineService {
   double _voiceVolume = 1.0;
   double _voiceSpeed = 1.0;
 
-  double _ambientVolume = 0.35;
-  AmbientSound _currentSound = AmbientSound.solfeggio528; // Default active ambient background
+  double _ambientVolume = 0.25;
+  AmbientSound _currentSound = AmbientSound.none; // Default to pure crystal-clear voice
 
   AudioEngineService() {
     _initTts();
@@ -33,42 +33,26 @@ class AudioEngineService {
   void _initTts() async {
     try {
       await _flutterTts.setLanguage('en-US');
-      await _flutterTts.setSpeechRate(0.42); // Calm, soothing meditative cadence
+      if (kIsWeb) {
+        // In Web Speech API, 1.0 is standard speed; 0.88 is calm and meditative
+        await _flutterTts.setSpeechRate(0.88);
+      } else {
+        await _flutterTts.setSpeechRate(0.48);
+        await _flutterTts.awaitSpeakCompletion(false);
+      }
       await _flutterTts.setVolume(1.0);
       await _flutterTts.setPitch(1.0);
-      await _flutterTts.awaitSpeakCompletion(true);
     } catch (e) {
       debugPrint("TTS Init Warning: $e");
     }
 
     _flutterTts.setCompletionHandler(() {
-      debugPrint("TTS completed speaking active quote.");
+      debugPrint("TTS completed speaking affirmation.");
     });
 
     _flutterTts.setErrorHandler((msg) {
       debugPrint("TTS Error: $msg");
     });
-  }
-
-  Future<void> _ensureTtsVoice() async {
-    try {
-      await _flutterTts.setLanguage('en-US');
-      final dynamic voices = await _flutterTts.getVoices;
-      if (voices != null && voices is List && voices.isNotEmpty) {
-        for (var voice in voices) {
-          if (voice is Map) {
-            final String locale = voice['locale']?.toString() ?? '';
-            final String name = voice['name']?.toString() ?? '';
-            if (locale.contains('en') || name.toLowerCase().contains('english') || name.toLowerCase().contains('google') || name.toLowerCase().contains('samantha')) {
-              await _flutterTts.setVoice({"name": name, "locale": locale});
-              break;
-            }
-          }
-        }
-      }
-    } catch (e) {
-      debugPrint("Voice resolution note: $e");
-    }
   }
 
   bool get isPlaying => _isPlaying;
@@ -77,21 +61,28 @@ class AudioEngineService {
   double get ambientVolume => _ambientVolume;
   AmbientSound get currentSound => _currentSound;
 
-  /// Speaks the given affirmation quote and starts background ambient if not already running
+  /// Speaks the given affirmation quote clearly and manages ambient sound
   Future<void> speakAffirmation(String text) async {
     _isPlaying = true;
 
-    // 1. Ensure ambient sound is playing
-    _playAmbientInternal();
+    // 1. Start ambient sound if enabled
+    if (_currentSound != AmbientSound.none) {
+      _playAmbientInternal();
+    }
 
-    // 2. TTS Speech synthesis
+    // 2. TTS Voice synthesis
     try {
       await _flutterTts.stop();
-      await _ensureTtsVoice();
+      await _flutterTts.setLanguage('en-US');
       await _flutterTts.setVolume(_voiceVolume);
-      double targetRate = (_voiceSpeed * 0.42).clamp(0.15, 0.9);
-      await _flutterTts.setSpeechRate(targetRate);
-      await _flutterTts.speak(text);
+
+      final double rate = kIsWeb
+          ? (_voiceSpeed * 0.88).clamp(0.5, 1.5)
+          : (_voiceSpeed * 0.48).clamp(0.2, 0.9);
+      await _flutterTts.setSpeechRate(rate);
+
+      final result = await _flutterTts.speak(text);
+      debugPrint("TTS speak called for '$text' -> result: $result");
     } catch (e) {
       debugPrint("TTS Speak error: $e");
     }
@@ -112,7 +103,7 @@ class AudioEngineService {
   Future<void> pause() async {
     _isPlaying = false;
     try {
-      await _flutterTts.pause();
+      await _flutterTts.stop();
       await _ambientPlayer.pause();
     } catch (_) {}
   }
@@ -141,7 +132,10 @@ class AudioEngineService {
 
   void setVoiceSpeed(double speed) {
     _voiceSpeed = speed.clamp(0.75, 1.5);
-    _flutterTts.setSpeechRate((_voiceSpeed * 0.42).clamp(0.15, 0.9));
+    final double rate = kIsWeb
+        ? (_voiceSpeed * 0.88).clamp(0.5, 1.5)
+        : (_voiceSpeed * 0.48).clamp(0.2, 0.9);
+    _flutterTts.setSpeechRate(rate);
   }
 
   void setAmbientSound(AmbientSound sound) async {
