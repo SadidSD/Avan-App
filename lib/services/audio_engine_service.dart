@@ -1,8 +1,8 @@
 import 'dart:async';
-import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'ambient_audio_synthesizer.dart';
 
 enum AmbientSound {
   none,
@@ -11,6 +11,7 @@ enum AmbientSound {
   forest,
   whiteNoise,
   solfeggio528,
+  solfeggio432,
 }
 
 class AudioEngineService {
@@ -21,31 +22,8 @@ class AudioEngineService {
   double _voiceVolume = 1.0;
   double _voiceSpeed = 1.0;
 
-  double _ambientVolume = 0.3;
-  AmbientSound _currentSound = AmbientSound.none;
-
-  int _positionSeconds = 0;
-  int _durationSeconds = 8;
-
-  bool _isLoopEnabled = false;
-
-  Timer? _progressTimer;
-  Timer? _sleepTimer;
-  int _sleepTimerRemaining = 0; // seconds
-
-  void Function()? onComplete;
-  void Function(int position)? onProgress;
-  void Function(int remainingSeconds)? onSleepTimerTick;
-  void Function()? onSleepTimerComplete;
-
-  // Seamless looping ambient soundscapes
-  final Map<AmbientSound, String> _soundUrls = {
-    AmbientSound.rain: 'https://cdn.freesound.org/previews/362/362428_6542721-lq.mp3',
-    AmbientSound.ocean: 'https://cdn.freesound.org/previews/400/400632_5121236-lq.mp3',
-    AmbientSound.forest: 'https://cdn.freesound.org/previews/524/524312_11564757-lq.mp3',
-    AmbientSound.whiteNoise: 'https://cdn.freesound.org/previews/274/274438_4006883-lq.mp3',
-    AmbientSound.solfeggio528: 'https://cdn.freesound.org/previews/587/587251_11861866-lq.mp3',
-  };
+  double _ambientVolume = 0.35;
+  AmbientSound _currentSound = AmbientSound.solfeggio528; // Default active ambient background
 
   AudioEngineService() {
     _initTts();
@@ -55,7 +33,7 @@ class AudioEngineService {
   void _initTts() async {
     try {
       await _flutterTts.setLanguage('en-US');
-      await _flutterTts.setSpeechRate(0.42); // Calm, meditative speaking pace
+      await _flutterTts.setSpeechRate(0.42); // Calm, soothing meditative cadence
       await _flutterTts.setVolume(1.0);
       await _flutterTts.setPitch(1.0);
       await _flutterTts.awaitSpeakCompletion(true);
@@ -64,34 +42,11 @@ class AudioEngineService {
     }
 
     _flutterTts.setCompletionHandler(() {
-      debugPrint("TTS finished speaking affirmation.");
-      // Allow a 2-3 second reflection pause before completing
-      _positionSeconds = _durationSeconds;
-      if (onProgress != null) onProgress!(_positionSeconds);
-      _stopProgressTimer();
-      _isPlaying = false;
-      if (onComplete != null) onComplete!();
-    });
-
-    _flutterTts.setCancelHandler(() {
-      _isPlaying = false;
-      _stopProgressTimer();
+      debugPrint("TTS completed speaking active quote.");
     });
 
     _flutterTts.setErrorHandler((msg) {
       debugPrint("TTS Error: $msg");
-      _isPlaying = false;
-      _stopProgressTimer();
-    });
-
-    _flutterTts.setPauseHandler(() {
-      _isPlaying = false;
-      _stopProgressTimer();
-    });
-
-    _flutterTts.setStartHandler(() {
-      _isPlaying = true;
-      _startProgressTimer();
     });
   }
 
@@ -106,7 +61,6 @@ class AudioEngineService {
             final String name = voice['name']?.toString() ?? '';
             if (locale.contains('en') || name.toLowerCase().contains('english') || name.toLowerCase().contains('google') || name.toLowerCase().contains('samantha')) {
               await _flutterTts.setVoice({"name": name, "locale": locale});
-              debugPrint("Selected Voice: $name ($locale)");
               break;
             }
           }
@@ -122,59 +76,49 @@ class AudioEngineService {
   double get voiceSpeed => _voiceSpeed;
   double get ambientVolume => _ambientVolume;
   AmbientSound get currentSound => _currentSound;
-  int get positionSeconds => _positionSeconds;
-  int get durationSeconds => _durationSeconds;
-  bool get isLoopEnabled => _isLoopEnabled;
-  int get sleepTimerRemaining => _sleepTimerRemaining;
 
-  Future<void> play(String text) async {
-    try {
-      await stop();
-    } catch (_) {}
-
-    // Pacing calculation: Average reading speed is ~3.5 words/sec at 1.0x, plus 3s meditative reflection pause
-    final wordCount = text.split(RegExp(r'\s+')).length;
-    final speechDuration = (wordCount / (2.6 * _voiceSpeed)).ceil();
-    _durationSeconds = max(7, speechDuration + 3); // minimum 7s for full statement & absorption
-    _positionSeconds = 0;
+  /// Speaks the given affirmation quote and starts background ambient if not already running
+  Future<void> speakAffirmation(String text) async {
     _isPlaying = true;
-    _startProgressTimer();
 
-    // 1. Play Ambient Soundscape if enabled (and not none)
-    if (_currentSound != AmbientSound.none && _soundUrls.containsKey(_currentSound)) {
-      final ambientUrl = _soundUrls[_currentSound]!;
-      try {
-        await _ambientPlayer.setVolume(_ambientVolume);
-        await _ambientPlayer.play(UrlSource(ambientUrl));
-      } catch (e) {
-        debugPrint("Ambient Player error: $e");
-      }
-    }
+    // 1. Ensure ambient sound is playing
+    _playAmbientInternal();
 
-    // 2. Natural TTS Speech Synthesis of the Affirmation Text
+    // 2. TTS Speech synthesis
     try {
+      await _flutterTts.stop();
       await _ensureTtsVoice();
       await _flutterTts.setVolume(_voiceVolume);
       double targetRate = (_voiceSpeed * 0.42).clamp(0.15, 0.9);
       await _flutterTts.setSpeechRate(targetRate);
       await _flutterTts.speak(text);
     } catch (e) {
-      debugPrint("TTS Speak note: $e");
+      debugPrint("TTS Speak error: $e");
+    }
+  }
+
+  void _playAmbientInternal() async {
+    if (_currentSound != AmbientSound.none) {
+      try {
+        final wavBytes = AmbientAudioSynthesizer.getWavBytesForSound(_currentSound);
+        await _ambientPlayer.setVolume(_ambientVolume);
+        await _ambientPlayer.play(BytesSource(wavBytes));
+      } catch (e) {
+        debugPrint("Ambient playback error: $e");
+      }
     }
   }
 
   Future<void> pause() async {
+    _isPlaying = false;
     try {
       await _flutterTts.pause();
       await _ambientPlayer.pause();
     } catch (_) {}
-    _isPlaying = false;
-    _stopProgressTimer();
   }
 
   Future<void> resume() async {
     _isPlaying = true;
-    _startProgressTimer();
     try {
       if (_currentSound != AmbientSound.none) {
         await _ambientPlayer.resume();
@@ -183,34 +127,11 @@ class AudioEngineService {
   }
 
   Future<void> stop() async {
+    _isPlaying = false;
     try {
       await _flutterTts.stop();
       await _ambientPlayer.stop();
     } catch (_) {}
-    _isPlaying = false;
-    _stopProgressTimer();
-    _positionSeconds = 0;
-  }
-
-  void _startProgressTimer() {
-    _stopProgressTimer();
-    _progressTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_positionSeconds < _durationSeconds) {
-        _positionSeconds++;
-        if (onProgress != null) onProgress!(_positionSeconds);
-      } else {
-        _isPlaying = false;
-        _stopProgressTimer();
-        if (onComplete != null) {
-          onComplete!();
-        }
-      }
-    });
-  }
-
-  void _stopProgressTimer() {
-    _progressTimer?.cancel();
-    _progressTimer = null;
   }
 
   void setVoiceVolume(double vol) {
@@ -227,10 +148,11 @@ class AudioEngineService {
     _currentSound = sound;
     if (_currentSound == AmbientSound.none) {
       await _ambientPlayer.stop();
-    } else if (_isPlaying && _soundUrls.containsKey(sound)) {
+    } else {
       try {
+        final wavBytes = AmbientAudioSynthesizer.getWavBytesForSound(sound);
         await _ambientPlayer.setVolume(_ambientVolume);
-        await _ambientPlayer.play(UrlSource(_soundUrls[sound]!));
+        await _ambientPlayer.play(BytesSource(wavBytes));
       } catch (e) {
         debugPrint("Ambient switch error: $e");
       }
@@ -242,40 +164,8 @@ class AudioEngineService {
     _ambientPlayer.setVolume(_ambientVolume);
   }
 
-  void toggleLoopMode() {
-    _isLoopEnabled = !_isLoopEnabled;
-  }
-
-  void toggleLoop() {
-    toggleLoopMode();
-  }
-
-  void startSleepTimer(int minutes) {
-    setSleepTimer(minutes);
-  }
-
-  void setSleepTimer(int minutes) {
-    _sleepTimer?.cancel();
-    _sleepTimerRemaining = minutes * 60;
-
-    if (minutes > 0) {
-      _sleepTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-        if (_sleepTimerRemaining > 0) {
-          _sleepTimerRemaining--;
-          if (onSleepTimerTick != null) onSleepTimerTick!(_sleepTimerRemaining);
-        } else {
-          _sleepTimer?.cancel();
-          _sleepTimer = null;
-          stop();
-          if (onSleepTimerComplete != null) onSleepTimerComplete!();
-        }
-      });
-    }
-  }
-
   void dispose() {
     stop();
     _ambientPlayer.dispose();
-    _sleepTimer?.cancel();
   }
 }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../models/affirmation.dart';
@@ -15,76 +16,74 @@ class AudioProvider with ChangeNotifier {
   int _currentAffirmationIndex = 0;
   bool _isPlayerOpen = false;
 
-  AudioProvider() {
-    // Set up engine callbacks
-    _audioService.onComplete = () {
-      if (_currentPlaylist == null) return;
-      if (_currentAffirmationIndex < _currentPlaylist!.affirmations.length - 1) {
-        nextAffirmation();
-      } else {
-        if (_audioService.isLoopEnabled) {
-          _currentAffirmationIndex = 0;
-          _playCurrentAffirmation();
-        } else {
-          // Finished playlist
-          notifyListeners();
-        }
-      }
-    };
+  int _sessionDurationSeconds = 600; // Full playlist length in seconds (default 10 min)
+  int _sessionPositionSeconds = 0;   // Current elapsed seconds in the playlist
+  bool _isLoopEnabled = false;
 
-    _audioService.onProgress = (position) {
-      notifyListeners();
-    };
+  Timer? _sessionTicker;
+  Timer? _sleepTimer;
+  int _sleepTimerRemaining = 0; // seconds
 
-    _audioService.onSleepTimerTick = (remaining) {
-      notifyListeners();
-    };
-    
-    _audioService.onSleepTimerComplete = () {
-      notifyListeners();
-    };
-  }
+  AudioProvider();
 
   bool get isPlaying => _audioService.isPlaying;
   double get voiceVolume => _audioService.voiceVolume;
   double get voiceSpeed => _audioService.voiceSpeed;
   double get ambientVolume => _audioService.ambientVolume;
   AmbientSound get currentSound => _audioService.currentSound;
-  int get positionSeconds => _audioService.positionSeconds;
-  int get durationSeconds => _audioService.durationSeconds;
-  bool get isLoopEnabled => _audioService.isLoopEnabled;
-  int get sleepTimerRemaining => _audioService.sleepTimerRemaining;
+
+  int get positionSeconds => _sessionPositionSeconds;
+  int get durationSeconds => _sessionDurationSeconds;
+  bool get isLoopEnabled => _isLoopEnabled;
+  int get sleepTimerRemaining => _sleepTimerRemaining;
 
   Playlist? get currentPlaylist => _currentPlaylist;
-  
+
   Affirmation? get currentAffirmation {
     if (_currentPlaylist == null) return null;
     if (_currentPlaylist!.affirmations.isEmpty) return null;
+    if (_currentAffirmationIndex >= _currentPlaylist!.affirmations.length) {
+      _currentAffirmationIndex = 0;
+    }
     return _currentPlaylist!.affirmations[_currentAffirmationIndex];
   }
 
   int get currentAffirmationIndex => _currentAffirmationIndex;
   bool get isPlayerOpen => _isPlayerOpen;
 
-  void togglePlayPause() {
-    if (_audioService.isPlaying) {
-      _audioService.pause();
-    } else {
-      if (currentAffirmation != null && _audioService.positionSeconds == 0) {
-        _playCurrentAffirmation();
-      } else if (currentAffirmation != null) {
-         // resume not properly supported by flutter_tts in all cases, so restart the affirmation
-         _playCurrentAffirmation();
+  double get _slotDurationSeconds {
+    if (_currentPlaylist == null || _currentPlaylist!.affirmations.isEmpty) {
+      return 60.0;
+    }
+    return _sessionDurationSeconds / _currentPlaylist!.affirmations.length;
+  }
+
+  int _parseDurationToSeconds(String durationStr) {
+    // e.g. "10 min", "15 min", "8 min", "20 min", "1 min", "45 sec"
+    final clean = durationStr.toLowerCase().trim();
+    if (clean.contains('min')) {
+      final numStr = RegExp(r'\d+').firstMatch(clean)?.group(0);
+      if (numStr != null) {
+        return int.parse(numStr) * 60;
+      }
+    } else if (clean.contains('sec')) {
+      final numStr = RegExp(r'\d+').firstMatch(clean)?.group(0);
+      if (numStr != null) {
+        return int.parse(numStr);
       }
     }
-    notifyListeners();
+    return 600; // default 10 min
   }
 
   void openPlaylist(Playlist playlist, [BuildContext? context]) {
     _currentPlaylist = playlist;
     _currentAffirmationIndex = 0;
+    _sessionDurationSeconds = _parseDurationToSeconds(playlist.duration);
+    _sessionPositionSeconds = 0;
     _isPlayerOpen = true;
+
     _playCurrentAffirmation();
+    _startSessionTicker();
     notifyListeners();
 
     if (context != null) {
@@ -96,10 +95,10 @@ class AudioProvider with ChangeNotifier {
   }
 
   void playSingleQuote(String quote, {String title = 'Daily Affirmation'}) {
-    openCustomAudio(title: title, quote: quote);
+    openCustomAudio(title: title, quote: quote, duration: '3 min');
   }
 
-  void openCustomAudio({required String title, required String quote, String duration = '1 min'}) {
+  void openCustomAudio({required String title, required String quote, String duration = '3 min'}) {
     final customAffirmation = Affirmation(
       id: 'custom_${DateTime.now().millisecondsSinceEpoch}',
       quote: quote,
@@ -115,53 +114,123 @@ class AudioProvider with ChangeNotifier {
       affirmations: [customAffirmation],
     );
     _currentAffirmationIndex = 0;
+    _sessionDurationSeconds = _parseDurationToSeconds(duration);
+    _sessionPositionSeconds = 0;
     _isPlayerOpen = true;
+
     _playCurrentAffirmation();
+    _startSessionTicker();
     notifyListeners();
   }
 
   void _playCurrentAffirmation() {
-    final affirmation = currentAffirmation;
-    if (affirmation != null) {
-      _audioService.play(affirmation.quote);
+    final aff = currentAffirmation;
+    if (aff != null) {
+      _audioService.speakAffirmation(aff.quote);
     }
   }
 
-  void closePlayer() {
-    _isPlayerOpen = false;
-    _audioService.stop();
+  void _startSessionTicker() {
+    _sessionTicker?.cancel();
+    _sessionTicker = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!_audioService.isPlaying) return;
+
+      if (_sessionPositionSeconds < _sessionDurationSeconds) {
+        _sessionPositionSeconds++;
+
+        // Calculate expected affirmation index based on session progress
+        final totalAffs = _currentPlaylist?.affirmations.length ?? 1;
+        final slot = _slotDurationSeconds;
+        final targetIndex = (_sessionPositionSeconds / slot).floor().clamp(0, totalAffs - 1);
+
+        if (targetIndex != _currentAffirmationIndex) {
+          _currentAffirmationIndex = targetIndex;
+          _playCurrentAffirmation();
+        }
+
+        notifyListeners();
+      } else {
+        // Reached end of full playlist session
+        if (_isLoopEnabled) {
+          _sessionPositionSeconds = 0;
+          _currentAffirmationIndex = 0;
+          _playCurrentAffirmation();
+          notifyListeners();
+        } else {
+          _audioService.stop();
+          _sessionTicker?.cancel();
+          notifyListeners();
+        }
+      }
+    });
+  }
+
+  void togglePlayPause() {
+    if (_audioService.isPlaying) {
+      _audioService.pause();
+    } else {
+      if (_sessionPositionSeconds >= _sessionDurationSeconds) {
+        _sessionPositionSeconds = 0;
+        _currentAffirmationIndex = 0;
+      }
+      _playCurrentAffirmation();
+      _startSessionTicker();
+    }
+    notifyListeners();
+  }
+
+  void seekTo(int seconds) {
+    _sessionPositionSeconds = seconds.clamp(0, _sessionDurationSeconds);
+    final totalAffs = _currentPlaylist?.affirmations.length ?? 1;
+    final slot = _slotDurationSeconds;
+    final targetIndex = (_sessionPositionSeconds / slot).floor().clamp(0, totalAffs - 1);
+
+    if (targetIndex != _currentAffirmationIndex) {
+      _currentAffirmationIndex = targetIndex;
+      if (_audioService.isPlaying) {
+        _playCurrentAffirmation();
+      }
+    }
     notifyListeners();
   }
 
   void nextAffirmation() {
     if (_currentPlaylist == null) return;
-    if (_currentAffirmationIndex < _currentPlaylist!.affirmations.length - 1) {
+    final totalAffs = _currentPlaylist!.affirmations.length;
+
+    if (_currentAffirmationIndex < totalAffs - 1) {
       _currentAffirmationIndex++;
+      _sessionPositionSeconds = (_currentAffirmationIndex * _slotDurationSeconds).round();
       _playCurrentAffirmation();
-    } else if (isLoopEnabled) {
+    } else if (_isLoopEnabled) {
       _currentAffirmationIndex = 0;
+      _sessionPositionSeconds = 0;
       _playCurrentAffirmation();
     } else {
       _audioService.stop();
+      _sessionPositionSeconds = _sessionDurationSeconds;
     }
     notifyListeners();
   }
 
   void previousAffirmation() {
     if (_currentPlaylist == null) return;
+
     if (_currentAffirmationIndex > 0) {
       _currentAffirmationIndex--;
+      _sessionPositionSeconds = (_currentAffirmationIndex * _slotDurationSeconds).round();
       _playCurrentAffirmation();
     } else {
-      // If at start, either loop to end or stay at start
-      if (isLoopEnabled) {
-        _currentAffirmationIndex = _currentPlaylist!.affirmations.length - 1;
-        _playCurrentAffirmation();
-      } else {
-        _currentAffirmationIndex = 0;
-        _playCurrentAffirmation();
-      }
+      _sessionPositionSeconds = 0;
+      _playCurrentAffirmation();
     }
+    notifyListeners();
+  }
+
+  void closePlayer() {
+    _isPlayerOpen = false;
+    _sessionTicker?.cancel();
+    _audioService.stop();
     notifyListeners();
   }
 
@@ -186,17 +255,33 @@ class AudioProvider with ChangeNotifier {
   }
 
   void toggleLoop() {
-    _audioService.toggleLoop();
+    _isLoopEnabled = !_isLoopEnabled;
     notifyListeners();
   }
 
   void setSleepTimer(int minutes) {
-    _audioService.startSleepTimer(minutes);
+    _sleepTimer?.cancel();
+    _sleepTimerRemaining = minutes * 60;
+
+    if (minutes > 0) {
+      _sleepTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        if (_sleepTimerRemaining > 0) {
+          _sleepTimerRemaining--;
+          notifyListeners();
+        } else {
+          _sleepTimer?.cancel();
+          _sleepTimer = null;
+          closePlayer();
+        }
+      });
+    }
     notifyListeners();
   }
 
   @override
   void dispose() {
+    _sessionTicker?.cancel();
+    _sleepTimer?.cancel();
     _audioService.dispose();
     super.dispose();
   }

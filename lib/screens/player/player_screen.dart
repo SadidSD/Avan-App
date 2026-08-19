@@ -268,7 +268,9 @@ class _PlayerScreenState extends State<PlayerScreen> with SingleTickerProviderSt
                                   ? audioProvider.durationSeconds
                                   : 1)
                               .toDouble(),
-                          onChanged: (_) {},
+                          onChanged: (val) {
+                            audioProvider.seekTo(val.toInt());
+                          },
                         ),
                       ),
                       Padding(
@@ -529,17 +531,19 @@ class _PlayerScreenState extends State<PlayerScreen> with SingleTickerProviderSt
                       style: GoogleFonts.inter(
                           fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
                   const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      _soundChip('🌧️ Rain', AmbientSound.rain, audioProvider, accent, setSheetState),
-                      _soundChip('🌊 Ocean', AmbientSound.ocean, audioProvider, accent, setSheetState),
-                      _soundChip('🌲 Forest', AmbientSound.forest, audioProvider, accent, setSheetState),
-                      _soundChip('⚪ White Noise', AmbientSound.whiteNoise, audioProvider, accent, setSheetState),
-                      _soundChip('✨ 528Hz Solfeggio', AmbientSound.solfeggio528, audioProvider, accent, setSheetState),
-                    ],
-                  ),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _soundChip('✨ 528Hz Solfeggio', AmbientSound.solfeggio528, audioProvider, accent, setSheetState),
+                        _soundChip('🔮 432Hz Miracle', AmbientSound.solfeggio432, audioProvider, accent, setSheetState),
+                        _soundChip('🌧️ Rain', AmbientSound.rain, audioProvider, accent, setSheetState),
+                        _soundChip('🌊 Ocean', AmbientSound.ocean, audioProvider, accent, setSheetState),
+                        _soundChip('🌲 Forest', AmbientSound.forest, audioProvider, accent, setSheetState),
+                        _soundChip('⚪ White Noise', AmbientSound.whiteNoise, audioProvider, accent, setSheetState),
+                        _soundChip('🔇 Off', AmbientSound.none, audioProvider, accent, setSheetState),
+                      ],
+                    ),
 
                   const SizedBox(height: 20),
                   Text('Sleep Timer',
