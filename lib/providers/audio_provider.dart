@@ -117,7 +117,8 @@ class AudioProvider with ChangeNotifier {
     notifyListeners();
 
     if (context != null) {
-      Navigator.of(context, rootNavigator: true).push(
+      Navigator.push(
+        context,
         MaterialPageRoute(builder: (context) => const PlayerScreen()),
       );
     }
