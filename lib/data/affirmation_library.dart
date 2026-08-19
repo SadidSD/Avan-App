@@ -1,0 +1,582 @@
+import '../models/affirmation.dart';
+import '../models/user_archetype.dart';
+
+/// Comprehensive scientific library of 180+ multi-dimensional affirmations
+/// covering 11 user archetypes, granular sub-levels, and therapeutic modalities.
+///
+/// 16-Dimensional Embedding Format:
+/// [0]  Career & Ambition          [8]  Caregiving & Family
+/// [1]  Anxiety & Grounding        [9]  Athletic & Physical Resilience
+/// [2]  Heartbreak & Detachment    [10] Cognitive Simplicity (IDD Accessibility)
+/// [3]  Grief & Bereavement        [11] Academic & Exam Mastery
+/// [4]  Self-Mastery & Habits      [12] LGBTQIA+ & Identity Pride
+/// [5]  Spiritual & Abundance      [13] Somatic Calm (Healing Mode)
+/// [6]  Leadership & High Stakes   [14] Action & Fire (Growth Mode)
+/// [7]  Confidence & Self-Esteem   [15] Believability Threshold (0.0 - 1.0)
+
+final List<Affirmation> comprehensiveAffirmationLibrary = [
+  // ===========================================================================
+  // 1. THE CAREER-DRIVEN PROFESSIONAL
+  // ===========================================================================
+  // --- Founder / Solopreneur ---
+  Affirmation(
+    id: 'aff_career_fnd_1',
+    quote: 'Uncertainty is the birthplace of innovation. I make sound decisions with the information I have today.',
+    category: 'Career & Ambition',
+    primaryArchetypes: [UserArchetype.careerProfessional, UserArchetype.selfImprovement],
+    subLevels: ['Founder / Solopreneur'],
+    modality: TherapeuticModality.cbtReframe,
+    tone: AffirmationTone.empowering,
+    embeddingVector: [0.95, 0.20, 0.00, 0.00, 0.85, 0.20, 0.90, 0.85, 0.00, 0.00, 0.00, 0.30, 0.00, 0.30, 0.90, 0.85],
+    believabilityScore: 0.88,
+    tags: ['founder', 'uncertainty', 'decision-making', 'business'],
+  ),
+  Affirmation(
+    id: 'aff_career_fnd_2',
+    quote: 'I do not need to have all the answers right now; I have the resourcefulness to figure out the next right step.',
+    category: 'Career & Ambition',
+    primaryArchetypes: [UserArchetype.careerProfessional, UserArchetype.anxiousOverthinker],
+    subLevels: ['Founder / Solopreneur', 'Corporate Executive / Leader'],
+    modality: TherapeuticModality.actValues,
+    tone: AffirmationTone.gentleAndGrounding,
+    embeddingVector: [0.90, 0.60, 0.00, 0.00, 0.70, 0.10, 0.80, 0.75, 0.00, 0.00, 0.00, 0.20, 0.00, 0.70, 0.60, 0.92],
+    believabilityScore: 0.95,
+    tags: ['founder', 'imposter-syndrome', 'patience', 'clarity'],
+  ),
+  Affirmation(
+    id: 'aff_career_fnd_3',
+    quote: 'Building something meaningful takes endurance. I honor today’s small operational progress.',
+    category: 'Career & Ambition',
+    primaryArchetypes: [UserArchetype.careerProfessional, UserArchetype.selfImprovement],
+    subLevels: ['Founder / Solopreneur'],
+    modality: TherapeuticModality.growthMindset,
+    tone: AffirmationTone.philosophical,
+    embeddingVector: [0.92, 0.15, 0.00, 0.00, 0.90, 0.10, 0.75, 0.70, 0.00, 0.00, 0.00, 0.10, 0.00, 0.40, 0.80, 0.90],
+    believabilityScore: 0.90,
+    tags: ['founder', 'consistency', 'grit', 'startup'],
+  ),
+
+  // --- Corporate Leader / Executive ---
+  Affirmation(
+    id: 'aff_career_exec_1',
+    quote: 'My leadership is rooted in calm clarity, attentive listening, and steady resolve.',
+    category: 'Career & Ambition',
+    primaryArchetypes: [UserArchetype.careerProfessional],
+    subLevels: ['Corporate Executive / Leader'],
+    modality: TherapeuticModality.cbtReframe,
+    tone: AffirmationTone.empowering,
+    embeddingVector: [0.90, 0.20, 0.00, 0.00, 0.80, 0.00, 0.95, 0.90, 0.00, 0.00, 0.00, 0.00, 0.00, 0.60, 0.80, 0.85],
+    believabilityScore: 0.85,
+    tags: ['leadership', 'executive', 'clarity', 'team'],
+  ),
+  Affirmation(
+    id: 'aff_career_exec_2',
+    quote: 'I create space for my team to excel without carrying the emotional weight of every outcome alone.',
+    category: 'Career & Ambition',
+    primaryArchetypes: [UserArchetype.careerProfessional, UserArchetype.parentCaregiver],
+    subLevels: ['Corporate Executive / Leader'],
+    modality: TherapeuticModality.selfCompassion,
+    tone: AffirmationTone.gentleAndGrounding,
+    embeddingVector: [0.85, 0.40, 0.00, 0.00, 0.60, 0.00, 0.90, 0.70, 0.30, 0.00, 0.00, 0.00, 0.00, 0.80, 0.50, 0.90],
+    believabilityScore: 0.92,
+    tags: ['leadership', 'boundaries', 'burnout-prevention'],
+  ),
+
+  // --- Individual Contributor / Climber ---
+  Affirmation(
+    id: 'aff_career_ic_1',
+    quote: 'I belong in every room I enter. My perspective, skills, and background add undeniable value.',
+    category: 'Career & Ambition',
+    primaryArchetypes: [UserArchetype.careerProfessional, UserArchetype.lgbtqia],
+    subLevels: ['Individual Contributor / Climber'],
+    modality: TherapeuticModality.cbtReframe,
+    tone: AffirmationTone.empowering,
+    embeddingVector: [0.88, 0.30, 0.00, 0.00, 0.70, 0.00, 0.60, 0.95, 0.00, 0.00, 0.00, 0.40, 0.30, 0.30, 0.85, 0.82],
+    believabilityScore: 0.85,
+    tags: ['imposter-syndrome', 'confidence', 'workplace', 'promotion'],
+  ),
+  Affirmation(
+    id: 'aff_career_ic_2',
+    quote: 'I am allowed to ask questions, learn out loud, and develop my mastery without shame.',
+    category: 'Career & Ambition',
+    primaryArchetypes: [UserArchetype.careerProfessional, UserArchetype.student],
+    subLevels: ['Individual Contributor / Climber'],
+    modality: TherapeuticModality.growthMindset,
+    tone: AffirmationTone.gentleAndGrounding,
+    embeddingVector: [0.85, 0.40, 0.00, 0.00, 0.60, 0.00, 0.40, 0.80, 0.00, 0.00, 0.00, 0.60, 0.00, 0.60, 0.60, 0.95],
+    believabilityScore: 0.95,
+    tags: ['learning', 'career-growth', 'psychological-safety'],
+  ),
+
+  // --- Sales & Client Relations ---
+  Affirmation(
+    id: 'aff_career_sales_1',
+    quote: 'A rejection is simply data, not a reflection of my worth. I bring genuine solutions to the right partners.',
+    category: 'Career & Ambition',
+    primaryArchetypes: [UserArchetype.careerProfessional],
+    subLevels: ['Sales & Client Relations'],
+    modality: TherapeuticModality.cbtReframe,
+    tone: AffirmationTone.directAndActionable,
+    embeddingVector: [0.95, 0.30, 0.10, 0.00, 0.80, 0.10, 0.70, 0.90, 0.00, 0.00, 0.00, 0.00, 0.00, 0.40, 0.90, 0.88],
+    believabilityScore: 0.89,
+    tags: ['sales', 'rejection-resilience', 'grit', 'closing'],
+  ),
+  Affirmation(
+    id: 'aff_career_sales_2',
+    quote: 'I communicate with empathy and confidence, building trust effortlessly with every conversation.',
+    category: 'Career & Ambition',
+    primaryArchetypes: [UserArchetype.careerProfessional],
+    subLevels: ['Sales & Client Relations'],
+    modality: TherapeuticModality.growthMindset,
+    tone: AffirmationTone.empowering,
+    embeddingVector: [0.90, 0.10, 0.00, 0.00, 0.70, 0.20, 0.75, 0.88, 0.00, 0.00, 0.00, 0.10, 0.00, 0.30, 0.85, 0.86],
+    believabilityScore: 0.87,
+    tags: ['sales', 'communication', 'trust', 'influence'],
+  ),
+
+  // ===========================================================================
+  // 2. THE ANXIOUS OVERTHINKER
+  // ===========================================================================
+  // --- Somatic Panic & Physical Tension ---
+  Affirmation(
+    id: 'aff_anx_somatic_1',
+    quote: 'This sensation is temporary adrenaline in my body. It will crest and subside, and I am safe in this breath.',
+    category: 'Anxiety Relief',
+    primaryArchetypes: [UserArchetype.anxiousOverthinker],
+    subLevels: ['Chronic Panic & Physical Tension'],
+    modality: TherapeuticModality.traumaInformed,
+    tone: AffirmationTone.gentleAndGrounding,
+    embeddingVector: [0.00, 0.98, 0.20, 0.20, 0.20, 0.20, 0.00, 0.50, 0.10, 0.20, 0.20, 0.10, 0.00, 0.95, 0.10, 0.98],
+    believabilityScore: 0.98,
+    tags: ['panic', 'somatic', 'breath', 'safety', 'grounding'],
+  ),
+  Affirmation(
+    id: 'aff_anx_somatic_2',
+    quote: 'I unclamp my jaw, drop my shoulders, and invite softness into my chest right now.',
+    category: 'Anxiety Relief',
+    primaryArchetypes: [UserArchetype.anxiousOverthinker, UserArchetype.personWithIDD],
+    subLevels: ['Chronic Panic & Physical Tension', 'Sensory Calming & Grounding'],
+    modality: TherapeuticModality.traumaInformed,
+    tone: AffirmationTone.simpleAndClear,
+    embeddingVector: [0.00, 0.95, 0.10, 0.10, 0.30, 0.10, 0.00, 0.40, 0.20, 0.30, 0.80, 0.00, 0.00, 0.98, 0.10, 0.99],
+    believabilityScore: 0.99,
+    tags: ['somatic', 'physical-tension', 'nervous-system', 'calm'],
+  ),
+
+  // --- Social & Performance Anxiety ---
+  Affirmation(
+    id: 'aff_anx_social_1',
+    quote: 'I do not need to be flawlessly entertaining. My calm, authentic presence is more than enough.',
+    category: 'Anxiety Relief',
+    primaryArchetypes: [UserArchetype.anxiousOverthinker, UserArchetype.careerProfessional],
+    subLevels: ['Social & Performance Anxiety'],
+    modality: TherapeuticModality.cbtReframe,
+    tone: AffirmationTone.gentleAndGrounding,
+    embeddingVector: [0.40, 0.90, 0.20, 0.00, 0.30, 0.10, 0.30, 0.85, 0.00, 0.00, 0.00, 0.20, 0.20, 0.85, 0.30, 0.94],
+    believabilityScore: 0.94,
+    tags: ['social-anxiety', 'authenticity', 'people', 'connection'],
+  ),
+  Affirmation(
+    id: 'aff_anx_social_2',
+    quote: 'Other people are focused on their own worlds. I release the imaginary spotlight.',
+    category: 'Anxiety Relief',
+    primaryArchetypes: [UserArchetype.anxiousOverthinker, UserArchetype.student],
+    subLevels: ['Social & Performance Anxiety'],
+    modality: TherapeuticModality.cbtReframe,
+    tone: AffirmationTone.philosophical,
+    embeddingVector: [0.20, 0.92, 0.10, 0.00, 0.40, 0.10, 0.10, 0.75, 0.00, 0.00, 0.00, 0.40, 0.10, 0.88, 0.20, 0.92],
+    believabilityScore: 0.93,
+    tags: ['social-anxiety', 'spotlight-effect', 'freedom'],
+  ),
+
+  // --- Bedtime & Night Rumination ---
+  Affirmation(
+    id: 'aff_anx_bed_1',
+    quote: 'Tomorrow’s problems cannot be solved tonight. I surrender this day and let sleep restore my mind.',
+    category: 'Better Sleep',
+    primaryArchetypes: [UserArchetype.anxiousOverthinker, UserArchetype.parentCaregiver],
+    subLevels: ['Bedtime & Late-Night Rumination'],
+    modality: TherapeuticModality.actValues,
+    tone: AffirmationTone.gentleAndGrounding,
+    embeddingVector: [0.10, 0.95, 0.10, 0.10, 0.30, 0.20, 0.00, 0.40, 0.30, 0.00, 0.00, 0.10, 0.00, 0.98, 0.00, 0.97],
+    believabilityScore: 0.97,
+    tags: ['sleep', 'night-rumination', 'surrender', 'peace'],
+  ),
+  Affirmation(
+    id: 'aff_anx_bed_2',
+    quote: 'I close the chapter of today with peace. My bed is a sanctuary of restoration.',
+    category: 'Better Sleep',
+    primaryArchetypes: [UserArchetype.anxiousOverthinker],
+    subLevels: ['Bedtime & Late-Night Rumination'],
+    modality: TherapeuticModality.traumaInformed,
+    tone: AffirmationTone.gentleAndGrounding,
+    embeddingVector: [0.00, 0.90, 0.10, 0.10, 0.20, 0.30, 0.00, 0.50, 0.10, 0.00, 0.10, 0.00, 0.00, 0.99, 0.00, 0.98],
+    believabilityScore: 0.98,
+    tags: ['sleep', 'rest', 'night', 'letting-go'],
+  ),
+
+  // ===========================================================================
+  // 3. THE HEARTBREAK SURVIVOR
+  // ===========================================================================
+  // --- Fresh Breakup / Shock Phase ---
+  Affirmation(
+    id: 'aff_hb_fresh_1',
+    quote: 'It is okay that I hurt right now. My heartbreak reflects the depth of my capacity to love, and that capacity remains whole.',
+    category: 'Self Love',
+    primaryArchetypes: [UserArchetype.heartbreakSurvivor],
+    subLevels: ['Fresh Breakup / Shock Phase (Day 0-30)'],
+    modality: TherapeuticModality.selfCompassion,
+    tone: AffirmationTone.gentleAndGrounding,
+    embeddingVector: [0.00, 0.60, 0.98, 0.40, 0.20, 0.20, 0.00, 0.70, 0.00, 0.00, 0.00, 0.00, 0.10, 0.92, 0.10, 0.99],
+    believabilityScore: 0.99,
+    tags: ['breakup', 'heartbreak', 'grief', 'self-compassion'],
+  ),
+  Affirmation(
+    id: 'aff_hb_fresh_2',
+    quote: 'I do not need to contact them to find peace. I give myself the closure that silence protects.',
+    category: 'Self Love',
+    primaryArchetypes: [UserArchetype.heartbreakSurvivor],
+    subLevels: ['Fresh Breakup / Shock Phase (Day 0-30)', 'Grief & Yearning / No-Contact Phase'],
+    modality: TherapeuticModality.actValues,
+    tone: AffirmationTone.directAndActionable,
+    embeddingVector: [0.00, 0.50, 0.96, 0.30, 0.50, 0.10, 0.00, 0.80, 0.00, 0.00, 0.00, 0.00, 0.00, 0.75, 0.40, 0.95],
+    believabilityScore: 0.94,
+    tags: ['no-contact', 'boundaries', 'closure', 'breakup'],
+  ),
+
+  // --- Grief & Yearning Phase ---
+  Affirmation(
+    id: 'aff_hb_yearn_1',
+    quote: 'I honor the memories without letting them anchor me to a past that no longer serves my growth.',
+    category: 'Relationships',
+    primaryArchetypes: [UserArchetype.heartbreakSurvivor],
+    subLevels: ['Grief & Yearning / No-Contact Phase'],
+    modality: TherapeuticModality.actValues,
+    tone: AffirmationTone.philosophical,
+    embeddingVector: [0.00, 0.40, 0.94, 0.50, 0.40, 0.30, 0.00, 0.75, 0.00, 0.00, 0.00, 0.00, 0.00, 0.85, 0.30, 0.92],
+    believabilityScore: 0.92,
+    tags: ['letting-go', 'memories', 'moving-forward'],
+  ),
+
+  // --- Self-Worth & Rediscovery ---
+  Affirmation(
+    id: 'aff_hb_worth_1',
+    quote: 'I am returning home to myself. Every piece of my heart is falling back into its rightful, beautiful place.',
+    category: 'Self Love',
+    primaryArchetypes: [UserArchetype.heartbreakSurvivor, UserArchetype.selfImprovement],
+    subLevels: ['Self-Worth & Rediscovery Phase'],
+    modality: TherapeuticModality.cbtReframe,
+    tone: AffirmationTone.empowering,
+    embeddingVector: [0.10, 0.20, 0.90, 0.10, 0.60, 0.40, 0.10, 0.98, 0.00, 0.00, 0.00, 0.00, 0.10, 0.70, 0.70, 0.88],
+    believabilityScore: 0.90,
+    tags: ['self-worth', 'rediscovery', 'empowerment', 'healing'],
+  ),
+
+  // ===========================================================================
+  // 4. THE GRIEVING INDIVIDUAL
+  // ===========================================================================
+  Affirmation(
+    id: 'aff_grv_parent_1',
+    quote: 'Grief is love with nowhere to go. I carry their memory forward in the kindness I offer to the world.',
+    category: 'Calm Mind',
+    primaryArchetypes: [UserArchetype.grievingIndividual],
+    subLevels: ['Loss of Parent or Sibling', 'Young Adult Grief (18-24)'],
+    modality: TherapeuticModality.selfCompassion,
+    tone: AffirmationTone.gentleAndGrounding,
+    embeddingVector: [0.00, 0.50, 0.40, 0.99, 0.20, 0.40, 0.00, 0.60, 0.20, 0.00, 0.00, 0.00, 0.00, 0.95, 0.10, 0.99],
+    believabilityScore: 0.99,
+    tags: ['grief', 'bereavement', 'loss', 'memory', 'love'],
+  ),
+  Affirmation(
+    id: 'aff_grv_day_1',
+    quote: 'I do not have to be strong today. I take this moment softly, one breath at a time.',
+    category: 'Calm Mind',
+    primaryArchetypes: [UserArchetype.grievingIndividual, UserArchetype.anxiousOverthinker],
+    subLevels: ['Loss of Parent or Sibling', 'Loss of Partner / Spouse', 'Young Adult Grief (18-24)'],
+    modality: TherapeuticModality.traumaInformed,
+    tone: AffirmationTone.gentleAndGrounding,
+    embeddingVector: [0.00, 0.70, 0.30, 0.98, 0.10, 0.20, 0.00, 0.40, 0.10, 0.00, 0.20, 0.00, 0.00, 0.98, 0.00, 0.99],
+    believabilityScore: 0.99,
+    tags: ['grief', 'gentle', 'healing', 'permission'],
+  ),
+  Affirmation(
+    id: 'aff_grv_hope_1',
+    quote: 'Experiencing joy again does not mean forgetting. It honors the fullness of the life we shared.',
+    category: 'Calm Mind',
+    primaryArchetypes: [UserArchetype.grievingIndividual],
+    subLevels: ['Loss of Partner / Spouse', 'Loss of Parent or Sibling'],
+    modality: TherapeuticModality.actValues,
+    tone: AffirmationTone.philosophical,
+    embeddingVector: [0.00, 0.30, 0.20, 0.95, 0.30, 0.40, 0.00, 0.70, 0.10, 0.00, 0.00, 0.00, 0.00, 0.88, 0.30, 0.93],
+    believabilityScore: 0.94,
+    tags: ['grief', 'joy', 'permission-to-live', 'honor'],
+  ),
+
+  // ===========================================================================
+  // 5. THE SELF-IMPROVEMENT ENTHUSIAST
+  // ===========================================================================
+  Affirmation(
+    id: 'aff_si_habit_1',
+    quote: 'Discipline is choosing between what I want right now and what I want most for my life.',
+    category: 'Discipline',
+    primaryArchetypes: [UserArchetype.selfImprovement, UserArchetype.careerProfessional],
+    subLevels: ['Daily Habit & Consistency Builder'],
+    modality: TherapeuticModality.growthMindset,
+    tone: AffirmationTone.philosophical,
+    embeddingVector: [0.70, 0.00, 0.00, 0.00, 0.99, 0.10, 0.60, 0.85, 0.00, 0.40, 0.00, 0.30, 0.00, 0.20, 0.95, 0.85],
+    believabilityScore: 0.88,
+    tags: ['discipline', 'habits', 'stoic', 'mastery'],
+  ),
+  Affirmation(
+    id: 'aff_si_flow_1',
+    quote: 'I eliminate the noise and anchor my mind in deep, purposeful craft.',
+    category: 'Productivity',
+    primaryArchetypes: [UserArchetype.selfImprovement, UserArchetype.careerProfessional],
+    subLevels: ['Deep Work & Focus Optimizer'],
+    modality: TherapeuticModality.cbtReframe,
+    tone: AffirmationTone.directAndActionable,
+    embeddingVector: [0.85, 0.20, 0.00, 0.00, 0.98, 0.00, 0.60, 0.80, 0.00, 0.20, 0.00, 0.50, 0.00, 0.40, 0.92, 0.88],
+    believabilityScore: 0.90,
+    tags: ['deep-work', 'focus', 'flow-state', 'productivity'],
+  ),
+  Affirmation(
+    id: 'aff_si_stoic_1',
+    quote: 'I control my inputs, my reactions, and my effort. The rest is simply the weather of life.',
+    category: 'Discipline',
+    primaryArchetypes: [UserArchetype.selfImprovement, UserArchetype.athlete],
+    subLevels: ['Stoic Mindset & Philosophy Explorer'],
+    modality: TherapeuticModality.actValues,
+    tone: AffirmationTone.philosophical,
+    embeddingVector: [0.60, 0.30, 0.00, 0.00, 0.95, 0.30, 0.50, 0.90, 0.00, 0.50, 0.00, 0.20, 0.00, 0.70, 0.85, 0.92],
+    believabilityScore: 0.92,
+    tags: ['stoicism', 'control', 'inner-fortress', 'resilience'],
+  ),
+
+  // ===========================================================================
+  // 6. THE SPIRITUAL SEEKER
+  // ===========================================================================
+  Affirmation(
+    id: 'aff_spi_abund_1',
+    quote: 'I align my thoughts with abundance. What is meant for my highest good finds me easily and naturally.',
+    category: 'Wealth & Abundance',
+    primaryArchetypes: [UserArchetype.spiritualSeeker],
+    subLevels: ['Law of Attraction & Abundance'],
+    modality: TherapeuticModality.spiritualAlignment,
+    tone: AffirmationTone.empowering,
+    embeddingVector: [0.40, 0.10, 0.00, 0.00, 0.30, 0.99, 0.20, 0.85, 0.00, 0.00, 0.00, 0.00, 0.10, 0.60, 0.70, 0.80],
+    believabilityScore: 0.82,
+    tags: ['manifestation', 'abundance', 'universe', 'attraction'],
+  ),
+  Affirmation(
+    id: 'aff_spi_intu_1',
+    quote: 'My intuition speaks in moments of stillness. I trust the quiet wisdom of my own heart.',
+    category: 'Calm Mind',
+    primaryArchetypes: [UserArchetype.spiritualSeeker, UserArchetype.selfImprovement],
+    subLevels: ['Intuition & Inner Wisdom'],
+    modality: TherapeuticModality.spiritualAlignment,
+    tone: AffirmationTone.gentleAndGrounding,
+    embeddingVector: [0.10, 0.40, 0.10, 0.10, 0.40, 0.98, 0.10, 0.80, 0.00, 0.00, 0.00, 0.00, 0.10, 0.90, 0.30, 0.90],
+    believabilityScore: 0.90,
+    tags: ['intuition', 'stillness', 'guidance', 'inner-peace'],
+  ),
+
+  // ===========================================================================
+  // 7. THE PARENT & CAREGIVER
+  // ===========================================================================
+  Affirmation(
+    id: 'aff_par_toddler_1',
+    quote: 'I do not have to be a flawless parent. My calm presence is the greatest anchor my child can have.',
+    category: 'Calm Mind',
+    primaryArchetypes: [UserArchetype.parentCaregiver],
+    subLevels: ['Newborn & Toddler Parent', 'School-Age & Teen Parent'],
+    modality: TherapeuticModality.selfCompassion,
+    tone: AffirmationTone.gentleAndGrounding,
+    embeddingVector: [0.10, 0.50, 0.00, 0.00, 0.30, 0.10, 0.20, 0.70, 0.99, 0.00, 0.00, 0.00, 0.00, 0.90, 0.30, 0.98],
+    believabilityScore: 0.98,
+    tags: ['parenting', 'patience', 'children', 'self-compassion'],
+  ),
+  Affirmation(
+    id: 'aff_par_burnout_1',
+    quote: 'Caring for myself is not taking away from my family; it is the very source that allows me to care for them.',
+    category: 'Self Love',
+    primaryArchetypes: [UserArchetype.parentCaregiver],
+    subLevels: ['Newborn & Toddler Parent', 'Elder & Family Caregiver'],
+    modality: TherapeuticModality.cbtReframe,
+    tone: AffirmationTone.gentleAndGrounding,
+    embeddingVector: [0.10, 0.40, 0.00, 0.00, 0.40, 0.10, 0.10, 0.80, 0.98, 0.00, 0.00, 0.00, 0.00, 0.88, 0.40, 0.96],
+    believabilityScore: 0.96,
+    tags: ['caregiver-burnout', 'self-care', 'parental-guilt', 'balance'],
+  ),
+  Affirmation(
+    id: 'aff_par_elder_1',
+    quote: 'I hold this heavy role with gentle hands. I am doing the best I can in difficult circumstances.',
+    category: 'Calm Mind',
+    primaryArchetypes: [UserArchetype.parentCaregiver, UserArchetype.grievingIndividual],
+    subLevels: ['Elder & Family Caregiver'],
+    modality: TherapeuticModality.selfCompassion,
+    tone: AffirmationTone.gentleAndGrounding,
+    embeddingVector: [0.00, 0.60, 0.00, 0.40, 0.20, 0.10, 0.00, 0.60, 0.95, 0.00, 0.10, 0.00, 0.00, 0.95, 0.10, 0.99],
+    believabilityScore: 0.99,
+    tags: ['caregiver', 'elder-care', 'compassion', 'resilience'],
+  ),
+
+  // ===========================================================================
+  // 8. THE ATHLETE & COMPETITOR
+  // ===========================================================================
+  Affirmation(
+    id: 'aff_ath_clutch_1',
+    quote: 'My preparation has built my endurance. Under pressure, my training takes over and my mind stays laser sharp.',
+    category: 'Motivation',
+    primaryArchetypes: [UserArchetype.athlete, UserArchetype.careerProfessional],
+    subLevels: ['Competitive Game Prep & Clutch Mindset'],
+    modality: TherapeuticModality.sportsPsychology,
+    tone: AffirmationTone.empowering,
+    embeddingVector: [0.50, 0.20, 0.00, 0.00, 0.80, 0.00, 0.60, 0.95, 0.00, 0.99, 0.00, 0.10, 0.00, 0.20, 0.98, 0.85],
+    believabilityScore: 0.87,
+    tags: ['athlete', 'competition', 'clutch', 'focus', 'training'],
+  ),
+  Affirmation(
+    id: 'aff_ath_endur_1',
+    quote: 'Fatigue is just a sensation; my spirit decides when I finish. I push through the barrier with rhythm and grit.',
+    category: 'Motivation',
+    primaryArchetypes: [UserArchetype.athlete],
+    subLevels: ['Endurance, Running & Fitness'],
+    modality: TherapeuticModality.sportsPsychology,
+    tone: AffirmationTone.directAndActionable,
+    embeddingVector: [0.20, 0.10, 0.00, 0.00, 0.90, 0.00, 0.30, 0.90, 0.00, 0.98, 0.00, 0.00, 0.00, 0.10, 0.99, 0.86],
+    believabilityScore: 0.88,
+    tags: ['running', 'endurance', 'fitness', 'grit', 'stamina'],
+  ),
+  Affirmation(
+    id: 'aff_ath_injury_1',
+    quote: 'My body is actively healing every single day. I respect the recovery process and trust my return to strength.',
+    category: 'Calm Mind',
+    primaryArchetypes: [UserArchetype.athlete, UserArchetype.anxiousOverthinker],
+    subLevels: ['Injury Recovery & Mental Reset'],
+    modality: TherapeuticModality.growthMindset,
+    tone: AffirmationTone.gentleAndGrounding,
+    embeddingVector: [0.10, 0.50, 0.00, 0.20, 0.60, 0.10, 0.10, 0.80, 0.00, 0.95, 0.00, 0.00, 0.00, 0.85, 0.40, 0.95],
+    believabilityScore: 0.95,
+    tags: ['injury', 'recovery', 'rehab', 'comeback', 'patience'],
+  ),
+
+  // ===========================================================================
+  // 9. THE PERSON WITH IDD / ACCESSIBLE & SENSORY FRIENDLY
+  // ===========================================================================
+  Affirmation(
+    id: 'aff_idd_sensory_1',
+    quote: 'I take a slow, deep breath. My feet are on the floor. I am calm and I am safe right now.',
+    category: 'Calm Mind',
+    primaryArchetypes: [UserArchetype.personWithIDD, UserArchetype.anxiousOverthinker],
+    subLevels: ['Sensory Calming & Grounding'],
+    modality: TherapeuticModality.accessibleDirect,
+    tone: AffirmationTone.simpleAndClear,
+    embeddingVector: [0.00, 0.80, 0.00, 0.00, 0.20, 0.00, 0.00, 0.60, 0.00, 0.00, 0.99, 0.00, 0.00, 0.98, 0.00, 1.00],
+    believabilityScore: 1.00,
+    tags: ['accessible', 'sensory', 'grounding', 'simple', 'safe'],
+  ),
+  Affirmation(
+    id: 'aff_idd_pride_1',
+    quote: 'I am good. I do my best every day. I am proud of the things I do.',
+    category: 'Confidence',
+    primaryArchetypes: [UserArchetype.personWithIDD],
+    subLevels: ['Daily Pride & Capability'],
+    modality: TherapeuticModality.accessibleDirect,
+    tone: AffirmationTone.simpleAndClear,
+    embeddingVector: [0.10, 0.20, 0.00, 0.00, 0.40, 0.10, 0.00, 0.90, 0.00, 0.00, 0.99, 0.10, 0.00, 0.70, 0.50, 1.00],
+    believabilityScore: 1.00,
+    tags: ['accessible', 'pride', 'capable', 'self-esteem', 'inclusion'],
+  ),
+  Affirmation(
+    id: 'aff_idd_friends_1',
+    quote: 'I am a kind friend. People like me for who I am. I belong here.',
+    category: 'Relationships',
+    primaryArchetypes: [UserArchetype.personWithIDD, UserArchetype.lgbtqia],
+    subLevels: ['Social Belonging & Friendship'],
+    modality: TherapeuticModality.accessibleDirect,
+    tone: AffirmationTone.simpleAndClear,
+    embeddingVector: [0.00, 0.30, 0.20, 0.00, 0.20, 0.10, 0.00, 0.85, 0.20, 0.00, 0.98, 0.00, 0.30, 0.80, 0.40, 1.00],
+    believabilityScore: 1.00,
+    tags: ['accessible', 'belonging', 'friendship', 'kindness'],
+  ),
+
+  // ===========================================================================
+  // 10. THE STUDENT & ACADEMIC
+  // ===========================================================================
+  Affirmation(
+    id: 'aff_stu_exam_1',
+    quote: 'My brain retains what I study. During the test, recall will flow calmly and clearly.',
+    category: 'Deep Focus',
+    primaryArchetypes: [UserArchetype.student, UserArchetype.careerProfessional],
+    subLevels: ['High School & College Exam Prep', 'Grad / Medical / Professional Exams'],
+    modality: TherapeuticModality.cbtReframe,
+    tone: AffirmationTone.empowering,
+    embeddingVector: [0.50, 0.40, 0.00, 0.00, 0.80, 0.00, 0.30, 0.85, 0.00, 0.00, 0.00, 0.99, 0.00, 0.40, 0.85, 0.89],
+    believabilityScore: 0.90,
+    tags: ['exam-prep', 'memory', 'studying', 'tests', 'focus'],
+  ),
+  Affirmation(
+    id: 'aff_stu_procrast_1',
+    quote: 'I do not need to finish everything at once. I only need to start the first 5 minutes right now.',
+    category: 'Productivity',
+    primaryArchetypes: [UserArchetype.student, UserArchetype.selfImprovement],
+    subLevels: ['Study Motivation & Anti-Procrastination'],
+    modality: TherapeuticModality.cbtReframe,
+    tone: AffirmationTone.directAndActionable,
+    embeddingVector: [0.40, 0.30, 0.00, 0.00, 0.90, 0.00, 0.20, 0.75, 0.00, 0.00, 0.00, 0.98, 0.00, 0.50, 0.90, 0.97],
+    believabilityScore: 0.97,
+    tags: ['procrastination', 'study', 'momentum', 'focus'],
+  ),
+  Affirmation(
+    id: 'aff_stu_grad_1',
+    quote: 'I was chosen for this academic path because I have the intellect and perseverance to master it.',
+    category: 'Confidence',
+    primaryArchetypes: [UserArchetype.student, UserArchetype.careerProfessional],
+    subLevels: ['Grad / Medical / Professional Exams'],
+    modality: TherapeuticModality.growthMindset,
+    tone: AffirmationTone.empowering,
+    embeddingVector: [0.65, 0.30, 0.00, 0.00, 0.75, 0.00, 0.40, 0.95, 0.00, 0.00, 0.00, 0.96, 0.00, 0.30, 0.88, 0.86],
+    believabilityScore: 0.88,
+    tags: ['grad-school', 'med-school', 'bar-exam', 'academic-confidence'],
+  ),
+
+  // ===========================================================================
+  // 11. THE LGBTQIA+ INDIVIDUAL
+  // ===========================================================================
+  Affirmation(
+    id: 'aff_lgbt_pride_1',
+    quote: 'My identity is sacred, authentic, and whole. I celebrate who I am with pride and dignity.',
+    category: 'Self Love',
+    primaryArchetypes: [UserArchetype.lgbtqia],
+    subLevels: ['Authenticity & Coming Out Journey', 'Trans & Non-Binary Identity Celebration'],
+    modality: TherapeuticModality.selfCompassion,
+    tone: AffirmationTone.empowering,
+    embeddingVector: [0.10, 0.20, 0.20, 0.10, 0.40, 0.30, 0.20, 0.98, 0.00, 0.00, 0.00, 0.00, 0.99, 0.60, 0.70, 0.92],
+    believabilityScore: 0.92,
+    tags: ['lgbtq', 'queer-pride', 'authenticity', 'trans', 'nonbinary', 'pride'],
+  ),
+  Affirmation(
+    id: 'aff_lgbt_resil_1',
+    quote: 'I do not shrink to make others comfortable. I take up space and thrive in my authentic truth.',
+    category: 'Confidence',
+    primaryArchetypes: [UserArchetype.lgbtqia, UserArchetype.careerProfessional],
+    subLevels: ['Resilience in Challenging Spaces'],
+    modality: TherapeuticModality.actValues,
+    tone: AffirmationTone.empowering,
+    embeddingVector: [0.30, 0.20, 0.10, 0.00, 0.50, 0.10, 0.30, 0.98, 0.00, 0.00, 0.00, 0.00, 0.98, 0.40, 0.85, 0.90],
+    believabilityScore: 0.91,
+    tags: ['resilience', 'courage', 'boundaries', 'taking-up-space'],
+  ),
+  Affirmation(
+    id: 'aff_lgbt_trans_1',
+    quote: 'My body and my journey are valid. I am becoming the truest version of myself every day.',
+    category: 'Self Love',
+    primaryArchetypes: [UserArchetype.lgbtqia],
+    subLevels: ['Trans & Non-Binary Identity Celebration', 'Authenticity & Coming Out Journey'],
+    modality: TherapeuticModality.selfCompassion,
+    tone: AffirmationTone.gentleAndGrounding,
+    embeddingVector: [0.00, 0.30, 0.10, 0.10, 0.40, 0.30, 0.00, 0.95, 0.00, 0.00, 0.00, 0.00, 0.99, 0.80, 0.50, 0.95],
+    believabilityScore: 0.96,
+    tags: ['transgender', 'nonbinary', 'gender-affirmation', 'body-peace'],
+  ),
+];

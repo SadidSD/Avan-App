@@ -1,5 +1,6 @@
 import '../models/affirmation.dart';
 import '../models/playlist.dart';
+import 'affirmation_library.dart';
 
 final List<Playlist> allPlaylists = [
   // ==========================================
@@ -245,9 +246,22 @@ final List<Playlist> allPlaylists = [
   ),
 ];
 
-/// Helper getters for easy filtering
 List<Playlist> get freePlaylists => 
     allPlaylists.where((playlist) => !playlist.isPremium).toList();
 
 List<Playlist> get premiumPlaylists => 
     allPlaylists.where((playlist) => playlist.isPremium).toList();
+
+/// Aggregates all affirmations from both predefined playlists and the expanded scientific library
+List<Affirmation> getAllGlobalAffirmations() {
+  final Map<String, Affirmation> map = {};
+  for (var aff in comprehensiveAffirmationLibrary) {
+    map[aff.id] = aff;
+  }
+  for (var pl in allPlaylists) {
+    for (var aff in pl.affirmations) {
+      map.putIfAbsent(aff.id, () => aff);
+    }
+  }
+  return map.values.toList();
+}

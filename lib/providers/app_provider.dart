@@ -1,8 +1,14 @@
 import 'package:flutter/foundation.dart';
+import '../models/affirmation.dart';
 import '../models/journal_entry.dart';
+import '../models/playlist.dart';
 import '../models/streak.dart';
+import '../models/user_archetype.dart';
+import '../models/user_profile_vector.dart';
 import '../models/user_recording.dart';
 import '../services/storage_service.dart';
+import '../services/personalization_engine.dart';
+import '../data/playlists_data.dart';
 
 enum AppMode { growth, healing, auto }
 
@@ -21,6 +27,8 @@ class AppProvider with ChangeNotifier {
   String _selectedVision = 'Calm & Confident Mind';
   String _selectedCommitment = '10 Min/Day';
 
+  UserProfileVector _userProfileVector = UserProfileVector();
+
   StreakData _streakData = StreakData();
   List<JournalEntry> _journalEntries = [];
   List<String> _favoriteAffirmations = [];
@@ -32,6 +40,7 @@ class AppProvider with ChangeNotifier {
 
   AppMode get appModeSetting => _appModeSetting;
   String get selectedMood => _selectedMood;
+  UserProfileVector get userProfileVector => _userProfileVector;
 
   /// Resolves active mode (handles 'auto' mode based on current time of day)
   AppMode get activeAppMode {
@@ -81,11 +90,107 @@ class AppProvider with ChangeNotifier {
     _selectedVision = survey['vision']!;
     _selectedCommitment = survey['commitment']!;
 
+    _userProfileVector = _storageService.getUserProfileVector();
+
+    // If profile vector is empty (first launch / upgrade), initialize it
+    if (_userProfileVector.vector.every((v) => v == 0.0)) {
+      _initializeVectorFromSurvey();
+    }
+
     _streakData = _storageService.getStreakData();
     _journalEntries = _storageService.getJournalEntries();
     _favoriteAffirmations = _storageService.getFavoriteAffirmations();
     _userRecordings = _storageService.getUserRecordings();
 
+    notifyListeners();
+  }
+
+  void _initializeVectorFromSurvey() {
+    List<UserArchetype> primary = [UserArchetype.careerProfessional];
+    if (_selectedGoal.contains('Confidence')) primary = [UserArchetype.careerProfessional];
+    if (_selectedGoal.contains('Stress') || _selectedGoal.contains('Anxiety')) primary = [UserArchetype.anxiousOverthinker];
+    if (_selectedGoal.contains('Focus') || _selectedGoal.contains('Productivity')) primary = [UserArchetype.selfImprovement];
+    if (_selectedGoal.contains('Relationships')) primary = [UserArchetype.heartbreakSurvivor];
+    if (_selectedGoal.contains('Wealth')) primary = [UserArchetype.spiritualSeeker];
+
+    final initialVec = PersonalizationEngine.buildArchetypeBaseVector(
+      primary: primary,
+      secondary: [],
+      subLevels: [],
+      tone: AffirmationTone.empowering,
+    );
+
+    _userProfileVector = UserProfileVector(
+      primaryArchetypes: primary,
+      vector: initialVec,
+    );
+    _storageService.saveUserProfileVector(_userProfileVector);
+  }
+
+  // ===========================================================================
+  // PERSONALIZATION GETTERS & METHODS
+  // ===========================================================================
+
+  /// Returns dynamically ranked personalized affirmations for the active user
+  List<Affirmation> getPersonalizedFeed({int limit = 10}) {
+    final pool = getAllGlobalAffirmations();
+    return PersonalizationEngine.getPersonalizedFeed(
+      profile: _userProfileVector,
+      pool: pool,
+      isGrowthMode: isGrowthMode,
+      mood: _selectedMood,
+      limit: limit,
+    );
+  }
+
+  /// Returns the top hero affirmation for today
+  Affirmation getHeroAffirmation() {
+    final pool = getAllGlobalAffirmations();
+    return PersonalizationEngine.getHeroAffirmation(
+      profile: _userProfileVector,
+      pool: pool,
+      isGrowthMode: isGrowthMode,
+      mood: _selectedMood,
+    );
+  }
+
+  /// Returns a situational dynamic playlist tailored to the user's primary archetype & state
+  Playlist getSituationalPlaylist() {
+    final pool = getAllGlobalAffirmations();
+    return PersonalizationEngine.generateSituationalPlaylist(
+      profile: _userProfileVector,
+      pool: pool,
+      isGrowthMode: isGrowthMode,
+    );
+  }
+
+  /// Updates the user's multi-archetype profile and synthesizes a new base vector
+  Future<void> setUserArchetypeProfile({
+    required List<UserArchetype> primary,
+    List<UserArchetype> secondary = const [],
+    List<String> subLevels = const [],
+    AffirmationTone tone = AffirmationTone.empowering,
+    double believability = 0.8,
+  }) async {
+    final newVector = PersonalizationEngine.buildArchetypeBaseVector(
+      primary: primary,
+      secondary: secondary,
+      subLevels: subLevels,
+      tone: tone,
+    );
+
+    _userProfileVector = UserProfileVector(
+      primaryArchetypes: primary,
+      secondaryArchetypes: secondary,
+      selectedSubLevels: subLevels,
+      preferredTone: tone,
+      vector: newVector,
+      believabilityPreference: believability,
+      lastUpdated: DateTime.now(),
+      interactionCount: _userProfileVector.interactionCount,
+    );
+
+    await _storageService.saveUserProfileVector(_userProfileVector);
     notifyListeners();
   }
 
@@ -157,11 +262,33 @@ class AppProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Toggles favorite and adapts user profile vector via online learning (EMA)
   Future<void> toggleFavorite(String affirmationId) async {
+    final pool = getAllGlobalAffirmations();
+    final matchingAff = pool.firstWhere(
+      (a) => a.id == affirmationId,
+      orElse: () => pool.first,
+    );
+
     if (_favoriteAffirmations.contains(affirmationId)) {
       _favoriteAffirmations.remove(affirmationId);
     } else {
       _favoriteAffirmations.add(affirmationId);
+
+      // Online Learning: shift user profile vector slightly toward favorited affirmation
+      if (matchingAff.embeddingVector.isNotEmpty) {
+        final updatedVec = PersonalizationEngine.updateVectorWithInteraction(
+          currentVector: _userProfileVector.vector,
+          affirmationVector: matchingAff.embeddingVector,
+          learningRate: 0.12,
+        );
+        _userProfileVector = _userProfileVector.copyWith(
+          vector: updatedVec,
+          interactionCount: _userProfileVector.interactionCount + 1,
+          lastUpdated: DateTime.now(),
+        );
+        await _storageService.saveUserProfileVector(_userProfileVector);
+      }
     }
     await _storageService.setFavoriteAffirmations(_favoriteAffirmations);
     notifyListeners();
@@ -209,6 +336,7 @@ class AppProvider with ChangeNotifier {
     _journalEntries = [];
     _userRecordings = [];
     _streakData = StreakData();
+    _userProfileVector = UserProfileVector();
     _currentNavIndex = 0;
     notifyListeners();
   }

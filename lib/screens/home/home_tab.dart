@@ -17,6 +17,7 @@ import '../../widgets/paywall_modal.dart';
 import '../../data/playlists_data.dart';
 import '../../models/playlist.dart';
 import '../../models/affirmation.dart';
+import '../../models/user_archetype.dart';
 
 class HomeTab extends StatefulWidget {
   const HomeTab({Key? key}) : super(key: key);
@@ -88,46 +89,22 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
       }
     }
 
-    // Build Just For You List
+    // Build Just For You List using Vector Personalization Engine
+    final personalizedAffs = appProvider.getPersonalizedFeed(limit: 12);
     List<Map<String, dynamic>> justForYouItems = [];
-    if (isGrowth) {
-      for (var i = 0; i < math.min(2, freePlaylists.length); i++) {
-        var playlist = freePlaylists[i];
-        for (var aff in playlist.affirmations) {
-          justForYouItems.add({
-            'affirmation': aff,
-            'playlist': playlist,
-          });
-        }
-      }
-      justForYouItems.shuffle();
-      if (justForYouItems.length > 8) {
-        justForYouItems = justForYouItems.sublist(0, 8);
-      }
-    } else {
-      for (var playlist in premiumPlaylists) {
-        if (playlist.category == 'Anxiety Relief' ||
-            playlist.category == 'Self Love' ||
-            playlist.category == 'Calm Mind') {
-          for (var aff in playlist.affirmations) {
-            justForYouItems.add({
-              'affirmation': aff,
-              'playlist': playlist,
-            });
-          }
-        }
-      }
-      justForYouItems.shuffle();
-      if (justForYouItems.length > 8) {
-        justForYouItems = justForYouItems.sublist(0, 8);
-      }
-    }
 
-    if (_searchQuery.isNotEmpty) {
-      justForYouItems = justForYouItems.where((item) {
-        Affirmation aff = item['affirmation'];
-        return aff.quote.toLowerCase().contains(_searchQuery.toLowerCase());
-      }).toList();
+    for (var aff in personalizedAffs) {
+      if (_searchQuery.isEmpty ||
+          aff.quote.toLowerCase().contains(_searchQuery.toLowerCase())) {
+        final matchingPlaylist = allPlaylists.firstWhere(
+          (p) => p.category == aff.category || p.affirmations.any((a) => a.id == aff.id),
+          orElse: () => allPlaylists.first,
+        );
+        justForYouItems.add({
+          'affirmation': aff,
+          'playlist': matchingPlaylist,
+        });
+      }
     }
 
     // Filter Playlists
@@ -281,6 +258,26 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                               '✨ Just for You',
                               style: AppTextStyles.sectionHeader,
                             ),
+                            const SizedBox(width: 8),
+                            if (appProvider.userProfileVector.primaryArchetypes.isNotEmpty)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: accent.withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: accent.withOpacity(0.25)),
+                                ),
+                                child: Text(
+                                  appProvider.userProfileVector.selectedSubLevels.isNotEmpty
+                                      ? appProvider.userProfileVector.selectedSubLevels.first
+                                      : ArchetypeRegistry.getMetadata(appProvider.userProfileVector.primaryArchetypes.first).title,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    color: accent,
+                                  ),
+                                ),
+                              ),
                           ],
                         ),
                         const SizedBox(height: 14),

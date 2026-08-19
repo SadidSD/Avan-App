@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/journal_entry.dart';
 import '../models/streak.dart';
 import '../models/user_recording.dart';
+import '../models/user_profile_vector.dart';
 
 class StorageService {
   late SharedPreferences _prefs;
@@ -81,6 +82,21 @@ class StorageService {
 
   String getSelectedMood() => _prefs.getString('selectedMood') ?? '';
   Future<void> setSelectedMood(String mood) => _prefs.setString('selectedMood', mood);
+
+  // User Profile Vector (Personalization Engine)
+  UserProfileVector getUserProfileVector() {
+    final String? vecStr = _prefs.getString('userProfileVector');
+    if (vecStr == null) return UserProfileVector();
+    try {
+      return UserProfileVector.fromJson(jsonDecode(vecStr));
+    } catch (_) {
+      return UserProfileVector();
+    }
+  }
+
+  Future<void> saveUserProfileVector(UserProfileVector profile) async {
+    await _prefs.setString('userProfileVector', jsonEncode(profile.toJson()));
+  }
 
   Future<void> clearAll() async {
     await _prefs.clear();
