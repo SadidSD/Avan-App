@@ -328,6 +328,12 @@ class AppProvider with ChangeNotifier {
     }
   }
 
+  Future<void> setPremium(bool val) async {
+    _isPremium = val;
+    await _storageService.setPremiumStatus(_isPremium);
+    notifyListeners();
+  }
+
   Future<void> resetAppData() async {
     await _storageService.clearAll();
     _isOnboardingCompleted = false;
