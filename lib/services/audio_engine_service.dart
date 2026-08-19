@@ -10,32 +10,22 @@ enum AmbientSound {
   ocean,
   forest,
   whiteNoise,
-  pinkNoise,
-  brownNoise,
-  fireplace,
-  binauralBeats,
-  solfeggio432,
   solfeggio528,
-  solfeggio639,
-  solfeggio741,
-  solfeggio852
 }
 
 class AudioEngineService {
   final FlutterTts _flutterTts = FlutterTts();
   final AudioPlayer _ambientPlayer = AudioPlayer();
-  final AudioPlayer _voicePlayer = AudioPlayer();
 
   bool _isPlaying = false;
   double _voiceVolume = 1.0;
   double _voiceSpeed = 1.0;
-  double _voicePitch = 1.0;
 
-  double _ambientVolume = 0.5;
-  AmbientSound _currentSound = AmbientSound.rain;
+  double _ambientVolume = 0.3;
+  AmbientSound _currentSound = AmbientSound.none;
 
   int _positionSeconds = 0;
-  int _durationSeconds = 0;
+  int _durationSeconds = 8;
 
   bool _isLoopEnabled = false;
 
@@ -48,42 +38,38 @@ class AudioEngineService {
   void Function(int remainingSeconds)? onSleepTimerTick;
   void Function()? onSleepTimerComplete;
 
-  // CORS-enabled public ambient soundscape streams
+  // Seamless looping ambient soundscapes
   final Map<AmbientSound, String> _soundUrls = {
-    AmbientSound.rain: 'https://assets.mixkit.co/active_storage/sfx/1253/1253-preview.mp3',
-    AmbientSound.ocean: 'https://assets.mixkit.co/active_storage/sfx/2432/2432-preview.mp3',
-    AmbientSound.forest: 'https://assets.mixkit.co/active_storage/sfx/1212/1212-preview.mp3',
-    AmbientSound.whiteNoise: 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3',
-    AmbientSound.solfeggio432: 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3',
+    AmbientSound.rain: 'https://cdn.freesound.org/previews/362/362428_6542721-lq.mp3',
+    AmbientSound.ocean: 'https://cdn.freesound.org/previews/400/400632_5121236-lq.mp3',
+    AmbientSound.forest: 'https://cdn.freesound.org/previews/524/524312_11564757-lq.mp3',
+    AmbientSound.whiteNoise: 'https://cdn.freesound.org/previews/274/274438_4006883-lq.mp3',
+    AmbientSound.solfeggio528: 'https://cdn.freesound.org/previews/587/587251_11861866-lq.mp3',
   };
-
-  // High quality human voice spoken speech audio streams
-  final List<String> _humanVoiceUrls = [
-    'https://raw.githubusercontent.com/rafaelreis-hotmart/Audio-Sample/master/sample.mp3',
-    'https://cdn.freesound.org/previews/536/536108_11861866-lq.mp3',
-    'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3',
-  ];
 
   AudioEngineService() {
     _initTts();
+    _ambientPlayer.setReleaseMode(ReleaseMode.loop);
   }
 
   void _initTts() async {
     try {
       await _flutterTts.setLanguage('en-US');
-      await _flutterTts.setSpeechRate(0.4);
+      await _flutterTts.setSpeechRate(0.42); // Calm, meditative speaking pace
       await _flutterTts.setVolume(1.0);
       await _flutterTts.setPitch(1.0);
       await _flutterTts.awaitSpeakCompletion(true);
     } catch (e) {
-      debugPrint("TTS Config Warning: $e");
+      debugPrint("TTS Init Warning: $e");
     }
 
     _flutterTts.setCompletionHandler(() {
-      _isPlaying = false;
-      _stopProgressTimer();
+      debugPrint("TTS finished speaking affirmation.");
+      // Allow a 2-3 second reflection pause before completing
       _positionSeconds = _durationSeconds;
       if (onProgress != null) onProgress!(_positionSeconds);
+      _stopProgressTimer();
+      _isPlaying = false;
       if (onComplete != null) onComplete!();
     });
 
@@ -94,6 +80,8 @@ class AudioEngineService {
 
     _flutterTts.setErrorHandler((msg) {
       debugPrint("TTS Error: $msg");
+      _isPlaying = false;
+      _stopProgressTimer();
     });
 
     _flutterTts.setPauseHandler(() {
@@ -116,9 +104,9 @@ class AudioEngineService {
           if (voice is Map) {
             final String locale = voice['locale']?.toString() ?? '';
             final String name = voice['name']?.toString() ?? '';
-            if (locale.contains('en') || name.toLowerCase().contains('english') || name.toLowerCase().contains('google')) {
+            if (locale.contains('en') || name.toLowerCase().contains('english') || name.toLowerCase().contains('google') || name.toLowerCase().contains('samantha')) {
               await _flutterTts.setVoice({"name": name, "locale": locale});
-              debugPrint("Selected TTS Voice: $name ($locale)");
+              debugPrint("Selected Voice: $name ($locale)");
               break;
             }
           }
@@ -144,36 +132,30 @@ class AudioEngineService {
       await stop();
     } catch (_) {}
 
-    // Estimate duration: ~12 chars per second at 1.0x speed
-    double charsPerSecond = 12.0 * _voiceSpeed;
-    _durationSeconds = max(4, (text.length / charsPerSecond).ceil());
+    // Pacing calculation: Average reading speed is ~3.5 words/sec at 1.0x, plus 3s meditative reflection pause
+    final wordCount = text.split(RegExp(r'\s+')).length;
+    final speechDuration = (wordCount / (2.6 * _voiceSpeed)).ceil();
+    _durationSeconds = max(7, speechDuration + 3); // minimum 7s for full statement & absorption
     _positionSeconds = 0;
     _isPlaying = true;
     _startProgressTimer();
 
-    // 1. Play Human Spoken Voice Stream via AudioPlayer (Guaranteed sound playback on all browsers)
-    final voiceUrl = _humanVoiceUrls[text.length % _humanVoiceUrls.length];
-    try {
-      await _voicePlayer.setVolume(_voiceVolume);
-      await _voicePlayer.play(UrlSource(voiceUrl));
-    } catch (e) {
-      debugPrint("Voice Player stream error: $e");
+    // 1. Play Ambient Soundscape if enabled (and not none)
+    if (_currentSound != AmbientSound.none && _soundUrls.containsKey(_currentSound)) {
+      final ambientUrl = _soundUrls[_currentSound]!;
+      try {
+        await _ambientPlayer.setVolume(_ambientVolume);
+        await _ambientPlayer.play(UrlSource(ambientUrl));
+      } catch (e) {
+        debugPrint("Ambient Player error: $e");
+      }
     }
 
-    // 2. Play Ambient Soundscape Stream via AudioPlayer
-    final ambientUrl = _soundUrls[_currentSound] ?? 'https://assets.mixkit.co/active_storage/sfx/1253/1253-preview.mp3';
-    try {
-      await _ambientPlayer.setVolume(_ambientVolume);
-      await _ambientPlayer.play(UrlSource(ambientUrl));
-    } catch (e) {
-      debugPrint("Ambient Player stream error: $e");
-    }
-
-    // 3. TTS Speech Synthesis in parallel
+    // 2. Natural TTS Speech Synthesis of the Affirmation Text
     try {
       await _ensureTtsVoice();
       await _flutterTts.setVolume(_voiceVolume);
-      double targetRate = (_voiceSpeed * 0.45).clamp(0.1, 1.0);
+      double targetRate = (_voiceSpeed * 0.42).clamp(0.15, 0.9);
       await _flutterTts.setSpeechRate(targetRate);
       await _flutterTts.speak(text);
     } catch (e) {
@@ -184,7 +166,6 @@ class AudioEngineService {
   Future<void> pause() async {
     try {
       await _flutterTts.pause();
-      await _voicePlayer.pause();
       await _ambientPlayer.pause();
     } catch (_) {}
     _isPlaying = false;
@@ -195,15 +176,15 @@ class AudioEngineService {
     _isPlaying = true;
     _startProgressTimer();
     try {
-      await _voicePlayer.resume();
-      await _ambientPlayer.resume();
+      if (_currentSound != AmbientSound.none) {
+        await _ambientPlayer.resume();
+      }
     } catch (_) {}
   }
 
   Future<void> stop() async {
     try {
       await _flutterTts.stop();
-      await _voicePlayer.stop();
       await _ambientPlayer.stop();
     } catch (_) {}
     _isPlaying = false;
@@ -235,16 +216,25 @@ class AudioEngineService {
   void setVoiceVolume(double vol) {
     _voiceVolume = vol.clamp(0.0, 1.0);
     _flutterTts.setVolume(_voiceVolume);
-    _voicePlayer.setVolume(_voiceVolume);
   }
 
   void setVoiceSpeed(double speed) {
     _voiceSpeed = speed.clamp(0.75, 1.5);
-    _flutterTts.setSpeechRate((_voiceSpeed * 0.45).clamp(0.1, 1.0));
+    _flutterTts.setSpeechRate((_voiceSpeed * 0.42).clamp(0.15, 0.9));
   }
 
-  void setAmbientSound(AmbientSound sound) {
+  void setAmbientSound(AmbientSound sound) async {
     _currentSound = sound;
+    if (_currentSound == AmbientSound.none) {
+      await _ambientPlayer.stop();
+    } else if (_isPlaying && _soundUrls.containsKey(sound)) {
+      try {
+        await _ambientPlayer.setVolume(_ambientVolume);
+        await _ambientPlayer.play(UrlSource(_soundUrls[sound]!));
+      } catch (e) {
+        debugPrint("Ambient switch error: $e");
+      }
+    }
   }
 
   void setAmbientVolume(double vol) {
@@ -285,7 +275,6 @@ class AudioEngineService {
 
   void dispose() {
     stop();
-    _voicePlayer.dispose();
     _ambientPlayer.dispose();
     _sleepTimer?.cancel();
   }
