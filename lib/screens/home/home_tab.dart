@@ -263,21 +263,25 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                             ),
                             const SizedBox(width: 8),
                             if (appProvider.userProfileVector.primaryArchetypes.isNotEmpty)
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: accent.withOpacity(0.12),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: accent.withOpacity(0.25)),
-                                ),
-                                child: Text(
-                                  appProvider.userProfileVector.selectedSubLevels.isNotEmpty
-                                      ? appProvider.userProfileVector.selectedSubLevels.first
-                                      : ArchetypeRegistry.getMetadata(appProvider.userProfileVector.primaryArchetypes.first).title,
-                                  style: GoogleFonts.inter(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w600,
-                                    color: accent,
+                              Flexible(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: accent.withOpacity(0.12),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: accent.withOpacity(0.25)),
+                                  ),
+                                  child: Text(
+                                    appProvider.userProfileVector.selectedSubLevels.isNotEmpty
+                                        ? appProvider.userProfileVector.selectedSubLevels.first
+                                        : ArchetypeRegistry.getMetadata(appProvider.userProfileVector.primaryArchetypes.first).title,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                      color: accent,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                               ),
