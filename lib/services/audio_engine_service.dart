@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_tts/flutter_tts.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'ambient_audio_synthesizer.dart';
+import 'tts_service.dart';
 
 enum AmbientSound {
   none,
@@ -15,7 +15,7 @@ enum AmbientSound {
 }
 
 class AudioEngineService {
-  final FlutterTts _flutterTts = FlutterTts();
+  final TtsService _ttsService = TtsService();
   final AudioPlayer _ambientPlayer = AudioPlayer();
 
   bool _isPlaying = false;
@@ -26,33 +26,16 @@ class AudioEngineService {
   AmbientSound _currentSound = AmbientSound.none; // Default to pure crystal-clear voice
 
   AudioEngineService() {
-    _initTts();
-    _ambientPlayer.setReleaseMode(ReleaseMode.loop);
+    _initEngine();
   }
 
-  void _initTts() async {
+  void _initEngine() async {
+    await _ttsService.init();
     try {
-      await _flutterTts.setLanguage('en-US');
-      if (kIsWeb) {
-        // In Web Speech API, 1.0 is standard speed; 0.88 is calm and meditative
-        await _flutterTts.setSpeechRate(0.88);
-      } else {
-        await _flutterTts.setSpeechRate(0.48);
-        await _flutterTts.awaitSpeakCompletion(false);
-      }
-      await _flutterTts.setVolume(1.0);
-      await _flutterTts.setPitch(1.0);
+      _ambientPlayer.setReleaseMode(ReleaseMode.loop);
     } catch (e) {
-      debugPrint("TTS Init Warning: $e");
+      debugPrint("Ambient player setup warning: $e");
     }
-
-    _flutterTts.setCompletionHandler(() {
-      debugPrint("TTS completed speaking affirmation.");
-    });
-
-    _flutterTts.setErrorHandler((msg) {
-      debugPrint("TTS Error: $msg");
-    });
   }
 
   bool get isPlaying => _isPlaying;
@@ -61,30 +44,20 @@ class AudioEngineService {
   double get ambientVolume => _ambientVolume;
   AmbientSound get currentSound => _currentSound;
 
-  /// Speaks the given affirmation quote clearly and manages ambient sound
+  /// Speaks the affirmation quote aloud and manages ambient soundscape
   Future<void> speakAffirmation(String text) async {
     _isPlaying = true;
 
-    // 1. Start ambient sound if enabled
+    // 1. Play background ambient if active
     if (_currentSound != AmbientSound.none) {
       _playAmbientInternal();
     }
 
-    // 2. TTS Voice synthesis
+    // 2. Synthesize speech
     try {
-      await _flutterTts.stop();
-      await _flutterTts.setLanguage('en-US');
-      await _flutterTts.setVolume(_voiceVolume);
-
-      final double rate = kIsWeb
-          ? (_voiceSpeed * 0.88).clamp(0.5, 1.5)
-          : (_voiceSpeed * 0.48).clamp(0.2, 0.9);
-      await _flutterTts.setSpeechRate(rate);
-
-      final result = await _flutterTts.speak(text);
-      debugPrint("TTS speak called for '$text' -> result: $result");
+      await _ttsService.speak(text, volume: _voiceVolume, speed: _voiceSpeed);
     } catch (e) {
-      debugPrint("TTS Speak error: $e");
+      debugPrint("AudioEngine speak error: $e");
     }
   }
 
@@ -103,7 +76,7 @@ class AudioEngineService {
   Future<void> pause() async {
     _isPlaying = false;
     try {
-      await _flutterTts.stop();
+      await _ttsService.pause();
       await _ambientPlayer.pause();
     } catch (_) {}
   }
@@ -111,6 +84,7 @@ class AudioEngineService {
   Future<void> resume() async {
     _isPlaying = true;
     try {
+      await _ttsService.resume();
       if (_currentSound != AmbientSound.none) {
         await _ambientPlayer.resume();
       }
@@ -120,22 +94,17 @@ class AudioEngineService {
   Future<void> stop() async {
     _isPlaying = false;
     try {
-      await _flutterTts.stop();
+      await _ttsService.stop();
       await _ambientPlayer.stop();
     } catch (_) {}
   }
 
   void setVoiceVolume(double vol) {
     _voiceVolume = vol.clamp(0.0, 1.0);
-    _flutterTts.setVolume(_voiceVolume);
   }
 
   void setVoiceSpeed(double speed) {
     _voiceSpeed = speed.clamp(0.75, 1.5);
-    final double rate = kIsWeb
-        ? (_voiceSpeed * 0.88).clamp(0.5, 1.5)
-        : (_voiceSpeed * 0.48).clamp(0.2, 0.9);
-    _flutterTts.setSpeechRate(rate);
   }
 
   void setAmbientSound(AmbientSound sound) async {
@@ -160,6 +129,7 @@ class AudioEngineService {
 
   void dispose() {
     stop();
+    _ttsService.dispose();
     _ambientPlayer.dispose();
   }
 }
