@@ -116,7 +116,7 @@ class AppColors {
   static const LinearGradient primaryGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFFFFF4EB), Color(0xFFFFF8F2)],
+    colors: [Color(0xFF3D2C1E), Color(0xFF261910)],
   );
 
   static const LinearGradient heroGradient = LinearGradient(
