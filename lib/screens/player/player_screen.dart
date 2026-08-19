@@ -545,6 +545,20 @@ class _PlayerScreenState extends State<PlayerScreen> with SingleTickerProviderSt
                       ],
                     ),
 
+                  const SizedBox(height: 18),
+                  Text('Affirmation Pacing Rhythm',
+                      style: GoogleFonts.inter(
+                          fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      _pacingChip('Brisk (12s)', 12, audioProvider, accent, setSheetState),
+                      _pacingChip('Natural (18s)', 18, audioProvider, accent, setSheetState),
+                      _pacingChip('Deep (30s)', 30, audioProvider, accent, setSheetState),
+                    ],
+                  ),
+
                   const SizedBox(height: 20),
                   Text('Sleep Timer',
                       style: GoogleFonts.inter(
@@ -565,6 +579,32 @@ class _PlayerScreenState extends State<PlayerScreen> with SingleTickerProviderSt
             );
           },
         );
+      },
+    );
+  }
+
+  Widget _pacingChip(
+      String label,
+      int seconds,
+      AudioProvider audioProvider,
+      Color accent,
+      StateSetter setSheetState) {
+    final isSelected = audioProvider.intervalPerAffirmation == seconds;
+    return ChoiceChip(
+      label: Text(label),
+      selected: isSelected,
+      selectedColor: AppColors.buttonDark,
+      backgroundColor: AppColors.surfaceSolid,
+      side: BorderSide(color: isSelected ? Colors.transparent : AppColors.border),
+      labelStyle: GoogleFonts.inter(
+        color: isSelected ? Colors.white : AppColors.textPrimary,
+        fontSize: 12,
+        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+      ),
+      onSelected: (sel) {
+        if (sel) {
+          setSheetState(() => audioProvider.setIntervalPerAffirmation(seconds));
+        }
       },
     );
   }

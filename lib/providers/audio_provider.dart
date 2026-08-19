@@ -17,8 +17,10 @@ class AudioProvider with ChangeNotifier {
   int _currentAffirmationIndex = 0;
   bool _isPlayerOpen = false;
 
-  int _sessionDurationSeconds = 480; // Full playlist length in seconds (default 8 min)
-  int _sessionPositionSeconds = 0;   // Current elapsed seconds in the playlist
+  // Natural pacing: 18 seconds per affirmation (6s speech + 12s peaceful reflection)
+  int _intervalPerAffirmation = 18; 
+  int _sessionDurationSeconds = 144;
+  int _sessionPositionSeconds = 0;
   bool _isLoopEnabled = false;
 
   Timer? _sessionTicker;
@@ -35,6 +37,7 @@ class AudioProvider with ChangeNotifier {
 
   int get positionSeconds => _sessionPositionSeconds;
   int get durationSeconds => _sessionDurationSeconds;
+  int get intervalPerAffirmation => _intervalPerAffirmation;
   bool get isLoopEnabled => _isLoopEnabled;
   int get sleepTimerRemaining => _sleepTimerRemaining;
 
@@ -52,27 +55,14 @@ class AudioProvider with ChangeNotifier {
   int get currentAffirmationIndex => _currentAffirmationIndex;
   bool get isPlayerOpen => _isPlayerOpen;
 
-  double get _slotDurationSeconds {
-    if (_currentPlaylist == null || _currentPlaylist!.affirmations.isEmpty) {
-      return 60.0;
-    }
-    return _sessionDurationSeconds / _currentPlaylist!.affirmations.length;
-  }
+  double get _slotDurationSeconds => _intervalPerAffirmation.toDouble();
 
-  int _parseDurationToSeconds(String durationStr) {
-    final clean = durationStr.toLowerCase().trim();
-    if (clean.contains('min')) {
-      final numStr = RegExp(r'\d+').firstMatch(clean)?.group(0);
-      if (numStr != null) {
-        return int.parse(numStr) * 60;
-      }
-    } else if (clean.contains('sec')) {
-      final numStr = RegExp(r'\d+').firstMatch(clean)?.group(0);
-      if (numStr != null) {
-        return int.parse(numStr);
-      }
-    }
-    return 480; // default 8 min
+  void setIntervalPerAffirmation(int seconds) {
+    _intervalPerAffirmation = seconds.clamp(10, 45);
+    final count = _currentPlaylist?.affirmations.length ?? 8;
+    _sessionDurationSeconds = count * _intervalPerAffirmation;
+    _sessionPositionSeconds = _currentAffirmationIndex * _intervalPerAffirmation;
+    notifyListeners();
   }
 
   /// Opens a specific affirmation and builds a complete multi-quote affirmation session
@@ -105,7 +95,6 @@ class AudioProvider with ChangeNotifier {
       }
     }
 
-    // Fallback filler if needed
     if (relatedQuotes.length < 6) {
       for (final aff in comprehensiveAffirmationLibrary) {
         if (relatedQuotes.length >= 8) break;
@@ -118,7 +107,7 @@ class AudioProvider with ChangeNotifier {
     final dynamicPlaylist = Playlist(
       id: 'personalized_session_${affirmation.id}',
       title: affirmation.category.isNotEmpty ? affirmation.category : 'Daily Affirmations',
-      duration: '${relatedQuotes.length} min', // 1 min per affirmation line
+      duration: '${(relatedQuotes.length * _intervalPerAffirmation / 60).ceil()} min',
       category: affirmation.category.isNotEmpty ? affirmation.category : 'Personalized',
       imagePath: parentPlaylist?.imagePath ?? 'assets/images/featured_meditation.jpg',
       isPremium: false,
@@ -131,11 +120,12 @@ class AudioProvider with ChangeNotifier {
   /// Opens a playlist at a specific affirmation index and opens the Player Screen
   void openPlaylist(Playlist playlist, [BuildContext? context, int initialIndex = 0]) {
     _currentPlaylist = playlist;
-    _sessionDurationSeconds = _parseDurationToSeconds(playlist.duration);
+    final count = playlist.affirmations.isNotEmpty ? playlist.affirmations.length : 1;
+    _sessionDurationSeconds = count * _intervalPerAffirmation;
     _currentAffirmationIndex = (initialIndex >= 0 && initialIndex < playlist.affirmations.length)
         ? initialIndex
         : 0;
-    _sessionPositionSeconds = (_currentAffirmationIndex * _slotDurationSeconds).round();
+    _sessionPositionSeconds = (_currentAffirmationIndex * _intervalPerAffirmation);
     _isPlayerOpen = true;
 
     _playCurrentAffirmation();
@@ -170,7 +160,7 @@ class AudioProvider with ChangeNotifier {
       affirmations: [customAffirmation],
     );
     _currentAffirmationIndex = 0;
-    _sessionDurationSeconds = _parseDurationToSeconds(duration);
+    _sessionDurationSeconds = _intervalPerAffirmation;
     _sessionPositionSeconds = 0;
     _isPlayerOpen = true;
 
@@ -195,8 +185,7 @@ class AudioProvider with ChangeNotifier {
         _sessionPositionSeconds++;
 
         final totalAffs = _currentPlaylist?.affirmations.length ?? 1;
-        final slot = _slotDurationSeconds;
-        final targetIndex = (_sessionPositionSeconds / slot).floor().clamp(0, totalAffs - 1);
+        final targetIndex = (_sessionPositionSeconds / _intervalPerAffirmation).floor().clamp(0, totalAffs - 1);
 
         if (targetIndex != _currentAffirmationIndex) {
           _currentAffirmationIndex = targetIndex;
@@ -236,8 +225,7 @@ class AudioProvider with ChangeNotifier {
   void seekTo(int seconds) {
     _sessionPositionSeconds = seconds.clamp(0, _sessionDurationSeconds);
     final totalAffs = _currentPlaylist?.affirmations.length ?? 1;
-    final slot = _slotDurationSeconds;
-    final targetIndex = (_sessionPositionSeconds / slot).floor().clamp(0, totalAffs - 1);
+    final targetIndex = (_sessionPositionSeconds / _intervalPerAffirmation).floor().clamp(0, totalAffs - 1);
 
     if (targetIndex != _currentAffirmationIndex) {
       _currentAffirmationIndex = targetIndex;
@@ -254,7 +242,7 @@ class AudioProvider with ChangeNotifier {
 
     if (_currentAffirmationIndex < totalAffs - 1) {
       _currentAffirmationIndex++;
-      _sessionPositionSeconds = (_currentAffirmationIndex * _slotDurationSeconds).round();
+      _sessionPositionSeconds = (_currentAffirmationIndex * _intervalPerAffirmation);
       _playCurrentAffirmation();
     } else if (_isLoopEnabled) {
       _currentAffirmationIndex = 0;
@@ -272,7 +260,7 @@ class AudioProvider with ChangeNotifier {
 
     if (_currentAffirmationIndex > 0) {
       _currentAffirmationIndex--;
-      _sessionPositionSeconds = (_currentAffirmationIndex * _slotDurationSeconds).round();
+      _sessionPositionSeconds = (_currentAffirmationIndex * _intervalPerAffirmation);
       _playCurrentAffirmation();
     } else {
       _sessionPositionSeconds = 0;
