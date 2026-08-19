@@ -2,6 +2,7 @@ import 'user_archetype.dart';
 
 class Affirmation {
   final String id;
+  final String title;
   final String quote;
   final String category;
   final String author;
@@ -18,6 +19,7 @@ class Affirmation {
 
   Affirmation({
     required this.id,
+    this.title = '',
     required this.quote,
     required this.category,
     this.author = 'AVAN',
@@ -31,9 +33,33 @@ class Affirmation {
     this.tags = const [],
   });
 
+  String get displayTitle {
+    if (title.isNotEmpty) return title;
+    if (tags.length >= 2) {
+      final t1 = _toTitleCase(tags[0]);
+      final t2 = _toTitleCase(tags[1]);
+      return '$t1 • $t2';
+    } else if (tags.isNotEmpty) {
+      return _toTitleCase(tags[0]);
+    }
+    if (subLevels.isNotEmpty) {
+      return subLevels.first;
+    }
+    return category;
+  }
+
+  static String _toTitleCase(String text) {
+    if (text.isEmpty) return '';
+    return text.split('-').map((word) {
+      if (word.isEmpty) return '';
+      return word[0].toUpperCase() + word.substring(1).toLowerCase();
+    }).join(' ');
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'title': title,
       'quote': quote,
       'category': category,
       'author': author,
@@ -51,6 +77,7 @@ class Affirmation {
   factory Affirmation.fromJson(Map<String, dynamic> json) {
     return Affirmation(
       id: json['id'] as String,
+      title: json['title'] as String? ?? '',
       quote: json['quote'] as String,
       category: json['category'] as String,
       author: json['author'] as String? ?? 'AVAN',

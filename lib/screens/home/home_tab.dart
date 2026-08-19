@@ -219,6 +219,7 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                                   child: SizedBox(
                                     width: screenWidth * 0.7,
                                     child: AffirmationCard(
+                                      title: aff.displayTitle,
                                       quote: aff.quote,
                                       playlistName: playlist.title,
                                       imagePath: playlist.imagePath,
@@ -303,6 +304,7 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                                   child: SizedBox(
                                     width: screenWidth * 0.7,
                                     child: AffirmationCard(
+                                      title: aff.displayTitle,
                                       quote: aff.quote,
                                       playlistName: playlist.title,
                                       imagePath: playlist.imagePath,
@@ -448,6 +450,7 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                                   child: SizedBox(
                                     width: screenWidth * 0.7,
                                     child: AffirmationCard(
+                                      title: aff.displayTitle,
                                       quote: aff.quote,
                                       playlistName: playlist.title,
                                       imagePath: playlist.imagePath,

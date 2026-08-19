@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 
 class AffirmationCard extends StatelessWidget {
+  final String? title;
   final String quote;
   final String playlistName;
   final String imagePath;
@@ -15,6 +16,7 @@ class AffirmationCard extends StatelessWidget {
 
   const AffirmationCard({
     Key? key,
+    this.title,
     required this.quote,
     required this.playlistName,
     required this.imagePath,
@@ -209,22 +211,39 @@ class AffirmationCard extends StatelessWidget {
               ],
             ),
 
-            // 2. Affirmation Text & Info
+            // 2. Affirmation Name, Quote & Info
             IgnorePointer(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(10.0, 9.0, 10.0, 10.0),
+                padding: const EdgeInsets.fromLTRB(12.0, 10.0, 12.0, 12.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Affirmation Title / Name
+                    if (title != null && title!.isNotEmpty) ...[
+                      Text(
+                        title!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.inter(
+                          fontSize: 13.0,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                      const SizedBox(height: 3.0),
+                    ],
                     // Quote Text
                     Text(
                       quote,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
-                        fontSize: 12.0,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                        fontSize: (title != null && title!.isNotEmpty) ? 11.5 : 12.0,
+                        fontWeight: (title != null && title!.isNotEmpty) ? FontWeight.w400 : FontWeight.w600,
+                        color: (title != null && title!.isNotEmpty)
+                            ? AppColors.textSecondary
+                            : AppColors.textPrimary,
                         height: 1.35,
                       ),
                     ),
@@ -247,7 +266,7 @@ class AffirmationCard extends StatelessWidget {
                             style: GoogleFonts.inter(
                               fontSize: 10.5,
                               fontWeight: FontWeight.w400,
-                              color: AppColors.textSecondary,
+                              color: AppColors.textMuted,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
