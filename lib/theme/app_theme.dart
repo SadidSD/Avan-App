@@ -4,16 +4,18 @@ import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
 class AppTheme {
-  static ThemeData get darkTheme {
+  static ThemeData get darkTheme => lightTheme;
+
+  static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
-      brightness: Brightness.dark,
+      brightness: Brightness.light,
       scaffoldBackgroundColor: AppColors.background,
-      colorScheme: const ColorScheme.dark(
-        surface: AppColors.surfaceSolid,
+      colorScheme: const ColorScheme.light(
+        surface: AppColors.surface,
         primary: AppColors.growthAccent,
         secondary: AppColors.healingAccent,
-        onPrimary: AppColors.background,
+        onPrimary: Colors.white,
         onSurface: AppColors.textPrimary,
         outline: AppColors.border,
       ),
@@ -113,7 +115,7 @@ class AppTheme {
         ),
       ),
       cardTheme: CardThemeData(
-        color: AppColors.surfaceSolid,
+        color: AppColors.surface,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20.0),
@@ -124,7 +126,7 @@ class AppTheme {
         backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
-        systemOverlayStyle: SystemUiOverlayStyle.light,
+        systemOverlayStyle: SystemUiOverlayStyle.dark,
         iconTheme: const IconThemeData(color: AppColors.textPrimary),
         titleTextStyle: GoogleFonts.inter(
           fontSize: 18,
@@ -158,12 +160,12 @@ class AppTheme {
       iconTheme: const IconThemeData(color: AppColors.textSecondary, size: 22),
       dividerColor: AppColors.border,
       dialogTheme: DialogThemeData(
-        backgroundColor: AppColors.surfaceSolid,
+        backgroundColor: AppColors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       ),
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: AppColors.surfaceSolid,
-        contentTextStyle: GoogleFonts.inter(color: AppColors.textPrimary),
+        backgroundColor: AppColors.textPrimary,
+        contentTextStyle: GoogleFonts.inter(color: Colors.white),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         behavior: SnackBarBehavior.floating,
       ),
@@ -179,6 +181,4 @@ class AppTheme {
       ),
     );
   }
-
-  static ThemeData get lightTheme => darkTheme;
 }

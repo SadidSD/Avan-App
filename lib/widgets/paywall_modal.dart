@@ -27,7 +27,7 @@ class PaywallModal extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(28.0),
       decoration: const BoxDecoration(
-        color: AppColors.surfaceSolid,
+        color: AppColors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(32.0)),
       ),
       child: Column(
@@ -37,7 +37,7 @@ class PaywallModal extends StatelessWidget {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: AppColors.textMuted,
+              color: AppColors.textMuted.withOpacity(0.4),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -69,8 +69,8 @@ class PaywallModal extends StatelessWidget {
           // Button 1: Demo Premium Unlock
           CustomButton(
             text: 'Try Free for 7 Days (Demo Unlock)',
-            backgroundColor: AppColors.goldAccent,
-            textColor: AppColors.surfaceSolid,
+            backgroundColor: AppColors.buttonDark,
+            textColor: Colors.white,
             onPressed: () {
               if (!appProvider.isPremium) {
                 appProvider.togglePremium();

@@ -70,15 +70,15 @@ class MainNavigationScreen extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(40),
             boxShadow: [
-              const BoxShadow(
-                color: Color(0x66000000),
-                blurRadius: 28,
-                spreadRadius: 2,
-                offset: Offset(0, 10),
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 24,
+                spreadRadius: 0,
+                offset: const Offset(0, 8),
               ),
               BoxShadow(
-                color: accent.withOpacity(0.12),
-                blurRadius: 20,
+                color: accent.withOpacity(0.06),
+                blurRadius: 16,
                 spreadRadius: -2,
                 offset: const Offset(0, 4),
               ),
@@ -87,16 +87,16 @@ class MainNavigationScreen extends StatelessWidget {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(40),
             child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 20.0, sigmaY: 20.0),
+              filter: ImageFilter.blur(sigmaX: 16.0, sigmaY: 16.0),
               child: Container(
                 height: 64,
                 padding: const EdgeInsets.symmetric(horizontal: 10),
                 decoration: BoxDecoration(
-                  color: const Color(0xE61A110D),
+                  color: Colors.white.withOpacity(0.92),
                   borderRadius: BorderRadius.circular(40),
                   border: Border.all(
-                    color: AppColors.borderBright,
-                    width: 1.2,
+                    color: Colors.black.withOpacity(0.06),
+                    width: 1.0,
                   ),
                 ),
                 child: Row(
@@ -186,12 +186,12 @@ class MainNavigationScreen extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
               color: isSelected
-                  ? accentColor.withOpacity(0.16)
+                  ? accentColor.withOpacity(0.12)
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(24),
               border: isSelected
                   ? Border.all(
-                      color: accentColor.withOpacity(0.35),
+                      color: accentColor.withOpacity(0.25),
                       width: 1,
                     )
                   : null,

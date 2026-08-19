@@ -41,7 +41,7 @@ class _GlassCardState extends State<GlassCard> with SingleTickerProviderStateMix
       duration: const Duration(milliseconds: 120),
     );
     _scaleAnimation = Tween<double>(begin: 1.0, end: 0.97).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
     );
   }
 
@@ -51,74 +51,67 @@ class _GlassCardState extends State<GlassCard> with SingleTickerProviderStateMix
     super.dispose();
   }
 
-  void _onTapDown(TapDownDetails details) {
-    if (widget.onTap != null) _controller.forward();
-  }
-
-  void _onTapUp(TapUpDetails details) {
-    if (widget.onTap != null) {
-      _controller.reverse();
-      widget.onTap!();
-    }
-  }
-
-  void _onTapCancel() {
-    if (widget.onTap != null) _controller.reverse();
-  }
-
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTapDown: _onTapDown,
-      onTapUp: _onTapUp,
-      onTapCancel: _onTapCancel,
+      onTap: widget.onTap,
+      onTapDown: widget.onTap != null ? (_) => _controller.forward() : null,
+      onTapUp: widget.onTap != null ? (_) => _controller.reverse() : null,
+      onTapCancel: widget.onTap != null ? () => _controller.reverse() : null,
       child: AnimatedBuilder(
         animation: _scaleAnimation,
         builder: (context, child) {
           return Transform.scale(
             scale: _scaleAnimation.value,
-            child: Container(
-              width: widget.width,
-              height: widget.height,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(widget.borderRadius),
-                boxShadow: [
-                  BoxShadow(
-                    color: widget.accentColor.withOpacity(widget.glowIntensity),
-                    blurRadius: 16 * widget.glowIntensity,
-                    spreadRadius: 2 * widget.glowIntensity,
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(widget.borderRadius),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                  child: Container(
-                    padding: widget.padding,
-                    decoration: BoxDecoration(
-                      color: widget.gradient == null ? const Color(0x0FFFDDBE) : null,
-                      gradient: widget.gradient,
-                      borderRadius: BorderRadius.circular(widget.borderRadius),
-                      border: Border.all(
-                        color: const Color(0x1AFFFFFF),
-                        width: 1,
-                      ),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x0D000000),
-                          blurRadius: 8,
-                          spreadRadius: -2,
-                        ),
-                      ],
-                    ),
-                    child: widget.child,
-                  ),
-                ),
-              ),
-            ),
+            child: child,
           );
         },
+        child: Container(
+          width: widget.width,
+          height: widget.height,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(widget.borderRadius),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.06),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+              if (widget.glowIntensity > 0)
+                BoxShadow(
+                  color: widget.accentColor.withOpacity(widget.glowIntensity * 0.2),
+                  blurRadius: 20,
+                  spreadRadius: 1,
+                ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(widget.borderRadius),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 16.0, sigmaY: 16.0),
+              child: Container(
+                padding: widget.padding,
+                decoration: BoxDecoration(
+                  gradient: widget.gradient ??
+                      LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Colors.white.withOpacity(0.85),
+                          Colors.white.withOpacity(0.65),
+                        ],
+                      ),
+                  borderRadius: BorderRadius.circular(widget.borderRadius),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.6),
+                    width: 1.0,
+                  ),
+                ),
+                child: widget.child,
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

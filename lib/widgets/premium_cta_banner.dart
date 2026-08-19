@@ -46,58 +46,67 @@ class _PremiumCtaBannerState extends State<PremiumCtaBanner> with SingleTickerPr
       child: AnimatedBuilder(
         animation: _controller,
         builder: (context, child) {
-          return ClipRRect(
-            borderRadius: BorderRadius.circular(20.0),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 16.0, sigmaY: 16.0),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(18.0),
-                decoration: BoxDecoration(
-                  gradient: AppColors.premiumGradient,
-                  borderRadius: BorderRadius.circular(20.0),
-                  border: Border.all(
-                    color: _borderColorAnim.value ?? const Color(0x33CBA167),
-                    width: 1.5,
+          return Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(18.0),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFFFFF8F0),
+                  Color(0xFFFFF2E5),
+                  Color(0xFFFFF8F0),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(20.0),
+              border: Border.all(
+                color: _borderColorAnim.value ?? const Color(0x33C4956A),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.goldAccent.withOpacity(0.1),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 44.0,
+                  height: 44.0,
+                  decoration: BoxDecoration(
+                    color: AppColors.goldAccent.withOpacity(0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.auto_awesome_rounded,
+                    color: AppColors.goldAccent,
                   ),
                 ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 44.0,
-                      height: 44.0,
-                      decoration: BoxDecoration(
-                        color: AppColors.goldSoft,
-                        shape: BoxShape.circle,
+                const SizedBox(width: 14.0),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Unlock All Affirmations',
+                        style: AppTextStyles.premiumCta,
                       ),
-                      child: Icon(
-                        Icons.auto_awesome_rounded,
-                        color: AppColors.goldAccent,
+                      const SizedBox(height: 4.0),
+                      Text(
+                        'Start your free trial →',
+                        style: AppTextStyles.cardSubtitle.copyWith(
+                          color: AppColors.goldAccent.withOpacity(0.7),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 14.0),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'Unlock All Affirmations',
-                            style: AppTextStyles.premiumCta,
-                          ),
-                          const SizedBox(height: 4.0),
-                          Text(
-                            'Start your free trial →',
-                            style: AppTextStyles.cardSubtitle.copyWith(
-                              color: AppColors.goldAccent.withOpacity(0.7),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
+              ],
             ),
           );
         },

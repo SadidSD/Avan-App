@@ -27,7 +27,7 @@ class AvanApp extends StatelessWidget {
           final appContent = MaterialApp(
             title: 'AVAN - Mindset & Affirmation App',
             debugShowCheckedModeBanner: false,
-            theme: AppTheme.darkTheme,
+            theme: AppTheme.lightTheme,
             home: appProvider.isOnboardingCompleted
                 ? MainNavigationScreen()
                 : const OnboardingCarousel(),
@@ -62,8 +62,8 @@ class MobileFrameWrapper extends StatelessWidget {
                   center: Alignment.center,
                   radius: 1.2,
                   colors: [
-                    Color(0xFF2C2420), // Rich dark warm center
-                    Color(0xFF120E0C), // Deep almost black edges
+                    Color(0xFFF5EDE4), // Warm beige center
+                    Color(0xFFEDE3D8), // Slightly deeper cream edges
                   ],
                 ),
               ),
@@ -82,10 +82,10 @@ class MobileFrameWrapper extends StatelessWidget {
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            Color(0xFF8A7E75), // Metallic light
-                            Color(0xFF2A231F), // Metallic dark
-                            Color(0xFF6B5C52), // Metallic mid
-                            Color(0xFF1E1815), // Metallic very dark
+                            Color(0xFFD4C4B0), // Metallic warm light
+                            Color(0xFFB8A896), // Metallic warm mid
+                            Color(0xFFCBBCA9), // Metallic warm
+                            Color(0xFFA89888), // Metallic warm dark
                           ],
                           stops: [0.0, 0.4, 0.7, 1.0],
                         ),

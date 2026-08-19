@@ -48,15 +48,15 @@ class _AnimatedCosmicBackgroundState extends State<AnimatedCosmicBackground>
   }
 
   void _setupColorTweens() {
-    Color topGrowth = const Color(0xFF1A2A1D);
-    Color midGrowth = const Color(0xFF1A110D);
-    Color bottomGrowth = const Color(0xFF0F0A07);
-    Color orbGrowth = AppColors.growthAccent.withOpacity(0.12);
+    Color topGrowth = const Color(0xFFF2FFF6);     // Light minty cream
+    Color midGrowth = const Color(0xFFFFF8F2);      // Warm cream
+    Color bottomGrowth = const Color(0xFFFBF0E6);   // Deeper cream
+    Color orbGrowth = AppColors.growthAccent.withOpacity(0.08);
 
-    Color topHealing = const Color(0xFF0D1F1F);
-    Color midHealing = const Color(0xFF1A110D);
-    Color bottomHealing = const Color(0xFF0F0A07);
-    Color orbHealing = AppColors.healingAccent.withOpacity(0.12);
+    Color topHealing = const Color(0xFFF0FFFE);     // Light teal cream
+    Color midHealing = const Color(0xFFFFF8F2);      // Warm cream
+    Color bottomHealing = const Color(0xFFFBF0E6);   // Deeper cream
+    Color orbHealing = AppColors.healingAccent.withOpacity(0.08);
 
     Color topStart = _prevMode == AppMode.growth ? topGrowth : topHealing;
     Color topEnd = widget.mode == AppMode.growth ? topGrowth : topHealing;
@@ -116,14 +116,14 @@ class _AnimatedCosmicBackgroundState extends State<AnimatedCosmicBackground>
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    _topColorAnim.value ?? const Color(0xFF1A110D),
-                    _midColorAnim.value ?? const Color(0xFF1A110D),
-                    _bottomColorAnim.value ?? const Color(0xFF0F0A07),
+                    _topColorAnim.value ?? const Color(0xFFFFF8F2),
+                    _midColorAnim.value ?? const Color(0xFFFFF8F2),
+                    _bottomColorAnim.value ?? const Color(0xFFFBF0E6),
                   ],
                 ),
               ),
             ),
-            // Ambient glow patches
+            // Ambient warm glow patches
             Positioned(
               left: -50,
               top: MediaQuery.of(context).size.height * 0.2 + math.sin(t) * 20,
@@ -132,10 +132,10 @@ class _AnimatedCosmicBackgroundState extends State<AnimatedCosmicBackground>
                 height: 300,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xFF2C1810).withOpacity(0.3),
+                  color: const Color(0xFFFCE8D5).withOpacity(0.4),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF2C1810).withOpacity(0.3),
+                      color: const Color(0xFFFCE8D5).withOpacity(0.25),
                       blurRadius: 100,
                       spreadRadius: 50,
                     ),
@@ -151,10 +151,10 @@ class _AnimatedCosmicBackgroundState extends State<AnimatedCosmicBackground>
                 height: 300,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xFF2C1810).withOpacity(0.3),
+                  color: const Color(0xFFFCE8D5).withOpacity(0.3),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF2C1810).withOpacity(0.3),
+                      color: const Color(0xFFFCE8D5).withOpacity(0.2),
                       blurRadius: 100,
                       spreadRadius: 50,
                     ),
