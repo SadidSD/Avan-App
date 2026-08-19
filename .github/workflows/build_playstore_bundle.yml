@@ -1,0 +1,51 @@
+name: Build Google Play Store Bundle (AAB)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  build-aab:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Setup Keystore & key.properties
+        run: |
+          echo "storePassword=avan_production_2026" > android/key.properties
+          echo "keyPassword=avan_production_2026" >> android/key.properties
+          echo "keyAlias=upload" >> android/key.properties
+          echo "storeFile=upload-keystore.jks" >> android/key.properties
+          echo "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" | base64 -d > android/app/upload-keystore.jks
+
+      - name: Build Android App Bundle (.aab)
+        run: flutter build appbundle --release
+
+      - name: Upload Play Store AAB Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: avan-playstore-release-aab
+          path: build/app/outputs/bundle/release/app-release.aab
+          retention-days: 30
