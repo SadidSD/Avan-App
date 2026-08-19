@@ -30,12 +30,13 @@ class AffirmationCard extends StatelessWidget {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () {
+        debugPrint("Tapped AffirmationCard: $quote");
         if (onTap != null) {
           onTap!();
         }
       },
       child: Container(
-        width: 170.0,
+        width: double.infinity,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20.0),
           color: Colors.white,
