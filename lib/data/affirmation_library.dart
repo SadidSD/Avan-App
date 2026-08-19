@@ -1,7 +1,7 @@
 import '../models/affirmation.dart';
 import '../models/user_archetype.dart';
 
-/// Comprehensive scientific library of 180+ multi-dimensional affirmations
+/// Comprehensive scientific library of 130+ multi-dimensional affirmations
 /// covering 11 user archetypes, granular sub-levels, and therapeutic modalities.
 ///
 /// 16-Dimensional Embedding Format:
@@ -27,7 +27,7 @@ final List<Affirmation> comprehensiveAffirmationLibrary = [
     subLevels: ['Founder / Solopreneur'],
     modality: TherapeuticModality.cbtReframe,
     tone: AffirmationTone.empowering,
-    embeddingVector: [0.95, 0.20, 0.00, 0.00, 0.85, 0.20, 0.90, 0.85, 0.00, 0.00, 0.00, 0.30, 0.00, 0.30, 0.90, 0.85],
+    embeddingVector: [0.95, 0.20, 0.00, 0.00, 0.85, 0.20, 0.90, 0.85, 0.00, 0.00, 0.00, 0.30, 0.00, 0.30, 0.90, 0.88],
     believabilityScore: 0.88,
     tags: ['founder', 'uncertainty', 'decision-making', 'business'],
   ),
@@ -39,7 +39,7 @@ final List<Affirmation> comprehensiveAffirmationLibrary = [
     subLevels: ['Founder / Solopreneur', 'Corporate Executive / Leader'],
     modality: TherapeuticModality.actValues,
     tone: AffirmationTone.gentleAndGrounding,
-    embeddingVector: [0.90, 0.60, 0.00, 0.00, 0.70, 0.10, 0.80, 0.75, 0.00, 0.00, 0.00, 0.20, 0.00, 0.70, 0.60, 0.92],
+    embeddingVector: [0.90, 0.60, 0.00, 0.00, 0.70, 0.10, 0.80, 0.75, 0.00, 0.00, 0.00, 0.20, 0.00, 0.70, 0.60, 0.95],
     believabilityScore: 0.95,
     tags: ['founder', 'imposter-syndrome', 'patience', 'clarity'],
   ),
@@ -54,6 +54,18 @@ final List<Affirmation> comprehensiveAffirmationLibrary = [
     embeddingVector: [0.92, 0.15, 0.00, 0.00, 0.90, 0.10, 0.75, 0.70, 0.00, 0.00, 0.00, 0.10, 0.00, 0.40, 0.80, 0.90],
     believabilityScore: 0.90,
     tags: ['founder', 'consistency', 'grit', 'startup'],
+  ),
+  Affirmation(
+    id: 'aff_career_fnd_4',
+    quote: 'Cash flow fluctuations and market feedback do not define my vision. I adapt quickly and stay mission-focused.',
+    category: 'Career & Ambition',
+    primaryArchetypes: [UserArchetype.careerProfessional],
+    subLevels: ['Founder / Solopreneur'],
+    modality: TherapeuticModality.cbtReframe,
+    tone: AffirmationTone.directAndActionable,
+    embeddingVector: [0.96, 0.30, 0.00, 0.00, 0.80, 0.30, 0.85, 0.85, 0.00, 0.00, 0.00, 0.00, 0.00, 0.30, 0.92, 0.87],
+    believabilityScore: 0.87,
+    tags: ['founder', 'cashflow', 'pivot', 'market', 'vision'],
   ),
 
   // --- Corporate Leader / Executive ---
@@ -77,9 +89,21 @@ final List<Affirmation> comprehensiveAffirmationLibrary = [
     subLevels: ['Corporate Executive / Leader'],
     modality: TherapeuticModality.selfCompassion,
     tone: AffirmationTone.gentleAndGrounding,
-    embeddingVector: [0.85, 0.40, 0.00, 0.00, 0.60, 0.00, 0.90, 0.70, 0.30, 0.00, 0.00, 0.00, 0.00, 0.80, 0.50, 0.90],
+    embeddingVector: [0.85, 0.40, 0.00, 0.00, 0.60, 0.00, 0.90, 0.70, 0.30, 0.00, 0.00, 0.00, 0.00, 0.80, 0.50, 0.92],
     believabilityScore: 0.92,
     tags: ['leadership', 'boundaries', 'burnout-prevention'],
+  ),
+  Affirmation(
+    id: 'aff_career_exec_3',
+    quote: 'Under intense scrutiny, I pause, breathe, and speak from a place of prepared authority and grace.',
+    category: 'Career & Ambition',
+    primaryArchetypes: [UserArchetype.careerProfessional, UserArchetype.anxiousOverthinker],
+    subLevels: ['Corporate Executive / Leader'],
+    modality: TherapeuticModality.actValues,
+    tone: AffirmationTone.empowering,
+    embeddingVector: [0.92, 0.40, 0.00, 0.00, 0.70, 0.00, 0.98, 0.92, 0.00, 0.00, 0.00, 0.00, 0.00, 0.70, 0.80, 0.88],
+    believabilityScore: 0.88,
+    tags: ['boardroom', 'high-stakes', 'executive-presence', 'poise'],
   ),
 
   // --- Individual Contributor / Climber ---
@@ -91,7 +115,7 @@ final List<Affirmation> comprehensiveAffirmationLibrary = [
     subLevels: ['Individual Contributor / Climber'],
     modality: TherapeuticModality.cbtReframe,
     tone: AffirmationTone.empowering,
-    embeddingVector: [0.88, 0.30, 0.00, 0.00, 0.70, 0.00, 0.60, 0.95, 0.00, 0.00, 0.00, 0.40, 0.30, 0.30, 0.85, 0.82],
+    embeddingVector: [0.88, 0.30, 0.00, 0.00, 0.70, 0.00, 0.60, 0.95, 0.00, 0.00, 0.00, 0.40, 0.30, 0.30, 0.85, 0.85],
     believabilityScore: 0.85,
     tags: ['imposter-syndrome', 'confidence', 'workplace', 'promotion'],
   ),
@@ -107,6 +131,18 @@ final List<Affirmation> comprehensiveAffirmationLibrary = [
     believabilityScore: 0.95,
     tags: ['learning', 'career-growth', 'psychological-safety'],
   ),
+  Affirmation(
+    id: 'aff_career_ic_3',
+    quote: 'My dedication and technical precision are creating irreversible career momentum.',
+    category: 'Success',
+    primaryArchetypes: [UserArchetype.careerProfessional, UserArchetype.selfImprovement],
+    subLevels: ['Individual Contributor / Climber'],
+    modality: TherapeuticModality.growthMindset,
+    tone: AffirmationTone.directAndActionable,
+    embeddingVector: [0.92, 0.10, 0.00, 0.00, 0.85, 0.00, 0.50, 0.90, 0.00, 0.00, 0.00, 0.40, 0.00, 0.20, 0.95, 0.89],
+    believabilityScore: 0.89,
+    tags: ['career-advancement', 'precision', 'reputation', 'excellence'],
+  ),
 
   // --- Sales & Client Relations ---
   Affirmation(
@@ -117,7 +153,7 @@ final List<Affirmation> comprehensiveAffirmationLibrary = [
     subLevels: ['Sales & Client Relations'],
     modality: TherapeuticModality.cbtReframe,
     tone: AffirmationTone.directAndActionable,
-    embeddingVector: [0.95, 0.30, 0.10, 0.00, 0.80, 0.10, 0.70, 0.90, 0.00, 0.00, 0.00, 0.00, 0.00, 0.40, 0.90, 0.88],
+    embeddingVector: [0.95, 0.30, 0.10, 0.00, 0.80, 0.10, 0.70, 0.90, 0.00, 0.00, 0.00, 0.00, 0.00, 0.40, 0.90, 0.89],
     believabilityScore: 0.89,
     tags: ['sales', 'rejection-resilience', 'grit', 'closing'],
   ),
@@ -129,9 +165,21 @@ final List<Affirmation> comprehensiveAffirmationLibrary = [
     subLevels: ['Sales & Client Relations'],
     modality: TherapeuticModality.growthMindset,
     tone: AffirmationTone.empowering,
-    embeddingVector: [0.90, 0.10, 0.00, 0.00, 0.70, 0.20, 0.75, 0.88, 0.00, 0.00, 0.00, 0.10, 0.00, 0.30, 0.85, 0.86],
+    embeddingVector: [0.90, 0.10, 0.00, 0.00, 0.70, 0.20, 0.75, 0.88, 0.00, 0.00, 0.00, 0.10, 0.00, 0.30, 0.85, 0.87],
     believabilityScore: 0.87,
     tags: ['sales', 'communication', 'trust', 'influence'],
+  ),
+  Affirmation(
+    id: 'aff_career_sales_3',
+    quote: 'I detach from the desperation of closing and focus entirely on diagnosing and serving the client.',
+    category: 'Confidence',
+    primaryArchetypes: [UserArchetype.careerProfessional, UserArchetype.selfImprovement],
+    subLevels: ['Sales & Client Relations'],
+    modality: TherapeuticModality.actValues,
+    tone: AffirmationTone.philosophical,
+    embeddingVector: [0.92, 0.25, 0.00, 0.00, 0.80, 0.10, 0.70, 0.85, 0.00, 0.00, 0.00, 0.00, 0.00, 0.50, 0.80, 0.91],
+    believabilityScore: 0.91,
+    tags: ['sales-mindset', 'consultative-selling', 'integrity'],
   ),
 
   // ===========================================================================
@@ -162,6 +210,18 @@ final List<Affirmation> comprehensiveAffirmationLibrary = [
     believabilityScore: 0.99,
     tags: ['somatic', 'physical-tension', 'nervous-system', 'calm'],
   ),
+  Affirmation(
+    id: 'aff_anx_somatic_3',
+    quote: 'I place my feet flat against the earth. I am held, I am anchored, and my nervous system is unwinding.',
+    category: 'Calm Mind',
+    primaryArchetypes: [UserArchetype.anxiousOverthinker, UserArchetype.grievingIndividual],
+    subLevels: ['Chronic Panic & Physical Tension'],
+    modality: TherapeuticModality.traumaInformed,
+    tone: AffirmationTone.gentleAndGrounding,
+    embeddingVector: [0.00, 0.96, 0.10, 0.30, 0.20, 0.30, 0.00, 0.60, 0.10, 0.00, 0.40, 0.00, 0.00, 0.99, 0.00, 0.98],
+    believabilityScore: 0.98,
+    tags: ['earthing', 'grounding', 'vagus-nerve', 'peace'],
+  ),
 
   // --- Social & Performance Anxiety ---
   Affirmation(
@@ -184,7 +244,7 @@ final List<Affirmation> comprehensiveAffirmationLibrary = [
     subLevels: ['Social & Performance Anxiety'],
     modality: TherapeuticModality.cbtReframe,
     tone: AffirmationTone.philosophical,
-    embeddingVector: [0.20, 0.92, 0.10, 0.00, 0.40, 0.10, 0.10, 0.75, 0.00, 0.00, 0.00, 0.40, 0.10, 0.88, 0.20, 0.92],
+    embeddingVector: [0.20, 0.92, 0.10, 0.00, 0.40, 0.10, 0.10, 0.75, 0.00, 0.00, 0.00, 0.40, 0.10, 0.88, 0.20, 0.93],
     believabilityScore: 0.93,
     tags: ['social-anxiety', 'spotlight-effect', 'freedom'],
   ),
@@ -239,7 +299,7 @@ final List<Affirmation> comprehensiveAffirmationLibrary = [
     subLevels: ['Fresh Breakup / Shock Phase (Day 0-30)', 'Grief & Yearning / No-Contact Phase'],
     modality: TherapeuticModality.actValues,
     tone: AffirmationTone.directAndActionable,
-    embeddingVector: [0.00, 0.50, 0.96, 0.30, 0.50, 0.10, 0.00, 0.80, 0.00, 0.00, 0.00, 0.00, 0.00, 0.75, 0.40, 0.95],
+    embeddingVector: [0.00, 0.50, 0.96, 0.30, 0.50, 0.10, 0.00, 0.80, 0.00, 0.00, 0.00, 0.00, 0.00, 0.75, 0.40, 0.94],
     believabilityScore: 0.94,
     tags: ['no-contact', 'boundaries', 'closure', 'breakup'],
   ),
@@ -257,6 +317,18 @@ final List<Affirmation> comprehensiveAffirmationLibrary = [
     believabilityScore: 0.92,
     tags: ['letting-go', 'memories', 'moving-forward'],
   ),
+  Affirmation(
+    id: 'aff_hb_yearn_2',
+    quote: 'Missing them is just a habit of my mind. It does not mean they belong in my future.',
+    category: 'Self Love',
+    primaryArchetypes: [UserArchetype.heartbreakSurvivor],
+    subLevels: ['Grief & Yearning / No-Contact Phase'],
+    modality: TherapeuticModality.cbtReframe,
+    tone: AffirmationTone.directAndActionable,
+    embeddingVector: [0.00, 0.40, 0.95, 0.20, 0.50, 0.10, 0.00, 0.85, 0.00, 0.00, 0.00, 0.00, 0.00, 0.80, 0.50, 0.94],
+    believabilityScore: 0.94,
+    tags: ['breakup-clarity', 'letting-go', 'future-focus'],
+  ),
 
   // --- Self-Worth & Rediscovery ---
   Affirmation(
@@ -267,9 +339,23 @@ final List<Affirmation> comprehensiveAffirmationLibrary = [
     subLevels: ['Self-Worth & Rediscovery Phase'],
     modality: TherapeuticModality.cbtReframe,
     tone: AffirmationTone.empowering,
-    embeddingVector: [0.10, 0.20, 0.90, 0.10, 0.60, 0.40, 0.10, 0.98, 0.00, 0.00, 0.00, 0.00, 0.10, 0.70, 0.70, 0.88],
+    embeddingVector: [0.10, 0.20, 0.90, 0.10, 0.60, 0.40, 0.10, 0.98, 0.00, 0.00, 0.00, 0.00, 0.10, 0.70, 0.70, 0.90],
     believabilityScore: 0.90,
     tags: ['self-worth', 'rediscovery', 'empowerment', 'healing'],
+  ),
+
+  // --- Divorce & Separation ---
+  Affirmation(
+    id: 'aff_hb_divorce_1',
+    quote: 'This ending is the hard soil from which my authentic next chapter will bloom.',
+    category: 'Confidence',
+    primaryArchetypes: [UserArchetype.heartbreakSurvivor, UserArchetype.parentCaregiver],
+    subLevels: ['Divorce & Long-term Separation'],
+    modality: TherapeuticModality.actValues,
+    tone: AffirmationTone.philosophical,
+    embeddingVector: [0.20, 0.30, 0.95, 0.40, 0.50, 0.30, 0.20, 0.90, 0.40, 0.00, 0.00, 0.00, 0.00, 0.75, 0.60, 0.92],
+    believabilityScore: 0.92,
+    tags: ['divorce', 'rebirth', 'starting-over', 'independence'],
   ),
 
   // ===========================================================================
@@ -307,9 +393,21 @@ final List<Affirmation> comprehensiveAffirmationLibrary = [
     subLevels: ['Loss of Partner / Spouse', 'Loss of Parent or Sibling'],
     modality: TherapeuticModality.actValues,
     tone: AffirmationTone.philosophical,
-    embeddingVector: [0.00, 0.30, 0.20, 0.95, 0.30, 0.40, 0.00, 0.70, 0.10, 0.00, 0.00, 0.00, 0.00, 0.88, 0.30, 0.93],
+    embeddingVector: [0.00, 0.30, 0.20, 0.95, 0.30, 0.40, 0.00, 0.70, 0.10, 0.00, 0.00, 0.00, 0.00, 0.88, 0.30, 0.94],
     believabilityScore: 0.94,
     tags: ['grief', 'joy', 'permission-to-live', 'honor'],
+  ),
+  Affirmation(
+    id: 'aff_grv_young_1',
+    quote: 'It feels unfair to carry this weight so early. I honor my pain and trust that I am not alone.',
+    category: 'Calm Mind',
+    primaryArchetypes: [UserArchetype.grievingIndividual, UserArchetype.student],
+    subLevels: ['Young Adult Grief (18-24)'],
+    modality: TherapeuticModality.selfCompassion,
+    tone: AffirmationTone.gentleAndGrounding,
+    embeddingVector: [0.00, 0.50, 0.20, 0.98, 0.20, 0.30, 0.00, 0.60, 0.00, 0.00, 0.00, 0.30, 0.10, 0.95, 0.10, 0.98],
+    believabilityScore: 0.98,
+    tags: ['young-adult-grief', 'peer-isolation', 'compassion'],
   ),
 
   // ===========================================================================
@@ -323,7 +421,7 @@ final List<Affirmation> comprehensiveAffirmationLibrary = [
     subLevels: ['Daily Habit & Consistency Builder'],
     modality: TherapeuticModality.growthMindset,
     tone: AffirmationTone.philosophical,
-    embeddingVector: [0.70, 0.00, 0.00, 0.00, 0.99, 0.10, 0.60, 0.85, 0.00, 0.40, 0.00, 0.30, 0.00, 0.20, 0.95, 0.85],
+    embeddingVector: [0.70, 0.00, 0.00, 0.00, 0.99, 0.10, 0.60, 0.85, 0.00, 0.40, 0.00, 0.30, 0.00, 0.20, 0.95, 0.88],
     believabilityScore: 0.88,
     tags: ['discipline', 'habits', 'stoic', 'mastery'],
   ),
@@ -351,6 +449,18 @@ final List<Affirmation> comprehensiveAffirmationLibrary = [
     believabilityScore: 0.92,
     tags: ['stoicism', 'control', 'inner-fortress', 'resilience'],
   ),
+  Affirmation(
+    id: 'aff_si_dopamine_1',
+    quote: 'I crave the deep reward of hard work over cheap, fleeting stimulation.',
+    category: 'Discipline',
+    primaryArchetypes: [UserArchetype.selfImprovement],
+    subLevels: ['Deep Work & Focus Optimizer', 'Daily Habit & Consistency Builder'],
+    modality: TherapeuticModality.cbtReframe,
+    tone: AffirmationTone.directAndActionable,
+    embeddingVector: [0.60, 0.10, 0.00, 0.00, 0.97, 0.00, 0.40, 0.85, 0.00, 0.30, 0.00, 0.40, 0.00, 0.30, 0.95, 0.88],
+    believabilityScore: 0.88,
+    tags: ['dopamine-detox', 'focus', 'self-control', 'monk-mode'],
+  ),
 
   // ===========================================================================
   // 6. THE SPIRITUAL SEEKER
@@ -363,7 +473,7 @@ final List<Affirmation> comprehensiveAffirmationLibrary = [
     subLevels: ['Law of Attraction & Abundance'],
     modality: TherapeuticModality.spiritualAlignment,
     tone: AffirmationTone.empowering,
-    embeddingVector: [0.40, 0.10, 0.00, 0.00, 0.30, 0.99, 0.20, 0.85, 0.00, 0.00, 0.00, 0.00, 0.10, 0.60, 0.70, 0.80],
+    embeddingVector: [0.40, 0.10, 0.00, 0.00, 0.30, 0.99, 0.20, 0.85, 0.00, 0.00, 0.00, 0.00, 0.10, 0.60, 0.70, 0.82],
     believabilityScore: 0.82,
     tags: ['manifestation', 'abundance', 'universe', 'attraction'],
   ),
@@ -378,6 +488,18 @@ final List<Affirmation> comprehensiveAffirmationLibrary = [
     embeddingVector: [0.10, 0.40, 0.10, 0.10, 0.40, 0.98, 0.10, 0.80, 0.00, 0.00, 0.00, 0.00, 0.10, 0.90, 0.30, 0.90],
     believabilityScore: 0.90,
     tags: ['intuition', 'stillness', 'guidance', 'inner-peace'],
+  ),
+  Affirmation(
+    id: 'aff_spi_grat_1',
+    quote: 'Gratitude expands what is already blessed in my life. I am a magnet for grace.',
+    category: 'Wealth & Abundance',
+    primaryArchetypes: [UserArchetype.spiritualSeeker],
+    subLevels: ['Gratitude & Higher Alignment'],
+    modality: TherapeuticModality.spiritualAlignment,
+    tone: AffirmationTone.empowering,
+    embeddingVector: [0.20, 0.10, 0.00, 0.00, 0.30, 0.98, 0.10, 0.90, 0.00, 0.00, 0.00, 0.00, 0.00, 0.80, 0.60, 0.88],
+    believabilityScore: 0.88,
+    tags: ['gratitude', 'blessings', 'abundance', 'frequency'],
   ),
 
   // ===========================================================================
@@ -419,6 +541,18 @@ final List<Affirmation> comprehensiveAffirmationLibrary = [
     believabilityScore: 0.99,
     tags: ['caregiver', 'elder-care', 'compassion', 'resilience'],
   ),
+  Affirmation(
+    id: 'aff_par_teen_1',
+    quote: 'I listen before I react. I hold loving boundaries without taking emotional storms personally.',
+    category: 'Relationships',
+    primaryArchetypes: [UserArchetype.parentCaregiver],
+    subLevels: ['School-Age & Teen Parent'],
+    modality: TherapeuticModality.cbtReframe,
+    tone: AffirmationTone.gentleAndGrounding,
+    embeddingVector: [0.10, 0.40, 0.10, 0.00, 0.40, 0.10, 0.30, 0.80, 0.97, 0.00, 0.00, 0.00, 0.00, 0.85, 0.40, 0.95],
+    believabilityScore: 0.95,
+    tags: ['teen-parenting', 'boundaries', 'co-regulation', 'empathy'],
+  ),
 
   // ===========================================================================
   // 8. THE ATHLETE & COMPETITOR
@@ -431,7 +565,7 @@ final List<Affirmation> comprehensiveAffirmationLibrary = [
     subLevels: ['Competitive Game Prep & Clutch Mindset'],
     modality: TherapeuticModality.sportsPsychology,
     tone: AffirmationTone.empowering,
-    embeddingVector: [0.50, 0.20, 0.00, 0.00, 0.80, 0.00, 0.60, 0.95, 0.00, 0.99, 0.00, 0.10, 0.00, 0.20, 0.98, 0.85],
+    embeddingVector: [0.50, 0.20, 0.00, 0.00, 0.80, 0.00, 0.60, 0.95, 0.00, 0.99, 0.00, 0.10, 0.00, 0.20, 0.98, 0.87],
     believabilityScore: 0.87,
     tags: ['athlete', 'competition', 'clutch', 'focus', 'training'],
   ),
@@ -443,7 +577,7 @@ final List<Affirmation> comprehensiveAffirmationLibrary = [
     subLevels: ['Endurance, Running & Fitness'],
     modality: TherapeuticModality.sportsPsychology,
     tone: AffirmationTone.directAndActionable,
-    embeddingVector: [0.20, 0.10, 0.00, 0.00, 0.90, 0.00, 0.30, 0.90, 0.00, 0.98, 0.00, 0.00, 0.00, 0.10, 0.99, 0.86],
+    embeddingVector: [0.20, 0.10, 0.00, 0.00, 0.90, 0.00, 0.30, 0.90, 0.00, 0.98, 0.00, 0.00, 0.00, 0.10, 0.99, 0.88],
     believabilityScore: 0.88,
     tags: ['running', 'endurance', 'fitness', 'grit', 'stamina'],
   ),
@@ -458,6 +592,18 @@ final List<Affirmation> comprehensiveAffirmationLibrary = [
     embeddingVector: [0.10, 0.50, 0.00, 0.20, 0.60, 0.10, 0.10, 0.80, 0.00, 0.95, 0.00, 0.00, 0.00, 0.85, 0.40, 0.95],
     believabilityScore: 0.95,
     tags: ['injury', 'recovery', 'rehab', 'comeback', 'patience'],
+  ),
+  Affirmation(
+    id: 'aff_ath_breath_1',
+    quote: 'My breath fuels my muscles. I lock into my pace and master the rhythm of the work.',
+    category: 'Deep Focus',
+    primaryArchetypes: [UserArchetype.athlete],
+    subLevels: ['Endurance, Running & Fitness', 'Competitive Game Prep & Clutch Mindset'],
+    modality: TherapeuticModality.sportsPsychology,
+    tone: AffirmationTone.directAndActionable,
+    embeddingVector: [0.20, 0.20, 0.00, 0.00, 0.85, 0.00, 0.20, 0.88, 0.00, 0.98, 0.00, 0.00, 0.00, 0.40, 0.95, 0.92],
+    believabilityScore: 0.92,
+    tags: ['breathing', 'stamina', 'pace', 'runner-high'],
   ),
 
   // ===========================================================================
@@ -499,6 +645,18 @@ final List<Affirmation> comprehensiveAffirmationLibrary = [
     believabilityScore: 1.00,
     tags: ['accessible', 'belonging', 'friendship', 'kindness'],
   ),
+  Affirmation(
+    id: 'aff_idd_calm_1',
+    quote: 'When things feel too loud, I can take quiet time. It is okay to go slow.',
+    category: 'Calm Mind',
+    primaryArchetypes: [UserArchetype.personWithIDD],
+    subLevels: ['Sensory Calming & Grounding'],
+    modality: TherapeuticModality.accessibleDirect,
+    tone: AffirmationTone.simpleAndClear,
+    embeddingVector: [0.00, 0.85, 0.00, 0.00, 0.20, 0.00, 0.00, 0.60, 0.00, 0.00, 0.99, 0.00, 0.00, 0.99, 0.00, 1.00],
+    believabilityScore: 1.00,
+    tags: ['accessible', 'sensory-overload', 'quiet', 'gentle'],
+  ),
 
   // ===========================================================================
   // 10. THE STUDENT & ACADEMIC
@@ -511,7 +669,7 @@ final List<Affirmation> comprehensiveAffirmationLibrary = [
     subLevels: ['High School & College Exam Prep', 'Grad / Medical / Professional Exams'],
     modality: TherapeuticModality.cbtReframe,
     tone: AffirmationTone.empowering,
-    embeddingVector: [0.50, 0.40, 0.00, 0.00, 0.80, 0.00, 0.30, 0.85, 0.00, 0.00, 0.00, 0.99, 0.00, 0.40, 0.85, 0.89],
+    embeddingVector: [0.50, 0.40, 0.00, 0.00, 0.80, 0.00, 0.30, 0.85, 0.00, 0.00, 0.00, 0.99, 0.00, 0.40, 0.85, 0.90],
     believabilityScore: 0.90,
     tags: ['exam-prep', 'memory', 'studying', 'tests', 'focus'],
   ),
@@ -535,9 +693,21 @@ final List<Affirmation> comprehensiveAffirmationLibrary = [
     subLevels: ['Grad / Medical / Professional Exams'],
     modality: TherapeuticModality.growthMindset,
     tone: AffirmationTone.empowering,
-    embeddingVector: [0.65, 0.30, 0.00, 0.00, 0.75, 0.00, 0.40, 0.95, 0.00, 0.00, 0.00, 0.96, 0.00, 0.30, 0.88, 0.86],
+    embeddingVector: [0.65, 0.30, 0.00, 0.00, 0.75, 0.00, 0.40, 0.95, 0.00, 0.00, 0.00, 0.96, 0.00, 0.30, 0.88, 0.88],
     believabilityScore: 0.88,
     tags: ['grad-school', 'med-school', 'bar-exam', 'academic-confidence'],
+  ),
+  Affirmation(
+    id: 'aff_stu_panic_1',
+    quote: 'One exam does not define my intelligence or my future. I take this test one question at a time.',
+    category: 'Calm Mind',
+    primaryArchetypes: [UserArchetype.student, UserArchetype.anxiousOverthinker],
+    subLevels: ['High School & College Exam Prep'],
+    modality: TherapeuticModality.cbtReframe,
+    tone: AffirmationTone.gentleAndGrounding,
+    embeddingVector: [0.30, 0.70, 0.00, 0.00, 0.50, 0.00, 0.10, 0.80, 0.00, 0.00, 0.00, 0.97, 0.00, 0.85, 0.40, 0.98],
+    believabilityScore: 0.98,
+    tags: ['test-anxiety', 'exam-calm', 'perspective'],
   ),
 
   // ===========================================================================
@@ -563,7 +733,7 @@ final List<Affirmation> comprehensiveAffirmationLibrary = [
     subLevels: ['Resilience in Challenging Spaces'],
     modality: TherapeuticModality.actValues,
     tone: AffirmationTone.empowering,
-    embeddingVector: [0.30, 0.20, 0.10, 0.00, 0.50, 0.10, 0.30, 0.98, 0.00, 0.00, 0.00, 0.00, 0.98, 0.40, 0.85, 0.90],
+    embeddingVector: [0.30, 0.20, 0.10, 0.00, 0.50, 0.10, 0.30, 0.98, 0.00, 0.00, 0.00, 0.00, 0.98, 0.40, 0.85, 0.91],
     believabilityScore: 0.91,
     tags: ['resilience', 'courage', 'boundaries', 'taking-up-space'],
   ),
@@ -575,8 +745,20 @@ final List<Affirmation> comprehensiveAffirmationLibrary = [
     subLevels: ['Trans & Non-Binary Identity Celebration', 'Authenticity & Coming Out Journey'],
     modality: TherapeuticModality.selfCompassion,
     tone: AffirmationTone.gentleAndGrounding,
-    embeddingVector: [0.00, 0.30, 0.10, 0.10, 0.40, 0.30, 0.00, 0.95, 0.00, 0.00, 0.00, 0.00, 0.99, 0.80, 0.50, 0.95],
+    embeddingVector: [0.00, 0.30, 0.10, 0.10, 0.40, 0.30, 0.00, 0.95, 0.00, 0.00, 0.00, 0.00, 0.99, 0.80, 0.50, 0.96],
     believabilityScore: 0.96,
     tags: ['transgender', 'nonbinary', 'gender-affirmation', 'body-peace'],
+  ),
+  Affirmation(
+    id: 'aff_lgbt_family_1',
+    quote: 'I choose and cultivate relationships that celebrate, protect, and cherish my authentic self.',
+    category: 'Relationships',
+    primaryArchetypes: [UserArchetype.lgbtqia],
+    subLevels: ['Resilience in Challenging Spaces', 'Authenticity & Coming Out Journey'],
+    modality: TherapeuticModality.actValues,
+    tone: AffirmationTone.gentleAndGrounding,
+    embeddingVector: [0.00, 0.30, 0.20, 0.10, 0.30, 0.20, 0.10, 0.90, 0.10, 0.00, 0.00, 0.00, 0.97, 0.80, 0.40, 0.95],
+    believabilityScore: 0.95,
+    tags: ['chosen-family', 'community', 'unconditional-love', 'safety'],
   ),
 ];
