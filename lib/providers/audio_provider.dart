@@ -59,7 +59,6 @@ class AudioProvider with ChangeNotifier {
   }
 
   int _parseDurationToSeconds(String durationStr) {
-    // e.g. "10 min", "15 min", "8 min", "20 min", "1 min", "45 sec"
     final clean = durationStr.toLowerCase().trim();
     if (clean.contains('min')) {
       final numStr = RegExp(r'\d+').firstMatch(clean)?.group(0);
@@ -72,14 +71,45 @@ class AudioProvider with ChangeNotifier {
         return int.parse(numStr);
       }
     }
-    return 600; // default 10 min
+    return 600;
   }
 
-  void openPlaylist(Playlist playlist, [BuildContext? context]) {
+  /// Opens a specific affirmation and optionally anchors it within its playlist
+  void openAffirmation({
+    required Affirmation affirmation,
+    Playlist? parentPlaylist,
+    BuildContext? context,
+  }) {
+    if (parentPlaylist != null) {
+      final index = parentPlaylist.affirmations.indexWhere((a) => a.id == affirmation.id);
+      if (index != -1) {
+        openPlaylist(parentPlaylist, context, index);
+        return;
+      }
+    }
+
+    // If standalone affirmation, wrap in a dedicated meditation playlist
+    final dynamicPlaylist = Playlist(
+      id: 'aff_play_${affirmation.id}',
+      title: affirmation.category.isNotEmpty ? affirmation.category : 'Personalized Session',
+      duration: '10 min',
+      category: affirmation.category,
+      imagePath: parentPlaylist?.imagePath ?? 'assets/images/featured_meditation.jpg',
+      isPremium: false,
+      affirmations: [affirmation],
+    );
+
+    openPlaylist(dynamicPlaylist, context, 0);
+  }
+
+  /// Opens a playlist at a specific affirmation index and opens the Player Screen
+  void openPlaylist(Playlist playlist, [BuildContext? context, int initialIndex = 0]) {
     _currentPlaylist = playlist;
-    _currentAffirmationIndex = 0;
     _sessionDurationSeconds = _parseDurationToSeconds(playlist.duration);
-    _sessionPositionSeconds = 0;
+    _currentAffirmationIndex = (initialIndex >= 0 && initialIndex < playlist.affirmations.length)
+        ? initialIndex
+        : 0;
+    _sessionPositionSeconds = (_currentAffirmationIndex * _slotDurationSeconds).round();
     _isPlayerOpen = true;
 
     _playCurrentAffirmation();
@@ -87,8 +117,7 @@ class AudioProvider with ChangeNotifier {
     notifyListeners();
 
     if (context != null) {
-      Navigator.push(
-        context,
+      Navigator.of(context, rootNavigator: true).push(
         MaterialPageRoute(builder: (context) => const PlayerScreen()),
       );
     }
@@ -138,7 +167,6 @@ class AudioProvider with ChangeNotifier {
       if (_sessionPositionSeconds < _sessionDurationSeconds) {
         _sessionPositionSeconds++;
 
-        // Calculate expected affirmation index based on session progress
         final totalAffs = _currentPlaylist?.affirmations.length ?? 1;
         final slot = _slotDurationSeconds;
         final targetIndex = (_sessionPositionSeconds / slot).floor().clamp(0, totalAffs - 1);
@@ -150,7 +178,6 @@ class AudioProvider with ChangeNotifier {
 
         notifyListeners();
       } else {
-        // Reached end of full playlist session
         if (_isLoopEnabled) {
           _sessionPositionSeconds = 0;
           _currentAffirmationIndex = 0;

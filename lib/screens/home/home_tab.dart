@@ -227,8 +227,11 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                                       isFavorite: true,
                                       accentColor: accent,
                                       onTap: () {
-                                        audioProvider.openPlaylist(
-                                            playlist, context);
+                                        audioProvider.openAffirmation(
+                                          affirmation: aff,
+                                          parentPlaylist: playlist,
+                                          context: context,
+                                        );
                                       },
                                       onFavoriteToggle: () {
                                         appProvider.toggleFavorite(aff.id);
@@ -306,8 +309,11 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                                           .contains(aff.id),
                                       accentColor: accent,
                                       onTap: () {
-                                        audioProvider.openPlaylist(
-                                            playlist, context);
+                                        audioProvider.openAffirmation(
+                                          affirmation: aff,
+                                          parentPlaylist: playlist,
+                                          context: context,
+                                        );
                                       },
                                       onFavoriteToggle: () {
                                         appProvider.toggleFavorite(aff.id);
@@ -452,7 +458,7 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                                           PaywallModal.show(context);
                                         } else {
                                           audioProvider.openPlaylist(
-                                              playlist, context);
+                                              playlist, context, index);
                                         }
                                       },
                                       onFavoriteToggle: () {
