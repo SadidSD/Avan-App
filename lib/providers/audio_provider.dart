@@ -5,6 +5,7 @@ import '../models/affirmation.dart';
 import '../models/playlist.dart';
 import '../services/audio_engine_service.dart';
 import '../data/playlists_data.dart';
+import '../data/affirmation_library.dart';
 import '../screens/player/player_screen.dart';
 
 class AudioProvider with ChangeNotifier {
@@ -16,7 +17,7 @@ class AudioProvider with ChangeNotifier {
   int _currentAffirmationIndex = 0;
   bool _isPlayerOpen = false;
 
-  int _sessionDurationSeconds = 600; // Full playlist length in seconds (default 10 min)
+  int _sessionDurationSeconds = 480; // Full playlist length in seconds (default 8 min)
   int _sessionPositionSeconds = 0;   // Current elapsed seconds in the playlist
   bool _isLoopEnabled = false;
 
@@ -71,10 +72,10 @@ class AudioProvider with ChangeNotifier {
         return int.parse(numStr);
       }
     }
-    return 600;
+    return 480; // default 8 min
   }
 
-  /// Opens a specific affirmation and optionally anchors it within its playlist
+  /// Opens a specific affirmation and builds a complete multi-quote affirmation session
   void openAffirmation({
     required Affirmation affirmation,
     Playlist? parentPlaylist,
@@ -88,15 +89,40 @@ class AudioProvider with ChangeNotifier {
       }
     }
 
-    // If standalone affirmation, wrap in a dedicated meditation playlist
+    // Assemble a full personalized 8-quote session around this theme
+    final List<Affirmation> relatedQuotes = [affirmation];
+    final category = affirmation.category.toLowerCase();
+
+    for (final aff in comprehensiveAffirmationLibrary) {
+      if (relatedQuotes.length >= 8) break;
+      if (aff.id != affirmation.id) {
+        if (aff.category.toLowerCase() == category ||
+            (aff.primaryArchetypes.isNotEmpty &&
+             affirmation.primaryArchetypes.isNotEmpty &&
+             aff.primaryArchetypes.first == affirmation.primaryArchetypes.first)) {
+          relatedQuotes.add(aff);
+        }
+      }
+    }
+
+    // Fallback filler if needed
+    if (relatedQuotes.length < 6) {
+      for (final aff in comprehensiveAffirmationLibrary) {
+        if (relatedQuotes.length >= 8) break;
+        if (!relatedQuotes.any((item) => item.id == aff.id)) {
+          relatedQuotes.add(aff);
+        }
+      }
+    }
+
     final dynamicPlaylist = Playlist(
-      id: 'aff_play_${affirmation.id}',
-      title: affirmation.category.isNotEmpty ? affirmation.category : 'Personalized Session',
-      duration: '10 min',
-      category: affirmation.category,
+      id: 'personalized_session_${affirmation.id}',
+      title: affirmation.category.isNotEmpty ? affirmation.category : 'Daily Affirmations',
+      duration: '${relatedQuotes.length} min', // 1 min per affirmation line
+      category: affirmation.category.isNotEmpty ? affirmation.category : 'Personalized',
       imagePath: parentPlaylist?.imagePath ?? 'assets/images/featured_meditation.jpg',
       isPremium: false,
-      affirmations: [affirmation],
+      affirmations: relatedQuotes,
     );
 
     openPlaylist(dynamicPlaylist, context, 0);
@@ -125,10 +151,10 @@ class AudioProvider with ChangeNotifier {
   }
 
   void playSingleQuote(String quote, {String title = 'Daily Affirmation'}) {
-    openCustomAudio(title: title, quote: quote, duration: '3 min');
+    openCustomAudio(title: title, quote: quote, duration: '1 min');
   }
 
-  void openCustomAudio({required String title, required String quote, String duration = '3 min'}) {
+  void openCustomAudio({required String title, required String quote, String duration = '1 min'}) {
     final customAffirmation = Affirmation(
       id: 'custom_${DateTime.now().millisecondsSinceEpoch}',
       quote: quote,
