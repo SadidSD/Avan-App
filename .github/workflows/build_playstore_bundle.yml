@@ -45,14 +45,17 @@ jobs:
           echo "storeFile=upload-keystore.jks" >> android/key.properties
 
       - name: Build Android App Bundle (.aab)
-        run: flutter build appbundle --release --android-skip-build-dependency-validation --no-tree-shake-icons
+        run: |
+          flutter build appbundle --release --android-skip-build-dependency-validation --no-tree-shake-icons --verbose 2>&1 | tee flutter_build.log
 
       - name: Upload Play Store AAB Artifact
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: avan-playstore-release-aab
           path: |
             build/app/outputs/bundle/release/app-release.aab
             android/app/build/outputs/bundle/release/app-release.aab
             **/app-release.aab
+            flutter_build.log
           retention-days: 30
