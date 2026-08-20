@@ -41,9 +41,9 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-      - name: Generate Signing Keystore
+      - name: Generate Production Release Keystore
         run: |
-          keytool -genkey -v -keystore android/app/debug.keystore -alias androiddebugkey -keypass android -storepass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          keytool -genkey -v -keystore android/app/release.keystore -alias avan_release -keypass avan_production_2026 -storepass avan_production_2026 -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=AVAN Mindset, OU=Mobile, O=AvanApp, L=San Francisco, ST=California, C=US"
 
       - name: Build Android App Bundle (.aab)
         run: |
