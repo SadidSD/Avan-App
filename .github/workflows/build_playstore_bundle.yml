@@ -45,7 +45,7 @@ jobs:
           echo "storeFile=upload-keystore.jks" >> android/key.properties
 
       - name: Build Android App Bundle (.aab)
-        run: flutter build appbundle --release --no-tree-shake-icons
+        run: flutter build appbundle --release --android-skip-build-dependency-validation --no-tree-shake-icons
 
       - name: Upload Play Store AAB Artifact
         uses: actions/upload-artifact@v4
