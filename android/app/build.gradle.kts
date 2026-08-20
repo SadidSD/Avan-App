@@ -3,7 +3,7 @@ import java.io.FileInputStream
 
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
+    id("kotlin-android")
     id("dev.flutter.flutter-gradle-plugin")
 }
 
@@ -41,7 +41,10 @@ android {
                 keyAlias = keystoreProperties.getProperty("keyAlias")
                 keyPassword = keystoreProperties.getProperty("keyPassword")
                 val storePath = keystoreProperties.getProperty("storeFile")
-                storeFile = if (storePath != null) file(storePath) else null
+                if (storePath != null) {
+                    val kFile = file(storePath)
+                    storeFile = if (kFile.exists()) kFile else rootProject.file(storePath)
+                }
                 storePassword = keystoreProperties.getProperty("storePassword")
             }
         }
@@ -50,7 +53,7 @@ android {
     buildTypes {
         release {
             val releaseSigning = signingConfigs.findByName("release")
-            if (keystorePropertiesFile.exists() && releaseSigning?.storeFile?.exists() == true) {
+            if (releaseSigning != null && releaseSigning.storeFile?.exists() == true) {
                 signingConfig = releaseSigning
             } else {
                 signingConfig = signingConfigs.getByName("debug")
