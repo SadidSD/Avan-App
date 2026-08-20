@@ -23,9 +23,10 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Set up Flutter
+      - name: Set up Flutter 3.24.5
         uses: subosito/flutter-action@v2
         with:
+          flutter-version: '3.24.5'
           channel: 'stable'
           cache: true
 
@@ -42,7 +43,7 @@ jobs:
 
       - name: Build Android App Bundle (.aab)
         run: |
-          flutter build appbundle --release --no-tree-shake-icons --android-skip-build-dependency-validation -v > flutter_build.log 2>&1 || (echo "=== WHAT WENT WRONG ===" && grep -A 30 -B 5 "What went wrong" flutter_build.log && echo "=== LOG TAIL ===" && tail -n 80 flutter_build.log && exit 1)
+          flutter build appbundle --release --no-tree-shake-icons --verbose > flutter_build.log 2>&1 || (echo "=== FLUTTER BUILD ERROR ===" && grep -i -C 5 "error" flutter_build.log | head -n 60 && echo "=== COMPILE FAILURE ===" && grep -C 15 "compileFlutterBuildRelease" flutter_build.log && exit 1)
 
       - name: Upload Play Store AAB Artifact
         uses: actions/upload-artifact@v4
