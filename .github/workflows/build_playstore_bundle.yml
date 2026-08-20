@@ -36,16 +36,8 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-      - name: Generate Release Keystore & key.properties
-        run: |
-          keytool -genkeypair -v -keystore android/app/upload-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload -storepass avan_production_2026 -keypass avan_production_2026 -dname "CN=AVAN, OU=Engineering, O=AvanApp, L=SanFrancisco, ST=CA, C=US"
-          echo "storePassword=avan_production_2026" > android/key.properties
-          echo "keyPassword=avan_production_2026" >> android/key.properties
-          echo "keyAlias=upload" >> android/key.properties
-          echo "storeFile=upload-keystore.jks" >> android/key.properties
-
       - name: Build Android App Bundle (.aab)
-        run: flutter build appbundle --release --android-skip-build-dependency-validation --no-tree-shake-icons
+        run: flutter build appbundle --release --no-tree-shake-icons --android-skip-build-dependency-validation
 
       - name: Upload Play Store AAB Artifact
         uses: actions/upload-artifact@v4
