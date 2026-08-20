@@ -41,11 +41,11 @@ jobs:
           echo "storeFile=upload-keystore.jks" >> android/key.properties
 
       - name: Build Android App Bundle (.aab)
-        run: |
-          flutter build appbundle --release -v 2>&1 | tee flutter_build.log || (echo "=== BUILD LOG SUMMARY ===" && grep -i -E "error:|exception:|failed|FAILURE" flutter_build.log | head -n 30 && exit 1)
+        run: flutter build appbundle --release --no-tree-shake-icons
 
       - name: Upload Play Store AAB Artifact
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: avan-playstore-release-aab
           path: build/app/outputs/bundle/release/app-release.aab
