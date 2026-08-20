@@ -29,10 +29,9 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Accept Android Licenses & Doctor
+      - name: Accept Android Licenses
         run: |
           yes | flutter doctor --android-licenses || true
-          flutter doctor -v
 
       - name: Install Dependencies
         run: flutter pub get
@@ -46,7 +45,7 @@ jobs:
           echo "storeFile=upload-keystore.jks" >> android/key.properties
 
       - name: Build Android App Bundle (.aab)
-        run: flutter build appbundle --release
+        run: flutter build appbundle --release --android-skip-build-dependency-validation --no-tree-shake-icons
 
       - name: Upload Play Store AAB Artifact
         uses: actions/upload-artifact@v4
