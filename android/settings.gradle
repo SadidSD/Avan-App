@@ -1,9 +1,17 @@
 pluginManagement {
     def flutterSdkPath = {
         def properties = new Properties()
-        file("local.properties").withInputStream { properties.load(it) }
+        def localPropertiesFile = file("local.properties")
+        if (localPropertiesFile.exists()) {
+            localPropertiesFile.withInputStream { properties.load(it) }
+        } else {
+            def flutterRoot = System.getenv("FLUTTER_ROOT") ?: System.getenv("FLUTTER_HOME")
+            if (flutterRoot != null) {
+                properties.setProperty("flutter.sdk", flutterRoot)
+            }
+        }
         def flutterSdkPath = properties.getProperty("flutter.sdk")
-        assert flutterSdkPath != null, "flutter.sdk not set in local.properties"
+        assert flutterSdkPath != null, "flutter.sdk not set in local.properties or FLUTTER_ROOT"
         return flutterSdkPath
     }()
 
