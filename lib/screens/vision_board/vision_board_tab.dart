@@ -55,11 +55,11 @@ class VisionBoardState extends ChangeNotifier {
   ];
 
   final Map<String, String> backgroundLibrary = {
-    'Archway Sun': 'https://images.unsplash.com/photo-1596766472421-2e6b20892019?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
-    'Girl Profile': 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
-    'Moon & Clouds': 'https://images.unsplash.com/photo-1532767153582-b1a0e5145009?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
-    'Featured Meditation': 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
-    'Sleep Night Sky': 'https://images.unsplash.com/photo-1519681393784-d120267933ba?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
+    'Archway Sun': 'assets/images/onboarding_archway_sun.jpg',
+    'Girl Profile': 'assets/images/onboarding_girl_profile.jpg',
+    'Moon & Clouds': 'assets/images/onboarding_moon_clouds.jpg',
+    'Featured Meditation': 'assets/images/featured_meditation.jpg',
+    'Sleep Night Sky': 'assets/images/sleep_story_night.jpg',
   };
 
   List<GoalBlock> activeBlocks = [
@@ -67,7 +67,7 @@ class VisionBoardState extends ChangeNotifier {
       id: '1',
       title: 'Inner Peace & Wealth',
       category: 'Mindset',
-      bgImageUrl: 'https://images.unsplash.com/photo-1596766472421-2e6b20892019?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
+      bgImageUrl: 'assets/images/onboarding_archway_sun.jpg',
       tint: AppColors.tanAccent,
       quote: 'I am a magnet for abundance.',
     ),
@@ -75,7 +75,7 @@ class VisionBoardState extends ChangeNotifier {
       id: '2',
       title: 'Daily Meditation Habit',
       category: 'Health',
-      bgImageUrl: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
+      bgImageUrl: 'assets/images/featured_meditation.jpg',
       tint: AppColors.nudeAccent,
       quote: 'Peace is my priority.',
     ),
@@ -396,7 +396,9 @@ class GoalCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(24),
           color: block.tint.withOpacity(0.3),
           image: DecorationImage(
-            image: NetworkImage(block.bgImageUrl),
+            image: block.bgImageUrl.startsWith('assets/')
+                ? AssetImage(block.bgImageUrl) as ImageProvider
+                : NetworkImage(block.bgImageUrl) as ImageProvider,
             fit: BoxFit.cover,
             colorFilter: ColorFilter.mode(
               block.tint.withOpacity(0.5),
@@ -593,7 +595,9 @@ class _EditGoalDialogState extends State<EditGoalDialog> {
                           width: 3,
                         ),
                         image: DecorationImage(
-                          image: NetworkImage(e.value),
+                          image: e.value.startsWith('assets/')
+                              ? AssetImage(e.value) as ImageProvider
+                              : NetworkImage(e.value) as ImageProvider,
                           fit: BoxFit.cover,
                         ),
                       ),

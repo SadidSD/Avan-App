@@ -10,6 +10,7 @@ import 'package:record/record.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:intl/intl.dart';
 
+import '../../services/tts_service.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/custom_card.dart';
 import '../../widgets/custom_button.dart';
@@ -33,7 +34,7 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
   late int _activeModeIndex; // 0: AI Practice, 1: Voice Studio
 
   // --- AI Practice State ---
-  late FlutterTts _flutterTts;
+  final TtsService _ttsService = TtsService();
   late SpeechToText _speechToText;
 
   bool _isSpeechEnabled = false;
@@ -93,39 +94,7 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
   }
 
   void _initTts() async {
-    _flutterTts = FlutterTts();
-    await _flutterTts.setLanguage("en-US");
-    await _flutterTts.setSpeechRate(_voiceSpeed);
-    await _flutterTts.setVolume(_voiceVolume);
-    
-    _flutterTts.setStartHandler(() {
-      if (mounted) {
-        setState(() {
-          _isSpeaking = true;
-          _visualizerController.repeat(reverse: true);
-        });
-      }
-    });
-
-    _flutterTts.setCompletionHandler(() {
-      if (mounted) {
-        setState(() {
-          _isSpeaking = false;
-          _visualizerController.stop();
-          _visualizerController.value = 0.0;
-        });
-      }
-    });
-
-    _flutterTts.setErrorHandler((msg) {
-      if (mounted) {
-        setState(() {
-          _isSpeaking = false;
-          _visualizerController.stop();
-          _visualizerController.value = 0.0;
-        });
-      }
-    });
+    await _ttsService.init();
   }
 
   void _initSpeech() async {
@@ -153,7 +122,7 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
     _recordingTimer?.cancel();
     _pulseController.dispose();
     _visualizerController.dispose();
-    _flutterTts.stop();
+    _ttsService.dispose();
     _speechToText.stop();
     _audioRecorder.dispose();
     _audioPlayer.dispose();
@@ -163,10 +132,39 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
   // --- AI Practice Actions ---
   void _speakCurrentAffirmation() async {
     if (_isSpeaking) {
-      await _flutterTts.stop();
+      await _ttsService.stop();
+      if (mounted) {
+        setState(() {
+          _isSpeaking = false;
+          _visualizerController.stop();
+          _visualizerController.value = 0.0;
+        });
+      }
     } else {
       if (_affirmations.isNotEmpty) {
-        await _flutterTts.speak(_affirmations[_currentIndex].quote);
+        final quote = _affirmations[_currentIndex].quote;
+        if (mounted) {
+          setState(() {
+            _isSpeaking = true;
+            _visualizerController.repeat(reverse: true);
+          });
+        }
+        await _ttsService.speak(
+          quote,
+          volume: _voiceVolume,
+          speed: _voiceSpeed,
+        );
+        // Reset speaking visualizer after speech duration
+        final estSeconds = (quote.split(' ').length / 2.2).ceil().clamp(3, 10);
+        Future.delayed(Duration(seconds: estSeconds), () {
+          if (mounted && _isSpeaking) {
+            setState(() {
+              _isSpeaking = false;
+              _visualizerController.stop();
+              _visualizerController.value = 0.0;
+            });
+          }
+        });
       }
     }
   }
@@ -1054,7 +1052,6 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
                     onChanged: (v) {
                       setModalState(() => _voiceSpeed = v);
                       setState(() => _voiceSpeed = v);
-                      _flutterTts.setSpeechRate(v);
                     },
                   ),
 
@@ -1068,7 +1065,6 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
                     onChanged: (v) {
                       setModalState(() => _voiceVolume = v);
                       setState(() => _voiceVolume = v);
-                      _flutterTts.setVolume(v);
                     },
                   ),
 

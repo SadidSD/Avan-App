@@ -19,6 +19,10 @@ class AppProvider with ChangeNotifier {
   bool _isOnboardingCompleted = false;
   int _currentNavIndex = 0;
 
+  String _userName = 'Alex';
+  String _userEmail = 'alex@email.com';
+  bool _isCloudSyncEnabled = false;
+
   AppMode _appModeSetting = AppMode.growth;
   String _selectedMood = '';
 
@@ -37,6 +41,10 @@ class AppProvider with ChangeNotifier {
   bool get isPremium => _isPremium;
   bool get isOnboardingCompleted => _isOnboardingCompleted;
   int get currentNavIndex => _currentNavIndex;
+
+  String get userName => _userName;
+  String get userEmail => _userEmail;
+  bool get isCloudSyncEnabled => _isCloudSyncEnabled;
 
   AppMode get appModeSetting => _appModeSetting;
   String get selectedMood => _selectedMood;
@@ -73,6 +81,10 @@ class AppProvider with ChangeNotifier {
     _isOnboardingCompleted = _storageService.getOnboardingStatus();
     _isPremium = _storageService.getPremiumStatus();
     
+    _userName = _storageService.getString('user_name', defaultValue: 'Alex');
+    _userEmail = _storageService.getString('user_email', defaultValue: 'alex@email.com');
+    _isCloudSyncEnabled = _storageService.getBool('cloud_sync_enabled', defaultValue: false);
+
     final modeStr = _storageService.getAppMode();
     if (modeStr == 'healing') {
       _appModeSetting = AppMode.healing;
@@ -102,6 +114,20 @@ class AppProvider with ChangeNotifier {
     _favoriteAffirmations = _storageService.getFavoriteAffirmations();
     _userRecordings = _storageService.getUserRecordings();
 
+    notifyListeners();
+  }
+
+  Future<void> updateProfile({required String name, required String email}) async {
+    _userName = name.trim().isNotEmpty ? name.trim() : 'Alex';
+    _userEmail = email.trim().isNotEmpty ? email.trim() : 'alex@email.com';
+    await _storageService.setString('user_name', _userName);
+    await _storageService.setString('user_email', _userEmail);
+    notifyListeners();
+  }
+
+  Future<void> setCloudSync(bool enabled) async {
+    _isCloudSyncEnabled = enabled;
+    await _storageService.setBool('cloud_sync_enabled', enabled);
     notifyListeners();
   }
 
@@ -164,52 +190,60 @@ class AppProvider with ChangeNotifier {
     );
   }
 
-  /// Updates the user's multi-archetype profile and synthesizes a new base vector
   Future<void> setUserArchetypeProfile({
     required List<UserArchetype> primary,
-    List<UserArchetype> secondary = const [],
-    List<String> subLevels = const [],
-    AffirmationTone tone = AffirmationTone.empowering,
-    double believability = 0.8,
+    required List<UserArchetype> secondary,
+    required List<String> subLevels,
+    required AffirmationTone tone,
   }) async {
-    final newVector = PersonalizationEngine.buildArchetypeBaseVector(
+    final baseVector = PersonalizationEngine.buildArchetypeBaseVector(
       primary: primary,
       secondary: secondary,
       subLevels: subLevels,
       tone: tone,
     );
-
     _userProfileVector = UserProfileVector(
       primaryArchetypes: primary,
       secondaryArchetypes: secondary,
       selectedSubLevels: subLevels,
       preferredTone: tone,
-      vector: newVector,
-      believabilityPreference: believability,
+      vector: baseVector,
       lastUpdated: DateTime.now(),
-      interactionCount: _userProfileVector.interactionCount,
     );
-
     await _storageService.saveUserProfileVector(_userProfileVector);
+    notifyListeners();
+  }
+
+  /// Returns all available affirmations across playlists and scientific library
+  List<Affirmation> getAllGlobalAffirmations() {
+    return allPlaylists.expand((p) => p.affirmations).toList();
+  }
+
+  void setNavIndex(int index) {
+    _currentNavIndex = index;
     notifyListeners();
   }
 
   Future<void> setAppMode(AppMode mode) async {
     _appModeSetting = mode;
-    String modeStr = 'growth';
-    if (mode == AppMode.healing) modeStr = 'healing';
-    if (mode == AppMode.auto) modeStr = 'auto';
+    final modeStr = mode == AppMode.healing ? 'healing' : (mode == AppMode.auto ? 'auto' : 'growth');
     await _storageService.setAppMode(modeStr);
     notifyListeners();
   }
 
   Future<void> setSelectedMood(String mood) async {
     if (_selectedMood == mood) {
-      _selectedMood = ''; // toggle off if tapped again
+      _selectedMood = '';
     } else {
       _selectedMood = mood;
     }
     await _storageService.setSelectedMood(_selectedMood);
+    notifyListeners();
+  }
+
+  Future<void> setPremium(bool val) async {
+    _isPremium = val;
+    await _storageService.setPremiumStatus(_isPremium);
     notifyListeners();
   }
 
@@ -225,21 +259,21 @@ class AppProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void setNavIndex(int index) {
-    _currentNavIndex = index;
-    notifyListeners();
-  }
-
-  Future<void> setSurveyAnswers({
+  Future<void> saveSurveyAnswers({
     required String goal,
     required String challenge,
     required String vision,
     required String commitment,
+    UserProfileVector? vector,
   }) async {
     _selectedGoal = goal;
     _selectedChallenge = challenge;
     _selectedVision = vision;
     _selectedCommitment = commitment;
+    if (vector != null) {
+      _userProfileVector = vector;
+      await _storageService.saveUserProfileVector(vector);
+    }
     await _storageService.setSurveyAnswers(goal, challenge, vision, commitment);
     notifyListeners();
   }
@@ -247,6 +281,7 @@ class AppProvider with ChangeNotifier {
   Future<void> addJournalEntry(JournalEntry entry) async {
     _journalEntries.insert(0, entry);
     await _storageService.saveJournalEntries(_journalEntries);
+    await incrementStreak();
     notifyListeners();
   }
 
@@ -328,16 +363,13 @@ class AppProvider with ChangeNotifier {
     }
   }
 
-  Future<void> setPremium(bool val) async {
-    _isPremium = val;
-    await _storageService.setPremiumStatus(_isPremium);
-    notifyListeners();
-  }
-
   Future<void> resetAppData() async {
     await _storageService.clearAll();
     _isOnboardingCompleted = false;
     _isPremium = false;
+    _userName = 'Alex';
+    _userEmail = 'alex@email.com';
+    _isCloudSyncEnabled = false;
     _favoriteAffirmations = [];
     _journalEntries = [];
     _userRecordings = [];
