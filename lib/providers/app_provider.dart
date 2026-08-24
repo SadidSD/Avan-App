@@ -15,7 +15,7 @@ enum AppMode { growth, healing, auto }
 class AppProvider with ChangeNotifier {
   final StorageService _storageService = StorageService();
 
-  bool _isPremium = false;
+  bool _isPremium = true;
   bool _isOnboardingCompleted = false;
   int _currentNavIndex = 0;
 
@@ -38,7 +38,7 @@ class AppProvider with ChangeNotifier {
   List<String> _favoriteAffirmations = [];
   List<UserRecording> _userRecordings = [];
 
-  bool get isPremium => _isPremium;
+  bool get isPremium => true;
   bool get isOnboardingCompleted => _isOnboardingCompleted;
   int get currentNavIndex => _currentNavIndex;
 

@@ -27,8 +27,8 @@ android {
         applicationId "com.avanapp.avan_app"
         minSdkVersion 23
         targetSdkVersion 35
-        versionCode 1
-        versionName "1.0.0"
+        versionCode 2
+        versionName "1.0.1"
     }
 
     signingConfigs {
