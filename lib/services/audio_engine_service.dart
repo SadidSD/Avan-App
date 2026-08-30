@@ -6,12 +6,18 @@ import 'tts_service.dart';
 
 enum AmbientSound {
   none,
+  solfeggio528,
+  solfeggio432,
+  solfeggio639,
+  solfeggio852,
+  binauralTheta,
   rain,
   ocean,
   forest,
+  fireplace,
+  windChimes,
+  nightCrickets,
   whiteNoise,
-  solfeggio528,
-  solfeggio432,
 }
 
 class AudioEngineService {
@@ -125,6 +131,10 @@ class AudioEngineService {
   void setAmbientVolume(double vol) {
     _ambientVolume = vol.clamp(0.0, 1.0);
     _ambientPlayer.setVolume(_ambientVolume);
+  }
+
+  void setAffirmationCompletionHandler(VoidCallback callback) {
+    _ttsService.setCompletionHandler(callback);
   }
 
   void dispose() {

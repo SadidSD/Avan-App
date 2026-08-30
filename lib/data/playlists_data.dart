@@ -1,5 +1,6 @@
 import '../models/affirmation.dart';
 import '../models/playlist.dart';
+import '../services/audio_engine_service.dart';
 import 'affirmation_library.dart';
 
 final List<Playlist> allPlaylists = [
@@ -13,6 +14,7 @@ final List<Playlist> allPlaylists = [
     category: 'Morning Energy',
     imagePath: 'assets/images/onboarding_archway_sun.jpg',
     isPremium: false,
+    defaultAmbientSound: AmbientSound.solfeggio528,
     affirmations: [
       Affirmation(id: 'aff_me_1', quote: 'I wake up today with strength in my heart and clarity in my mind.', category: 'Morning Energy'),
       Affirmation(id: 'aff_me_2', quote: 'My body is rested and my mind is clear, ready to embrace the day.', category: 'Morning Energy'),
@@ -31,6 +33,7 @@ final List<Playlist> allPlaylists = [
     category: 'Deep Focus',
     imagePath: 'assets/images/sleep_story_night.jpg',
     isPremium: false,
+    defaultAmbientSound: AmbientSound.binauralTheta,
     affirmations: [
       Affirmation(id: 'aff_df_1', quote: 'My mind is a laser, cutting through distractions and focusing on what matters.', category: 'Deep Focus'),
       Affirmation(id: 'aff_df_2', quote: 'I easily enter a state of flow where my productivity is effortless.', category: 'Deep Focus'),
@@ -49,6 +52,7 @@ final List<Playlist> allPlaylists = [
     category: 'Better Sleep',
     imagePath: 'assets/images/onboarding_moon_clouds.jpg',
     isPremium: false,
+    defaultAmbientSound: AmbientSound.nightCrickets,
     affirmations: [
       Affirmation(id: 'aff_bs_1', quote: 'I release the events of the day and prepare my mind for deep, restorative rest.', category: 'Better Sleep'),
       Affirmation(id: 'aff_bs_2', quote: 'My body is heavy, relaxed, and sinking into the comfort of my bed.', category: 'Better Sleep'),
@@ -67,6 +71,7 @@ final List<Playlist> allPlaylists = [
     category: 'Calm Mind',
     imagePath: 'assets/images/featured_meditation.jpg',
     isPremium: false,
+    defaultAmbientSound: AmbientSound.ocean,
     affirmations: [
       Affirmation(id: 'aff_cm_1', quote: 'Peace begins within me, and I choose to cultivate it in every moment.', category: 'Calm Mind'),
       Affirmation(id: 'aff_cm_2', quote: 'I am the observer of my thoughts, not their captive.', category: 'Calm Mind'),
@@ -89,6 +94,7 @@ final List<Playlist> allPlaylists = [
     category: 'Confidence',
     imagePath: 'assets/images/onboarding_archway_sun.jpg',
     isPremium: true,
+    defaultAmbientSound: AmbientSound.solfeggio432,
     affirmations: [
       Affirmation(id: 'aff_cf_1', quote: 'I believe in my abilities and trust my intuition completely.', category: 'Confidence'),
       Affirmation(id: 'aff_cf_2', quote: 'I am worthy of respect, success, and all the good things life has to offer.', category: 'Confidence'),
@@ -107,6 +113,7 @@ final List<Playlist> allPlaylists = [
     category: 'Self Love',
     imagePath: 'assets/images/onboarding_girl_profile.jpg',
     isPremium: true,
+    defaultAmbientSound: AmbientSound.solfeggio852,
     affirmations: [
       Affirmation(id: 'aff_sl_1', quote: 'I accept myself unconditionally, embracing all my flaws and perfections.', category: 'Self Love'),
       Affirmation(id: 'aff_sl_2', quote: 'I treat myself with the same kindness and compassion I offer to others.', category: 'Self Love'),
@@ -125,6 +132,7 @@ final List<Playlist> allPlaylists = [
     category: 'Anxiety Relief',
     imagePath: 'assets/images/onboarding_moon_clouds.jpg',
     isPremium: true,
+    defaultAmbientSound: AmbientSound.rain,
     affirmations: [
       Affirmation(id: 'aff_ar_1', quote: 'I acknowledge my anxious thoughts and gently let them go.', category: 'Anxiety Relief'),
       Affirmation(id: 'aff_ar_2', quote: 'I am safe in this present moment, and all is well.', category: 'Anxiety Relief'),
@@ -143,6 +151,7 @@ final List<Playlist> allPlaylists = [
     category: 'Wealth & Abundance',
     imagePath: 'assets/images/onboarding_archway_sun.jpg',
     isPremium: true,
+    defaultAmbientSound: AmbientSound.solfeggio639,
     affirmations: [
       Affirmation(id: 'aff_wa_1', quote: 'I am open and receptive to all the wealth the universe has to offer.', category: 'Wealth & Abundance'),
       Affirmation(id: 'aff_wa_2', quote: 'Money flows to me easily, frequently, and in abundant quantities.', category: 'Wealth & Abundance'),
@@ -161,6 +170,7 @@ final List<Playlist> allPlaylists = [
     category: 'Discipline',
     imagePath: 'assets/images/featured_meditation.jpg',
     isPremium: true,
+    defaultAmbientSound: AmbientSound.binauralTheta,
     affirmations: [
       Affirmation(id: 'aff_ds_1', quote: 'I do what needs to be done, even when I don’t feel like it.', category: 'Discipline'),
       Affirmation(id: 'aff_ds_2', quote: 'My willpower is strong, and my daily habits align with my highest goals.', category: 'Discipline'),
@@ -179,6 +189,7 @@ final List<Playlist> allPlaylists = [
     category: 'Success',
     imagePath: 'assets/images/onboarding_archway_sun.jpg',
     isPremium: true,
+    defaultAmbientSound: AmbientSound.windChimes,
     affirmations: [
       Affirmation(id: 'aff_sc_1', quote: 'I am meant for greatness, and success is my natural state of being.', category: 'Success'),
       Affirmation(id: 'aff_sc_2', quote: 'I attract success by being my authentic, capable, and driven self.', category: 'Success'),
@@ -197,6 +208,7 @@ final List<Playlist> allPlaylists = [
     category: 'Motivation',
     imagePath: 'assets/images/featured_meditation.jpg',
     isPremium: true,
+    defaultAmbientSound: AmbientSound.solfeggio528,
     affirmations: [
       Affirmation(id: 'aff_mo_1', quote: 'I am overflowing with drive, passion, and an unstoppable desire to win.', category: 'Motivation'),
       Affirmation(id: 'aff_mo_2', quote: 'The fire within me burns brighter than the fears around me.', category: 'Motivation'),
@@ -215,6 +227,7 @@ final List<Playlist> allPlaylists = [
     category: 'Productivity',
     imagePath: 'assets/images/sleep_story_night.jpg',
     isPremium: true,
+    defaultAmbientSound: AmbientSound.forest,
     affirmations: [
       Affirmation(id: 'aff_pr_1', quote: 'I manage my time efficiently and accomplish my tasks with ease.', category: 'Productivity'),
       Affirmation(id: 'aff_pr_2', quote: 'I prioritize what matters most and eliminate trivial distractions.', category: 'Productivity'),
@@ -233,6 +246,7 @@ final List<Playlist> allPlaylists = [
     category: 'Relationships',
     imagePath: 'assets/images/onboarding_girl_profile.jpg',
     isPremium: true,
+    defaultAmbientSound: AmbientSound.fireplace,
     affirmations: [
       Affirmation(id: 'aff_re_1', quote: 'I attract healthy, loving, and supportive relationships into my life.', category: 'Relationships'),
       Affirmation(id: 'aff_re_2', quote: 'I communicate openly, honestly, and with deep empathy for others.', category: 'Relationships'),

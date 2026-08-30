@@ -3,6 +3,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 
 class PlatformTts {
   final FlutterTts _flutterTts = FlutterTts();
+  VoidCallback? onComplete;
 
   Future<void> init() async {
     try {
@@ -10,7 +11,10 @@ class PlatformTts {
       await _flutterTts.setSpeechRate(0.48);
       await _flutterTts.setVolume(1.0);
       await _flutterTts.setPitch(1.0);
-      await _flutterTts.awaitSpeakCompletion(false);
+      await _flutterTts.awaitSpeakCompletion(true);
+      _flutterTts.setCompletionHandler(() {
+        onComplete?.call();
+      });
     } catch (e) {
       debugPrint("Native TTS Init Error: $e");
     }

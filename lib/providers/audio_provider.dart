@@ -17,17 +17,22 @@ class AudioProvider with ChangeNotifier {
   int _currentAffirmationIndex = 0;
   bool _isPlayerOpen = false;
 
-  // Natural pacing: 18 seconds per affirmation (6s speech + 12s peaceful reflection)
-  int _intervalPerAffirmation = 18; 
-  int _sessionDurationSeconds = 144;
+  // Pacing: 3 to 4 seconds gap between affirmations
+  int _gapBetweenAffirmations = 3; 
+  int _intervalPerAffirmation = 7; 
+  int _sessionDurationSeconds = 56;
   int _sessionPositionSeconds = 0;
   bool _isLoopEnabled = false;
 
   Timer? _sessionTicker;
+  Timer? _gapTimer;
+  Timer? _watchdogTimer;
   Timer? _sleepTimer;
   int _sleepTimerRemaining = 0; // seconds
 
-  AudioProvider();
+  AudioProvider() {
+    _audioService.setAffirmationCompletionHandler(_onSpeechCompleted);
+  }
 
   bool get isPlaying => _audioService.isPlaying;
   double get voiceVolume => _audioService.voiceVolume;
@@ -38,6 +43,7 @@ class AudioProvider with ChangeNotifier {
   int get positionSeconds => _sessionPositionSeconds;
   int get durationSeconds => _sessionDurationSeconds;
   int get intervalPerAffirmation => _intervalPerAffirmation;
+  int get gapBetweenAffirmations => _gapBetweenAffirmations;
   bool get isLoopEnabled => _isLoopEnabled;
   int get sleepTimerRemaining => _sleepTimerRemaining;
 
@@ -57,8 +63,9 @@ class AudioProvider with ChangeNotifier {
 
   double get _slotDurationSeconds => _intervalPerAffirmation.toDouble();
 
-  void setIntervalPerAffirmation(int seconds) {
-    _intervalPerAffirmation = seconds.clamp(10, 45);
+  void setIntervalPerAffirmation(int gapSeconds) {
+    _gapBetweenAffirmations = gapSeconds.clamp(2, 8);
+    _intervalPerAffirmation = 4 + _gapBetweenAffirmations;
     final count = _currentPlaylist?.affirmations.length ?? 8;
     _sessionDurationSeconds = count * _intervalPerAffirmation;
     _sessionPositionSeconds = _currentAffirmationIndex * _intervalPerAffirmation;
@@ -111,6 +118,7 @@ class AudioProvider with ChangeNotifier {
       category: affirmation.category.isNotEmpty ? affirmation.category : 'Personalized',
       imagePath: parentPlaylist?.imagePath ?? 'assets/images/featured_meditation.jpg',
       isPremium: false,
+      defaultAmbientSound: parentPlaylist?.defaultAmbientSound ?? AmbientSound.solfeggio528,
       affirmations: relatedQuotes,
     );
 
@@ -120,6 +128,9 @@ class AudioProvider with ChangeNotifier {
   /// Opens a playlist at a specific affirmation index and opens the Player Screen
   void openPlaylist(Playlist playlist, [BuildContext? context, int initialIndex = 0]) {
     _currentPlaylist = playlist;
+    // Auto-activate the playlist's unique curated background soundscape!
+    _audioService.setAmbientSound(playlist.defaultAmbientSound);
+
     final count = playlist.affirmations.isNotEmpty ? playlist.affirmations.length : 1;
     _sessionDurationSeconds = count * _intervalPerAffirmation;
     _currentAffirmationIndex = (initialIndex >= 0 && initialIndex < playlist.affirmations.length)
@@ -157,6 +168,7 @@ class AudioProvider with ChangeNotifier {
       category: 'Voice Studio',
       imagePath: 'assets/images/featured_meditation.jpg',
       isPremium: false,
+      defaultAmbientSound: AmbientSound.solfeggio432,
       affirmations: [customAffirmation],
     );
     _currentAffirmationIndex = 0;
@@ -169,11 +181,57 @@ class AudioProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  void _onSpeechCompleted() {
+    if (!_audioService.isPlaying) return;
+    _watchdogTimer?.cancel();
+    _gapTimer?.cancel();
+
+    // Natural 3.5s reflection gap with ambient background music
+    _gapTimer = Timer(Duration(milliseconds: (_gapBetweenAffirmations * 1000 + 500)), () {
+      if (!_audioService.isPlaying) return;
+      _advanceToNextAffirmation();
+    });
+  }
+
   void _playCurrentAffirmation() {
+    _gapTimer?.cancel();
+    _watchdogTimer?.cancel();
+
     final aff = currentAffirmation;
     if (aff != null) {
       _audioService.speakAffirmation(aff.quote);
+
+      // Fallback watchdog in case platform callback doesn't fire
+      final words = aff.quote.split(' ').length;
+      final estimatedSec = (words / 2.0).ceil().clamp(3, 9);
+      final maxWaitSec = estimatedSec + _gapBetweenAffirmations + 2;
+      _watchdogTimer = Timer(Duration(seconds: maxWaitSec), () {
+        if (_audioService.isPlaying) {
+          _advanceToNextAffirmation();
+        }
+      });
     }
+  }
+
+  void _advanceToNextAffirmation() {
+    if (_currentPlaylist == null) return;
+    final totalAffs = _currentPlaylist!.affirmations.length;
+
+    if (_currentAffirmationIndex < totalAffs - 1) {
+      _currentAffirmationIndex++;
+      _sessionPositionSeconds = (_currentAffirmationIndex * _intervalPerAffirmation);
+      _playCurrentAffirmation();
+    } else if (_isLoopEnabled) {
+      _currentAffirmationIndex = 0;
+      _sessionPositionSeconds = 0;
+      _playCurrentAffirmation();
+    } else {
+      _audioService.stop();
+      _sessionPositionSeconds = _sessionDurationSeconds;
+      _gapTimer?.cancel();
+      _watchdogTimer?.cancel();
+    }
+    notifyListeners();
   }
 
   void _startSessionTicker() {
@@ -183,33 +241,15 @@ class AudioProvider with ChangeNotifier {
 
       if (_sessionPositionSeconds < _sessionDurationSeconds) {
         _sessionPositionSeconds++;
-
-        final totalAffs = _currentPlaylist?.affirmations.length ?? 1;
-        final targetIndex = (_sessionPositionSeconds / _intervalPerAffirmation).floor().clamp(0, totalAffs - 1);
-
-        if (targetIndex != _currentAffirmationIndex) {
-          _currentAffirmationIndex = targetIndex;
-          _playCurrentAffirmation();
-        }
-
         notifyListeners();
-      } else {
-        if (_isLoopEnabled) {
-          _sessionPositionSeconds = 0;
-          _currentAffirmationIndex = 0;
-          _playCurrentAffirmation();
-          notifyListeners();
-        } else {
-          _audioService.stop();
-          _sessionTicker?.cancel();
-          notifyListeners();
-        }
       }
     });
   }
 
   void togglePlayPause() {
     if (_audioService.isPlaying) {
+      _gapTimer?.cancel();
+      _watchdogTimer?.cancel();
       _audioService.pause();
     } else {
       if (_sessionPositionSeconds >= _sessionDurationSeconds) {
@@ -223,6 +263,8 @@ class AudioProvider with ChangeNotifier {
   }
 
   void seekTo(int seconds) {
+    _gapTimer?.cancel();
+    _watchdogTimer?.cancel();
     _sessionPositionSeconds = seconds.clamp(0, _sessionDurationSeconds);
     final totalAffs = _currentPlaylist?.affirmations.length ?? 1;
     final targetIndex = (_sessionPositionSeconds / _intervalPerAffirmation).floor().clamp(0, totalAffs - 1);
@@ -238,6 +280,8 @@ class AudioProvider with ChangeNotifier {
 
   void nextAffirmation() {
     if (_currentPlaylist == null) return;
+    _gapTimer?.cancel();
+    _watchdogTimer?.cancel();
     final totalAffs = _currentPlaylist!.affirmations.length;
 
     if (_currentAffirmationIndex < totalAffs - 1) {
@@ -257,6 +301,8 @@ class AudioProvider with ChangeNotifier {
 
   void previousAffirmation() {
     if (_currentPlaylist == null) return;
+    _gapTimer?.cancel();
+    _watchdogTimer?.cancel();
 
     if (_currentAffirmationIndex > 0) {
       _currentAffirmationIndex--;
@@ -271,6 +317,8 @@ class AudioProvider with ChangeNotifier {
 
   void closePlayer() {
     _isPlayerOpen = false;
+    _gapTimer?.cancel();
+    _watchdogTimer?.cancel();
     _sessionTicker?.cancel();
     _audioService.stop();
     notifyListeners();
@@ -322,6 +370,8 @@ class AudioProvider with ChangeNotifier {
 
   @override
   void dispose() {
+    _gapTimer?.cancel();
+    _watchdogTimer?.cancel();
     _sessionTicker?.cancel();
     _sleepTimer?.cancel();
     _audioService.dispose();

@@ -19,19 +19,19 @@ class _OnboardingCarouselState extends State<OnboardingCarousel> {
       'image': 'assets/images/onboarding_girl_profile.jpg',
       'icon': '✨',
       'title': 'Your space to\nbecome your best self',
-      'subtitle': 'Daily affirmations, guided meditations and restful sleep stories for a calmer, happier you.',
+      'subtitle': 'Daily personalized affirmations, voice repetition, and vision boards to elevate your subconscious mind.',
     },
     {
       'image': 'assets/images/onboarding_archway_sun.jpg',
       'icon': '🌿',
       'title': 'Affirm your mind',
-      'subtitle': 'Positive words shape your reality. Start your day with empowering affirmations.',
+      'subtitle': 'Positive words shape your neural pathways. Start each day with high-resonance mindset playlists.',
     },
     {
       'image': 'assets/images/onboarding_moon_clouds.jpg',
-      'icon': '🌙',
-      'title': 'Relax. Reflect. Restore.',
-      'subtitle': 'Guided meditations and sleep stories help you relax, let go of stress and sleep better.',
+      'icon': '🎙️',
+      'title': 'Say After Me & Voice Studio',
+      'subtitle': 'Practice interactive voice repetition, record affirmations in your own voice, and manifest your vision.',
     },
   ];
 
@@ -81,12 +81,15 @@ class _OnboardingCarouselState extends State<OnboardingCarousel> {
                   final slide = _slides[index];
                   return Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Artwork Container
-                        Container(
-                          height: 280,
+                    child: Center(
+                      child: SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // Artwork Container
+                            Container(
+                              height: 240,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(32.0),
                             boxShadow: const [
@@ -169,7 +172,9 @@ class _OnboardingCarouselState extends State<OnboardingCarousel> {
                         ),
                       ],
                     ),
-                  );
+                  ),
+                ),
+              );
                 },
               ),
             ),

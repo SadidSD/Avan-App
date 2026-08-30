@@ -7,6 +7,7 @@ class PlatformTts {
   html.SpeechSynthesisUtterance? _currentUtterance;
   Timer? _resumeKeepAliveTimer;
   List<html.SpeechSynthesisVoice>? _voices;
+  VoidCallback? onComplete;
 
   Future<void> init() async {
     try {
@@ -71,6 +72,7 @@ class PlatformTts {
       utterance.onEnd.listen((_) {
         debugPrint("Web TTS finished speaking: '$text'");
         _stopKeepAlive();
+        onComplete?.call();
       });
 
       utterance.onError.listen((e) {

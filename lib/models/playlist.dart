@@ -1,4 +1,5 @@
 import 'affirmation.dart';
+import '../services/audio_engine_service.dart';
 
 class Playlist {
   final String id;
@@ -8,6 +9,7 @@ class Playlist {
   final String imagePath;
   final bool isPremium;
   final List<Affirmation> affirmations;
+  final AmbientSound defaultAmbientSound;
 
   Playlist({
     required this.id,
@@ -17,5 +19,6 @@ class Playlist {
     required this.imagePath,
     this.isPremium = false,
     required this.affirmations,
+    this.defaultAmbientSound = AmbientSound.solfeggio528,
   });
 }

@@ -20,7 +20,15 @@ class AmbientAudioSynthesizer {
   static Uint8List _generateWavBytes(AmbientSound sound) {
     const int durationSeconds = 6;
     const int totalSamples = sampleRate * durationSeconds;
-    final int numChannels = (sound == AmbientSound.solfeggio528 || sound == AmbientSound.solfeggio432) ? 2 : 1;
+    final int numChannels = (sound == AmbientSound.solfeggio528 ||
+        sound == AmbientSound.solfeggio432 ||
+        sound == AmbientSound.solfeggio639 ||
+        sound == AmbientSound.solfeggio852 ||
+        sound == AmbientSound.binauralTheta ||
+        sound == AmbientSound.windChimes ||
+        sound == AmbientSound.nightCrickets)
+        ? 2
+        : 1;
 
     final Float32List leftChannel = Float32List(totalSamples);
     final Float32List rightChannel = Float32List(totalSamples);
@@ -32,7 +40,7 @@ class AmbientAudioSynthesizer {
         // Soft, peaceful 528Hz healing singing bowl chord with 4Hz binaural pulse
         for (int i = 0; i < totalSamples; i++) {
           final t = i / sampleRate;
-          final envelope = 0.5 + 0.5 * math.sin(2 * math.pi * 0.25 * t); // Gentle 4s breathing swell
+          final envelope = 0.5 + 0.5 * math.sin(2 * math.pi * 0.25 * t);
           leftChannel[i] = (0.22 * math.sin(2 * math.pi * 528.0 * t) +
                             0.12 * math.sin(2 * math.pi * 264.0 * t) +
                             0.05 * math.sin(2 * math.pi * 1056.0 * t)) * envelope;
@@ -51,6 +59,87 @@ class AmbientAudioSynthesizer {
                             0.12 * math.sin(2 * math.pi * 216.0 * t)) * envelope;
           rightChannel[i] = (0.25 * math.sin(2 * math.pi * 436.0 * t) +
                              0.12 * math.sin(2 * math.pi * 218.0 * t)) * envelope;
+        }
+        break;
+
+      case AmbientSound.solfeggio639:
+        // Harmonic 639Hz Heart Chakra resonance (Love, Compassion & Abundance)
+        for (int i = 0; i < totalSamples; i++) {
+          final t = i / sampleRate;
+          final envelope = 0.5 + 0.5 * math.sin(2 * math.pi * 0.22 * t);
+          leftChannel[i] = (0.22 * math.sin(2 * math.pi * 639.0 * t) +
+                            0.10 * math.sin(2 * math.pi * 319.5 * t) +
+                            0.04 * math.sin(2 * math.pi * 1278.0 * t)) * envelope;
+          rightChannel[i] = (0.22 * math.sin(2 * math.pi * 644.0 * t) +
+                             0.10 * math.sin(2 * math.pi * 322.0 * t) +
+                             0.04 * math.sin(2 * math.pi * 1288.0 * t)) * envelope;
+        }
+        break;
+
+      case AmbientSound.solfeggio852:
+        // Pure 852Hz Intuition & Awakening crystal tone
+        for (int i = 0; i < totalSamples; i++) {
+          final t = i / sampleRate;
+          final envelope = 0.55 + 0.45 * math.sin(2 * math.pi * 0.16 * t);
+          leftChannel[i] = (0.20 * math.sin(2 * math.pi * 852.0 * t) +
+                            0.08 * math.sin(2 * math.pi * 426.0 * t)) * envelope;
+          rightChannel[i] = (0.20 * math.sin(2 * math.pi * 856.0 * t) +
+                             0.08 * math.sin(2 * math.pi * 428.0 * t)) * envelope;
+        }
+        break;
+
+      case AmbientSound.binauralTheta:
+        // 6Hz Theta Waves (Left 216Hz, Right 222Hz) for Deep Focus & Flow State
+        for (int i = 0; i < totalSamples; i++) {
+          final t = i / sampleRate;
+          final sub = 0.08 * math.sin(2 * math.pi * 108.0 * t);
+          leftChannel[i] = (0.22 * math.sin(2 * math.pi * 216.0 * t) + sub).clamp(-1.0, 1.0);
+          rightChannel[i] = (0.22 * math.sin(2 * math.pi * 222.0 * t) + sub).clamp(-1.0, 1.0);
+        }
+        break;
+
+      case AmbientSound.fireplace:
+        // Warm crackling hearth with low flame rumble and spark snaps
+        double rumble = 0.0;
+        for (int i = 0; i < totalSamples; i++) {
+          final white = random.nextDouble() * 2.0 - 1.0;
+          rumble = 0.98 * rumble + white * 0.04;
+          final isCrackle = random.nextDouble() > 0.9985;
+          final crackle = isCrackle ? (random.nextDouble() * 0.45 - 0.22) : 0.0;
+          final sample = (rumble * 1.8 + crackle).clamp(-1.0, 1.0);
+          leftChannel[i] = sample;
+          rightChannel[i] = sample;
+        }
+        break;
+
+      case AmbientSound.windChimes:
+        // Gentle pentatonic singing chimes drifting in soft breeze
+        final List<double> chimeFreqs = [528.0, 660.0, 792.0, 990.0, 1188.0];
+        for (int i = 0; i < totalSamples; i++) {
+          final t = i / sampleRate;
+          final breeze = 0.4 + 0.6 * math.sin(2 * math.pi * 0.2 * t);
+          double chimeSum = 0.0;
+          for (int c = 0; c < chimeFreqs.length; c++) {
+            final phase = c * 1.25;
+            final hit = math.pow(0.5 + 0.5 * math.sin(2 * math.pi * 0.35 * t + phase), 6).toDouble();
+            chimeSum += 0.06 * hit * math.sin(2 * math.pi * chimeFreqs[c] * t);
+          }
+          final sample = (chimeSum * breeze * 1.6).clamp(-1.0, 1.0);
+          leftChannel[i] = sample;
+          rightChannel[i] = sample;
+        }
+        break;
+
+      case AmbientSound.nightCrickets:
+        // Tranquil night atmosphere with gentle rhythmic crickets
+        for (int i = 0; i < totalSamples; i++) {
+          final t = i / sampleRate;
+          final chirpPulse = math.pow(math.max(0.0, math.sin(2 * math.pi * 4.5 * t)), 8.0).toDouble();
+          final cricketWave = math.sin(2 * math.pi * 4500.0 * t) * chirpPulse * 0.16;
+          final airRumble = 0.03 * math.sin(2 * math.pi * 120.0 * t);
+          final sample = (cricketWave + airRumble).clamp(-1.0, 1.0);
+          leftChannel[i] = sample;
+          rightChannel[i] = sample;
         }
         break;
 

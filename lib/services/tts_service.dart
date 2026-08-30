@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'tts_service_stub.dart'
     if (dart.library.html) 'tts_service_web.dart';
 
@@ -14,6 +15,10 @@ class TtsService {
   Future<void> resume() => _platformTts.resume();
 
   Future<void> stop() => _platformTts.stop();
+
+  void setCompletionHandler(VoidCallback callback) {
+    _platformTts.onComplete = callback;
+  }
 
   void dispose() => _platformTts.dispose();
 }

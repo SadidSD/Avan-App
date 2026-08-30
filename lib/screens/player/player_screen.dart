@@ -535,27 +535,33 @@ class _PlayerScreenState extends State<PlayerScreen> with SingleTickerProviderSt
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                        _soundChip('✨ 528Hz Solfeggio', AmbientSound.solfeggio528, audioProvider, accent, setSheetState),
-                        _soundChip('🔮 432Hz Miracle', AmbientSound.solfeggio432, audioProvider, accent, setSheetState),
+                        _soundChip('✨ 528Hz Miracle', AmbientSound.solfeggio528, audioProvider, accent, setSheetState),
+                        _soundChip('🔮 432Hz Calm', AmbientSound.solfeggio432, audioProvider, accent, setSheetState),
+                        _soundChip('💚 639Hz Heart', AmbientSound.solfeggio639, audioProvider, accent, setSheetState),
+                        _soundChip('🌌 852Hz Intuition', AmbientSound.solfeggio852, audioProvider, accent, setSheetState),
+                        _soundChip('🧠 Theta Focus', AmbientSound.binauralTheta, audioProvider, accent, setSheetState),
                         _soundChip('🌧️ Rain', AmbientSound.rain, audioProvider, accent, setSheetState),
-                        _soundChip('🌊 Ocean', AmbientSound.ocean, audioProvider, accent, setSheetState),
-                        _soundChip('🌲 Forest', AmbientSound.forest, audioProvider, accent, setSheetState),
-                        _soundChip('⚪ White Noise', AmbientSound.whiteNoise, audioProvider, accent, setSheetState),
+                        _soundChip('🌊 Ocean Waves', AmbientSound.ocean, audioProvider, accent, setSheetState),
+                        _soundChip('🌲 Forest Breeze', AmbientSound.forest, audioProvider, accent, setSheetState),
+                        _soundChip('🔥 Cozy Hearth', AmbientSound.fireplace, audioProvider, accent, setSheetState),
+                        _soundChip('🎐 Wind Chimes', AmbientSound.windChimes, audioProvider, accent, setSheetState),
+                        _soundChip('🦗 Night Crickets', AmbientSound.nightCrickets, audioProvider, accent, setSheetState),
+                        _soundChip('⚪ Gentle Air', AmbientSound.whiteNoise, audioProvider, accent, setSheetState),
                         _soundChip('🔇 Off', AmbientSound.none, audioProvider, accent, setSheetState),
                       ],
                     ),
 
                   const SizedBox(height: 18),
-                  Text('Affirmation Pacing Rhythm',
+                  Text('Affirmation Gap Pacing',
                       style: GoogleFonts.inter(
                           fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
                   const SizedBox(height: 10),
                   Wrap(
                     spacing: 8,
                     children: [
-                      _pacingChip('Brisk (12s)', 12, audioProvider, accent, setSheetState),
-                      _pacingChip('Natural (18s)', 18, audioProvider, accent, setSheetState),
-                      _pacingChip('Deep (30s)', 30, audioProvider, accent, setSheetState),
+                      _pacingChip('Quick (2s Gap)', 2, audioProvider, accent, setSheetState),
+                      _pacingChip('Natural (3.5s Gap)', 3, audioProvider, accent, setSheetState),
+                      _pacingChip('Deep (6s Gap)', 6, audioProvider, accent, setSheetState),
                     ],
                   ),
 
@@ -589,7 +595,7 @@ class _PlayerScreenState extends State<PlayerScreen> with SingleTickerProviderSt
       AudioProvider audioProvider,
       Color accent,
       StateSetter setSheetState) {
-    final isSelected = audioProvider.intervalPerAffirmation == seconds;
+    final isSelected = audioProvider.gapBetweenAffirmations == seconds;
     return ChoiceChip(
       label: Text(label),
       selected: isSelected,
