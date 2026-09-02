@@ -1,5 +1,3 @@
-import 'package:flutter/foundation.dart';
-
 class UserRecording {
   final String id;
   final String title;
@@ -44,12 +42,12 @@ class UserRecording {
     bool? isFavorite,
   }) {
     return UserRecording(
-      id: this.id,
+      id: id,
       title: title ?? this.title,
-      durationSeconds: this.durationSeconds,
-      date: this.date,
+      durationSeconds: durationSeconds,
+      date: date,
       isFavorite: isFavorite ?? this.isFavorite,
-      audioPath: this.audioPath,
+      audioPath: audioPath,
     );
   }
 }

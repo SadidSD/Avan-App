@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:provider/provider.dart';
@@ -50,7 +49,6 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
   // Settings
   double _voiceSpeed = 1.0;
   double _voiceVolume = 1.0;
-  String _bgm = 'None';
 
   late AnimationController _pulseController;
   late AnimationController _visualizerController;
@@ -95,11 +93,34 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
 
   void _initTts() async {
     await _ttsService.init();
+    _ttsService.setCompletionHandler(() {
+      if (mounted && _isSpeaking) {
+        setState(() {
+          _isSpeaking = false;
+          _visualizerController.stop();
+          _visualizerController.value = 0.0;
+        });
+      }
+    });
   }
 
   void _initSpeech() async {
-    _speechToText = SpeechToText();
-    _isSpeechEnabled = await _speechToText.initialize();
+    try {
+      _speechToText = SpeechToText();
+      _isSpeechEnabled = await _speechToText.initialize(
+        onError: (error) => debugPrint("STT init note: $error"),
+        onStatus: (status) {
+          if (status == 'done' || status == 'notListening') {
+            if (mounted && _micState == MicState.listening) {
+              _calculateAccuracy();
+            }
+          }
+        },
+      );
+    } catch (e) {
+      debugPrint("STT initialize catch: $e");
+      _isSpeechEnabled = false;
+    }
     if (mounted) setState(() {});
   }
 
@@ -180,11 +201,19 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
       _recognizedText = '';
     });
 
-    await _speechToText.listen(
-      onResult: _onSpeechResult,
-      listenFor: const Duration(seconds: 8),
-      pauseFor: const Duration(seconds: 3),
-    );
+    try {
+      await _speechToText.listen(
+        onResult: _onSpeechResult,
+        listenOptions: SpeechListenOptions(
+          listenMode: ListenMode.confirmation,
+          cancelOnError: false,
+          partialResults: true,
+        ),
+      );
+    } catch (e) {
+      debugPrint("STT listen note: $e");
+      _simulateSpeechRecognition();
+    }
   }
 
   void _stopListening() async {
