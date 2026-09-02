@@ -344,6 +344,12 @@ class AudioProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  void setGapBetweenAffirmations(int seconds) {
+    _gapBetweenAffirmations = seconds.clamp(1, 10);
+    _intervalPerAffirmation = 4 + _gapBetweenAffirmations;
+    notifyListeners();
+  }
+
   void toggleLoop() {
     _isLoopEnabled = !_isLoopEnabled;
     notifyListeners();

@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+
+import '../../models/user_archetype.dart';
 import '../../providers/app_provider.dart';
+import '../../providers/audio_provider.dart';
+import '../../services/notification_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
-import '../../services/notification_service.dart';
-
 import '../../widgets/custom_card.dart';
 import '../../widgets/paywall_modal.dart';
-import '../widgets_preview/widgets_tab.dart';
 import '../my_voice/my_voice_tab.dart';
+import '../onboarding/survey_screen.dart';
+import '../widgets_preview/widgets_tab.dart';
 
 class ProfileTab extends StatefulWidget {
   const ProfileTab({Key? key}) : super(key: key);
@@ -28,433 +32,89 @@ class _ProfileTabState extends State<ProfileTab> {
 
   @override
   Widget build(BuildContext context) {
-    final appProvider = Provider.of<AppProvider>(context);
+    final appProvider = context.watch<AppProvider>();
     final isGrowth = appProvider.isGrowthMode;
     final accent = AppColors.accentForMode(isGrowth);
+
+    // Determine Archetype Display Label
+    String archetypeLabel = 'Mindset Explorer';
+    String archetypeSubLabel = 'Daily Neuroplastic Growth';
+    if (appProvider.userProfileVector.primaryArchetypes.isNotEmpty) {
+      final meta = ArchetypeRegistry.getMetadata(appProvider.userProfileVector.primaryArchetypes.first);
+      archetypeLabel = meta.title;
+      if (appProvider.userProfileVector.selectedSubLevels.isNotEmpty) {
+        archetypeSubLabel = appProvider.userProfileVector.selectedSubLevels.first;
+      } else {
+        archetypeSubLabel = meta.shortDescription;
+      }
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20.0),
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
+              // 1. Top Bar Header
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Profile',
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
+                  Text(
+                    'Profile & Growth Hub',
+                    style: GoogleFonts.cormorantGaramond(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w700,
+                      fontStyle: FontStyle.italic,
                       color: AppColors.textPrimary,
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.settings_outlined, color: AppColors.textPrimary, size: 24),
+                    icon: const Icon(Icons.help_outline_rounded, color: AppColors.textPrimary, size: 22),
+                    tooltip: 'Help & FAQ',
                     onPressed: () => _showHelpSupportModal(context),
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 18),
 
-              // User Info Header
-              Center(
-                child: Column(
-                  children: [
-                    Container(
-                      width: 84,
-                      height: 84,
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceElevated,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: accent.withOpacity(0.4), width: 2),
-                        boxShadow: [
-                          BoxShadow(
-                            color: accent.withOpacity(0.12),
-                            blurRadius: 16,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: const Center(
-                        child: Icon(Icons.person_outline_rounded, size: 44, color: AppColors.textPrimary),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      appProvider.userName,
-                      style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      appProvider.userEmail,
-                      style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
-                    ),
-                    const SizedBox(height: 12),
-                    OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        backgroundColor: accent,
-                        foregroundColor: Colors.white,
-                        side: const BorderSide(color: Colors.transparent),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-                      ),
-                      onPressed: () => _showEditProfileDialog(context, appProvider),
-                      icon: const Icon(Icons.edit_outlined, size: 14, color: Colors.white),
-                      label: const Text('Edit Profile', style: TextStyle(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w600)),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
+              // 2. Identity & Mindset Archetype Card
+              _buildIdentityCard(context, appProvider, accent, archetypeLabel, archetypeSubLabel),
+              const SizedBox(height: 20),
 
-              // Cloud Sync & Multi-Device Backup Card
-              CustomCard(
-                backgroundColor: AppColors.surfaceElevated,
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: accent.withOpacity(0.15),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        appProvider.isCloudSyncEnabled ? Icons.cloud_done_rounded : Icons.cloud_upload_outlined,
-                        color: accent,
-                        size: 22,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            appProvider.isCloudSyncEnabled ? 'Cloud Sync Active ✨' : 'Backup & Multi-Device Sync',
-                            style: const TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            appProvider.isCloudSyncEnabled
-                                ? 'Your journal reflections & streaks are backed up'
-                                : 'Sign in to save your journey across all devices',
-                            style: const TextStyle(fontSize: 11.5, color: AppColors.textSecondary),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: appProvider.isCloudSyncEnabled ? AppColors.surface : accent,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        elevation: 0,
-                      ),
-                      onPressed: () {
-                        if (!appProvider.isCloudSyncEnabled) {
-                          _showCloudSyncDialog(context, appProvider);
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Cloud backup is up-to-date! ☁️')),
-                          );
-                        }
-                      },
-                      child: Text(
-                        appProvider.isCloudSyncEnabled ? 'Synced' : 'Connect',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: appProvider.isCloudSyncEnabled ? AppColors.textSecondary : Colors.white,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
+              // 3. Neuroplastic Consistency & Analytics Card
+              _buildConsistencyCard(context, appProvider, accent),
+              const SizedBox(height: 20),
 
-              // Streak & Rewards Card
+              // 4. Manifestation Vault (2x2 Quick-Access Grid)
               Text(
-                'STREAK & REWARDS',
+                'MANIFESTATION VAULT',
                 style: AppTextStyles.sectionTitle,
               ),
               const SizedBox(height: 12),
-              CustomCard(
-                backgroundColor: AppColors.surfaceElevated,
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            const Text('🔥', style: TextStyle(fontSize: 28)),
-                            const SizedBox(width: 12),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '${appProvider.streakData.currentStreak} Day Streak',
-                                  style: const TextStyle(
-                                    fontFamily: 'Plus Jakarta Sans',
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.textPrimary,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  'Best: ${appProvider.streakData.longestStreak} days',
-                                  style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: AppColors.goldAccent.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: AppColors.goldAccent.withOpacity(0.4)),
-                          ),
-                          child: const Row(
-                            children: [
-                              Icon(Icons.workspace_premium_rounded, size: 16, color: AppColors.goldAccent),
-                              SizedBox(width: 4),
-                              Text(
-                                'Level 2',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.goldAccent,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    const Divider(height: 1, color: AppColors.border),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _buildBadge(Icons.spa_rounded, AppColors.growthAccent, 'Mindful'),
-                        _buildBadge(Icons.electric_bolt_rounded, AppColors.goldAccent, 'Consistent'),
-                        _buildBadge(Icons.auto_awesome_rounded, AppColors.healingAccent, 'Reflective'),
-                        _buildBadge(Icons.favorite_rounded, Colors.pinkAccent, 'Resilient'),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+              _buildManifestationVault(context, appProvider, accent),
               const SizedBox(height: 24),
 
-              // Theme Mode Selector
+              // 5. Atmosphere & Theme Mode
               Text(
                 'THEME & ATMOSPHERE',
                 style: AppTextStyles.sectionTitle,
               ),
               const SizedBox(height: 12),
-              CustomCard(
-                backgroundColor: AppColors.surfaceElevated,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Atmospheric Mode',
-                      style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'Growth (Deep Sapphire/Teal) for energizing action, or Healing (Deep Violet/Rose) for calming somatic recovery.',
-                      style: TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
-                    ),
-                    const SizedBox(height: 14),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () => appProvider.setAppMode(AppMode.growth),
-                            style: OutlinedButton.styleFrom(
-                              backgroundColor: appProvider.appModeSetting == AppMode.growth ? AppColors.growthAccent : Colors.transparent,
-                              side: BorderSide(color: appProvider.appModeSetting == AppMode.growth ? AppColors.growthAccent : AppColors.border),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                            ),
-                            child: Text(
-                              '⚡ Growth',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: appProvider.appModeSetting == AppMode.growth ? Colors.white : AppColors.textPrimary,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () => appProvider.setAppMode(AppMode.healing),
-                            style: OutlinedButton.styleFrom(
-                              backgroundColor: appProvider.appModeSetting == AppMode.healing ? AppColors.healingAccent : Colors.transparent,
-                              side: BorderSide(color: appProvider.appModeSetting == AppMode.healing ? AppColors.healingAccent : AppColors.border),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                            ),
-                            child: Text(
-                              '🌸 Healing',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: appProvider.appModeSetting == AppMode.healing ? Colors.white : AppColors.textPrimary,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () => appProvider.setAppMode(AppMode.auto),
-                            style: OutlinedButton.styleFrom(
-                              backgroundColor: appProvider.appModeSetting == AppMode.auto ? accent : Colors.transparent,
-                              side: BorderSide(color: appProvider.appModeSetting == AppMode.auto ? accent : AppColors.border),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                            ),
-                            child: Text(
-                              '🔄 Auto',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: appProvider.appModeSetting == AppMode.auto ? Colors.white : AppColors.textPrimary,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
+              _buildThemeCard(context, appProvider, accent),
+              const SizedBox(height: 24),
 
-              // Settings List
-              _buildMenuItem(
-                context,
-                Icons.notifications_none_rounded,
-                'Daily Reminders & Notifications ⏰',
-                onTap: () => _showRemindersModal(context),
-              ),
-              _buildMenuItem(
-                context,
-                Icons.mic_none_rounded,
-                'My Voice Studio 🎙️',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const MyVoiceTab()),
-                  );
-                },
-              ),
-              _buildMenuItem(
-                context,
-                Icons.menu_book_rounded,
-                'Reflections Journal 📖',
-                onTap: () => appProvider.setNavIndex(2),
-              ),
-              _buildMenuItem(
-                context,
-                Icons.favorite_border_rounded,
-                'Favorite Affirmations ❤️',
-                onTap: () => appProvider.setNavIndex(0),
-              ),
-              _buildMenuItem(
-                context,
-                Icons.widgets_outlined,
-                'Widgets Studio 🎨',
-                onTap: () {
-                  if (!appProvider.isPremium) {
-                    PaywallModal.show(context);
-                  } else {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const WidgetsTab()),
-                    );
-                  }
-                },
-              ),
-              _buildMenuItem(
-                context,
-                Icons.help_outline_rounded,
-                'Help, FAQ & Support 💡',
-                onTap: () => _showHelpSupportModal(context),
+              // 6. Preferences & Settings List
+              Text(
+                'PREFERENCES & SYSTEM',
+                style: AppTextStyles.sectionTitle,
               ),
               const SizedBox(height: 12),
+              _buildSettingsList(context, appProvider, accent),
 
-              // Reset App Data Button
-              _buildMenuItem(
-                context,
-                Icons.restart_alt_rounded,
-                'Reset App & Clear All Memory 🔄',
-                onTap: () {
-                  showDialog(
-                    context: context,
-                    builder: (dialogCtx) => AlertDialog(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                      title: const Text('Reset App & Clear Memory?', style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.bold)),
-                      content: const Text(
-                        'This will wipe all saved journal entries, user recordings, survey choices, and streak data, restarting AVAN back to onboarding.',
-                        style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(dialogCtx),
-                          child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
-                        ),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.redAccent,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                          onPressed: () {
-                            Navigator.pop(dialogCtx);
-                            appProvider.resetAppData();
-                          },
-                          child: const Text('Reset Everything', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-
-              const SizedBox(height: 80),
+              const SizedBox(height: 100),
             ],
           ),
         ),
@@ -462,52 +122,558 @@ class _ProfileTabState extends State<ProfileTab> {
     );
   }
 
-  Widget _buildMenuItem(BuildContext context, IconData icon, String title, {VoidCallback? onTap}) {
+  // ===========================================================================
+  // 1. IDENTITY & ARCHETYPE CARD
+  // ===========================================================================
+  Widget _buildIdentityCard(
+    BuildContext context,
+    AppProvider appProvider,
+    Color accent,
+    String archetypeLabel,
+    String archetypeSubLabel,
+  ) {
+    return CustomCard(
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              // Avatar
+              Container(
+                width: 68,
+                height: 68,
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceElevated,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: accent.withOpacity(0.5), width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: accent.withOpacity(0.2),
+                      blurRadius: 14,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Text(
+                    appProvider.userName.isNotEmpty ? appProvider.userName[0].toUpperCase() : 'A',
+                    style: GoogleFonts.cormorantGaramond(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: accent,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+
+              // Name & Email
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            appProvider.userName,
+                            style: GoogleFonts.inter(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.goldAccent.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: AppColors.goldAccent.withOpacity(0.35)),
+                          ),
+                          child: const Text(
+                            'PRO',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.goldAccent,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      appProvider.userEmail,
+                      style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
+                    // Edit Profile Button
+                    InkWell(
+                      onTap: () => _showEditProfileDialog(context, appProvider),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.edit_outlined, size: 12, color: accent),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Edit Profile',
+                            style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: accent),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Divider(height: 1, color: AppColors.border),
+          const SizedBox(height: 14),
+
+          // Active Archetype & Recalibrate Action
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: accent.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: accent.withOpacity(0.2)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.psychology_rounded, size: 24, color: accent),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        archetypeLabel,
+                        style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                      ),
+                      Text(
+                        archetypeSubLabel,
+                        style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondary),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const SurveyScreen()),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: accent,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    minimumSize: Size.zero,
+                  ),
+                  child: const Text('Recalibrate ✨', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ===========================================================================
+  // 2. CONSISTENCY & ANALYTICS CARD
+  // ===========================================================================
+  Widget _buildConsistencyCard(BuildContext context, AppProvider appProvider, Color accent) {
+    final streak = appProvider.streakData;
+    final weekdays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    final currentDayIndex = (DateTime.now().weekday - 1) % 7;
+
+    return CustomCard(
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Text('🔥', style: TextStyle(fontSize: 26)),
+                  const SizedBox(width: 10),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${streak.currentStreak} Day Streak',
+                        style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                      ),
+                      Text(
+                        'Best Record: ${streak.longestStreak} days 🏆',
+                        style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.goldAccent.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.goldAccent.withOpacity(0.3)),
+                ),
+                child: Text(
+                  'Consistency High',
+                  style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.goldAccent),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // 7-Day Consistency Dots Row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(7, (index) {
+              final isToday = index == currentDayIndex;
+              final isDone = index <= currentDayIndex;
+
+              return Column(
+                children: [
+                  Text(
+                    weekdays[index],
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      fontWeight: isToday ? FontWeight.bold : FontWeight.w500,
+                      color: isToday ? accent : AppColors.textMuted,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isDone ? accent.withOpacity(0.2) : AppColors.surfaceElevated,
+                      border: Border.all(
+                        color: isToday ? accent : (isDone ? accent.withOpacity(0.5) : AppColors.border),
+                        width: isToday ? 2 : 1,
+                      ),
+                    ),
+                    child: Center(
+                      child: Icon(
+                        isDone ? Icons.check_rounded : Icons.circle,
+                        size: isDone ? 16 : 6,
+                        color: isDone ? accent : AppColors.textMuted,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            }),
+          ),
+          const SizedBox(height: 16),
+          const Divider(height: 1, color: AppColors.border),
+          const SizedBox(height: 14),
+
+          // Milestone Achievement Badges
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildMilestoneBadge(Icons.spa_rounded, AppColors.growthAccent, 'Mindful Pioneer'),
+              _buildMilestoneBadge(Icons.local_fire_department_rounded, AppColors.goldAccent, '7-Day Spark'),
+              _buildMilestoneBadge(Icons.mic_rounded, AppColors.healingAccent, 'Voice Master'),
+              _buildMilestoneBadge(Icons.dashboard_rounded, Colors.purpleAccent, 'Visionary'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMilestoneBadge(IconData icon, Color color, String label) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.12),
+            shape: BoxShape.circle,
+            border: Border.all(color: color.withOpacity(0.4), width: 1.5),
+          ),
+          child: Icon(icon, color: color, size: 20),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+        ),
+      ],
+    );
+  }
+
+  // ===========================================================================
+  // 3. MANIFESTATION VAULT (2X2 GRID)
+  // ===========================================================================
+  Widget _buildManifestationVault(BuildContext context, AppProvider appProvider, Color accent) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _buildVaultCard(
+                icon: Icons.favorite_rounded,
+                iconColor: Colors.pinkAccent,
+                title: 'Favorites',
+                subtitle: '${appProvider.favoriteAffirmations.length} Saved Quotes',
+                onTap: () => appProvider.setNavIndex(0),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildVaultCard(
+                icon: Icons.mic_rounded,
+                iconColor: accent,
+                title: 'My Voice',
+                subtitle: '${appProvider.userRecordings.length} Studio Tracks',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const MyVoiceTab()),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildVaultCard(
+                icon: Icons.dashboard_customize_rounded,
+                iconColor: AppColors.goldAccent,
+                title: 'Vision Boards',
+                subtitle: '${appProvider.savedVisionBoards.length + 1} Board Designs',
+                onTap: () => appProvider.setNavIndex(3),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildVaultCard(
+                icon: Icons.menu_book_rounded,
+                iconColor: Colors.tealAccent,
+                title: 'Reflections',
+                subtitle: '${appProvider.journalEntries.length} Journal Entries',
+                onTap: () => appProvider.setNavIndex(2),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildVaultCard({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return CustomCard(
+      padding: const EdgeInsets.all(14),
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: iconColor.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: iconColor, size: 18),
+              ),
+              const Icon(Icons.arrow_forward_ios_rounded, size: 12, color: AppColors.textSecondary),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(title, style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary)),
+          const SizedBox(height: 2),
+          Text(subtitle, style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondary)),
+        ],
+      ),
+    );
+  }
+
+  // ===========================================================================
+  // 4. THEME & ATMOSPHERE CARD
+  // ===========================================================================
+  Widget _buildThemeCard(BuildContext context, AppProvider appProvider, Color accent) {
+    return CustomCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Atmospheric Mode',
+            style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Growth (Deep Sapphire/Teal) for energizing motivation, or Healing (Deep Violet/Rose) for calming somatic recovery.',
+            style: GoogleFonts.inter(fontSize: 11.5, color: AppColors.textSecondary, height: 1.35),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              _buildModeOption(
+                label: '⚡ Growth',
+                isSelected: appProvider.appModeSetting == AppMode.growth,
+                color: AppColors.growthAccent,
+                onTap: () => appProvider.setAppMode(AppMode.growth),
+              ),
+              const SizedBox(width: 8),
+              _buildModeOption(
+                label: '🌸 Healing',
+                isSelected: appProvider.appModeSetting == AppMode.healing,
+                color: AppColors.healingAccent,
+                onTap: () => appProvider.setAppMode(AppMode.healing),
+              ),
+              const SizedBox(width: 8),
+              _buildModeOption(
+                label: '🔄 Auto',
+                isSelected: appProvider.appModeSetting == AppMode.auto,
+                color: accent,
+                onTap: () => appProvider.setAppMode(AppMode.auto),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModeOption({
+    required String label,
+    required bool isSelected,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: OutlinedButton(
+        onPressed: onTap,
+        style: OutlinedButton.styleFrom(
+          backgroundColor: isSelected ? color : Colors.transparent,
+          side: BorderSide(color: isSelected ? color : AppColors.border),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          padding: const EdgeInsets.symmetric(vertical: 8),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 11.5,
+            fontWeight: FontWeight.bold,
+            color: isSelected ? Colors.white : AppColors.textPrimary,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ===========================================================================
+  // 5. SETTINGS LIST
+  // ===========================================================================
+  Widget _buildSettingsList(BuildContext context, AppProvider appProvider, Color accent) {
+    return Column(
+      children: [
+        _buildSettingTile(
+          icon: Icons.notifications_none_rounded,
+          title: 'Daily Reminders & Notifications ⏰',
+          onTap: () => _showRemindersModal(context),
+        ),
+        _buildSettingTile(
+          icon: Icons.graphic_eq_rounded,
+          title: 'Audio Engine & Pacing Preferences 🎵',
+          onTap: () => _showAudioSettingsModal(context),
+        ),
+        _buildSettingTile(
+          icon: Icons.cloud_done_outlined,
+          title: 'Cloud Sync & Multi-Device Backup ☁️',
+          onTap: () => _showCloudSyncDialog(context, appProvider),
+        ),
+        _buildSettingTile(
+          icon: Icons.widgets_outlined,
+          title: 'Lock Screen & Home Widgets 🎨',
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const WidgetsTab()),
+            );
+          },
+        ),
+        _buildSettingTile(
+          icon: Icons.restart_alt_rounded,
+          title: 'Reset App & Clear All Memory 🔄',
+          isDestructive: true,
+          onTap: () => _showResetDataDialog(context, appProvider),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSettingTile({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+    bool isDestructive = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
       child: CustomCard(
-        backgroundColor: AppColors.surfaceElevated,
-        onTap: onTap,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        onTap: onTap,
         child: Row(
           children: [
-            Icon(icon, size: 20, color: AppColors.textSecondary),
+            Icon(icon, size: 20, color: isDestructive ? Colors.redAccent : AppColors.textSecondary),
             const SizedBox(width: 14),
             Expanded(
               child: Text(
                 title,
-                style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 15, color: AppColors.textPrimary),
+                style: GoogleFonts.inter(
+                  fontWeight: FontWeight.w500,
+                  fontSize: 14,
+                  color: isDestructive ? Colors.redAccent : AppColors.textPrimary,
+                ),
               ),
             ),
-            const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.textSecondary),
+            const Icon(Icons.arrow_forward_ios_rounded, size: 12, color: AppColors.textSecondary),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildBadge(IconData icon, Color color, String label) {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.15),
-            shape: BoxShape.circle,
-            border: Border.all(color: color.withOpacity(0.5), width: 1.5),
-          ),
-          child: Icon(icon, color: color, size: 24),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.textSecondary),
-        ),
-      ],
-    );
-  }
-
-  // --- 1. Edit Profile Dialog ---
+  // ===========================================================================
+  // MODALS & DIALOGS
+  // ===========================================================================
   void _showEditProfileDialog(BuildContext context, AppProvider appProvider) {
     final nameCtrl = TextEditingController(text: appProvider.userName);
     final emailCtrl = TextEditingController(text: appProvider.userEmail);
@@ -515,12 +681,8 @@ class _ProfileTabState extends State<ProfileTab> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.background,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Text(
-          'Edit Profile',
-          style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-        ),
+        title: const Text('Edit Profile 👤', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -528,44 +690,37 @@ class _ProfileTabState extends State<ProfileTab> {
               controller: nameCtrl,
               decoration: InputDecoration(
                 labelText: 'Your Name',
-                labelStyle: const TextStyle(color: AppColors.textSecondary),
                 filled: true,
                 fillColor: AppColors.surfaceElevated,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
               ),
-              style: const TextStyle(color: AppColors.textPrimary),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
             TextField(
               controller: emailCtrl,
               decoration: InputDecoration(
                 labelText: 'Email Address',
-                labelStyle: const TextStyle(color: AppColors.textSecondary),
                 filled: true,
                 fillColor: AppColors.surfaceElevated,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
               ),
-              style: const TextStyle(color: AppColors.textPrimary),
             ),
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
-          ),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.accentForMode(appProvider.isGrowthMode),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            ),
             onPressed: () {
               appProvider.updateProfile(name: nameCtrl.text, email: emailCtrl.text);
               Navigator.pop(ctx);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Profile updated successfully! ✨')),
+                const SnackBar(content: Text('Profile updated successfully! ✨'), behavior: SnackBarBehavior.floating),
               );
             },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.buttonDark,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            ),
             child: const Text('Save Changes', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
@@ -573,325 +728,233 @@ class _ProfileTabState extends State<ProfileTab> {
     );
   }
 
-  // --- 2. Reminders & Notifications Modal ---
-  void _showRemindersModal(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppColors.background,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (modalCtx, setModalState) {
-            final s = _notificationService.settings;
-            final isGrowth = Provider.of<AppProvider>(context, listen: false).isGrowthMode;
-            final accent = AppColors.accentForMode(isGrowth);
-
-            return Padding(
-              padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: AppColors.border,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  const Text(
-                    'Affirmation Reminders ⏰',
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    'Get gentle, scientifically-timed mindset prompts throughout your day.',
-                    style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Morning Reminder Row
-                  CustomCard(
-                    backgroundColor: AppColors.surfaceElevated,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('☀️ Morning Energizer', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary, fontSize: 14)),
-                            const SizedBox(height: 2),
-                            Text(s.morningTime.formatTimeOfDay(), style: TextStyle(color: accent, fontWeight: FontWeight.w600, fontSize: 13)),
-                          ],
-                        ),
-                        Row(
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.edit_calendar_rounded, size: 20, color: AppColors.textSecondary),
-                              onPressed: () async {
-                                final picked = await showTimePicker(context: context, initialTime: s.morningTime);
-                                if (picked != null) {
-                                  final updated = s.copyWith(morningTime: picked);
-                                  await _notificationService.updateSettings(updated);
-                                  setModalState(() {});
-                                }
-                              },
-                            ),
-                            Switch(
-                              value: s.isMorningEnabled,
-                              activeColor: accent,
-                              onChanged: (val) async {
-                                final updated = s.copyWith(isMorningEnabled: val);
-                                await _notificationService.updateSettings(updated);
-                                setModalState(() {});
-                              },
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-
-                  // Evening Reminder Row
-                  CustomCard(
-                    backgroundColor: AppColors.surfaceElevated,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('🌙 Evening Wind-Down', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary, fontSize: 14)),
-                            const SizedBox(height: 2),
-                            Text(s.eveningTime.formatTimeOfDay(), style: TextStyle(color: AppColors.healingAccent, fontWeight: FontWeight.w600, fontSize: 13)),
-                          ],
-                        ),
-                        Row(
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.edit_calendar_rounded, size: 20, color: AppColors.textSecondary),
-                              onPressed: () async {
-                                final picked = await showTimePicker(context: context, initialTime: s.eveningTime);
-                                if (picked != null) {
-                                  final updated = s.copyWith(eveningTime: picked);
-                                  await _notificationService.updateSettings(updated);
-                                  setModalState(() {});
-                                }
-                              },
-                            ),
-                            Switch(
-                              value: s.isEveningEnabled,
-                              activeColor: AppColors.healingAccent,
-                              onChanged: (val) async {
-                                final updated = s.copyWith(isEveningEnabled: val);
-                                await _notificationService.updateSettings(updated);
-                                setModalState(() {});
-                              },
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: accent,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Reminders scheduled! ⏰✨')),
-                        );
-                      },
-                      child: const Text('Done', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  // --- 3. Cloud Sync & Multi-Device Modal ---
   void _showCloudSyncDialog(BuildContext context, AppProvider appProvider) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.background,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Row(
-          children: [
-            Icon(Icons.cloud_sync_rounded, color: AppColors.growthAccent, size: 28),
-            SizedBox(width: 10),
-            Text(
-              'Cloud Backup',
-              style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-            ),
+        title: Row(
+          children: const [
+            Icon(Icons.cloud_done_rounded, color: AppColors.goldAccent),
+            SizedBox(width: 8),
+            Text('Cloud Sync & Backup', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Connect your account to synchronize your journal reflections, custom vision boards, recorded voices, and streak data across your phone, tablet, and web.',
-              style: TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4),
-            ),
-            const SizedBox(height: 18),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.check_circle_outline_rounded, color: AppColors.growthAccent, size: 20),
-              title: const Text('Automatic daily backup', style: TextStyle(fontSize: 13, color: AppColors.textPrimary)),
-            ),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.check_circle_outline_rounded, color: AppColors.growthAccent, size: 20),
-              title: const Text('End-to-end privacy encryption', style: TextStyle(fontSize: 13, color: AppColors.textPrimary)),
+            Text(
+              appProvider.isCloudSyncEnabled
+                  ? 'Your journal entries, streak progress, and vision boards are backed up securely.'
+                  : 'Enable cloud sync to preserve your progress across all your iOS and Android devices.',
+              style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4),
             ),
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Stay Guest', style: TextStyle(color: AppColors.textSecondary)),
-          ),
-          ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.accentForMode(appProvider.isGrowthMode),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            ),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+          ElevatedButton(
             onPressed: () {
-              appProvider.setCloudSync(true);
+              appProvider.setCloudSync(!appProvider.isCloudSyncEnabled);
               Navigator.pop(ctx);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Cloud sync enabled! Reflections backed up ☁️')),
+                SnackBar(
+                  content: Text(appProvider.isCloudSyncEnabled ? 'Cloud Sync Paused' : 'Cloud Sync Activated! ☁️'),
+                  behavior: SnackBarBehavior.floating,
+                ),
               );
             },
-            icon: const Icon(Icons.lock_outline_rounded, size: 16, color: Colors.white),
-            label: const Text('Enable Cloud Backup', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.buttonDark,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            ),
+            child: Text(
+              appProvider.isCloudSyncEnabled ? 'Pause Sync' : 'Enable Backup',
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
     );
   }
 
-  // --- 4. Help & Support / FAQ Modal ---
+  void _showRemindersModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surfaceElevated,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(22),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: const [
+                Icon(Icons.notifications_active_rounded, color: AppColors.goldAccent),
+                SizedBox(width: 8),
+                Text('Daily Mindset Reminders ⏰', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            const Text('Configure gentle reminder notifications to build consistent daily neural rewiring habits.', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+            const SizedBox(height: 18),
+            ListTile(
+              leading: const Icon(Icons.wb_sunny_rounded, color: AppColors.goldAccent),
+              title: const Text('Morning Affirmation (8:00 AM)'),
+              trailing: Switch(value: true, onChanged: (_) {}),
+            ),
+            ListTile(
+              leading: const Icon(Icons.nightlight_round, color: Colors.purpleAccent),
+              title: const Text('Evening Reflection (9:30 PM)'),
+              trailing: Switch(value: true, onChanged: (_) {}),
+            ),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.buttonDark,
+                minimumSize: const Size.fromHeight(48),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              child: const Text('Save Reminder Schedule', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAudioSettingsModal(BuildContext context) {
+    final audioProvider = context.read<AudioProvider>();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surfaceElevated,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(22),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: const [
+                Icon(Icons.graphic_eq_rounded, color: AppColors.goldAccent),
+                SizedBox(width: 8),
+                Text('Audio Engine & Pacing 🎵', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            const Text('Customize default voice speed and reflection silence between affirmations.', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+            const SizedBox(height: 16),
+            Text('Reflection Pause Duration: ${audioProvider.gapBetweenAffirmations}s', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+            Slider(
+              value: audioProvider.gapBetweenAffirmations.toDouble(),
+              min: 1.0,
+              max: 6.0,
+              divisions: 5,
+              activeColor: AppColors.goldAccent,
+              onChanged: (val) {
+                audioProvider.setGapBetweenAffirmations(val.round());
+              },
+            ),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.buttonDark,
+                minimumSize: const Size.fromHeight(48),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              child: const Text('Done', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showHelpSupportModal(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.surfaceElevated,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      builder: (ctx) {
-        return DraggableScrollableSheet(
-          expand: false,
-          initialChildSize: 0.7,
-          maxChildSize: 0.9,
-          minChildSize: 0.4,
-          builder: (sheetCtx, scrollCtrl) {
-            return SingleChildScrollView(
-              controller: scrollCtrl,
-              padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: AppColors.border,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  const Text(
-                    'Frequently Asked Questions 💡',
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildFaqItem('How does the AI audio pacing work?', 'AVAN uses a calibrated 18-second affirmation cycle (6 seconds of crystal-clear speech followed by 12 seconds of peaceful reflection silence) to allow psychological reframing to deeply integrate into your subconscious.'),
-                  _buildFaqItem('How does the 16D personalization vector adapt to me?', 'Every time you favorite an affirmation, complete a journal entry, or select a mood, AVAN runs an Exponential Moving Average (EMA) shift on your on-device vector to prioritize statements that resonate with your archetype.'),
-                  _buildFaqItem('How do I restore my Play Store purchase?', 'If you switch devices or reinstall AVAN, open any premium locked playlist and tap "Restore Purchases" at the bottom of the paywall modal to immediately recover your subscription.'),
-                  _buildFaqItem('Does AVAN work offline?', 'Yes! AVAN includes procedural in-memory binaural and Solfeggio soundscapes as well as local speech synthesis that function 100% offline without requiring internet.'),
-                  const SizedBox(height: 24),
-                  const Text('Need direct help?', style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-                  const SizedBox(height: 8),
-                  CustomCard(
-                    backgroundColor: AppColors.surfaceElevated,
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      children: const [
-                        Icon(Icons.email_outlined, color: AppColors.growthAccent, size: 24),
-                        SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Developer Support', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-                              SizedBox(height: 2),
-                              Text('support@avanapp.com', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.75,
+        maxChildSize: 0.9,
+        minChildSize: 0.5,
+        expand: false,
+        builder: (_, scrollCtrl) => Padding(
+          padding: const EdgeInsets.all(22),
+          child: ListView(
+            controller: scrollCtrl,
+            children: [
+              Row(
+                children: const [
+                  Icon(Icons.help_center_rounded, color: AppColors.goldAccent),
+                  SizedBox(width: 8),
+                  Text('Help & Support 💡', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ],
               ),
-            );
-          },
-        );
-      },
+              const SizedBox(height: 16),
+              _buildFaqItem('How does the personalization algorithm work?', 'AVAN uses a 16-dimensional neuroplastic vector matching your survey identity (Career, Anxiety, Heartbreak, Grief, etc.) with science-backed affirmations and frequencies.'),
+              _buildFaqItem('What is the difference between Growth and Healing modes?', 'Growth mode uses energetic Deep Sapphire and Electric Teal with action-focused affirmations. Healing mode uses calming Deep Violet and Rose Quartz with somatic grounding.'),
+              _buildFaqItem('How do I upload photos to my Vision Board?', 'Tap any goal card in the Vision Board tab, then tap the photo icon or "+ Upload" card to pick pictures directly from your camera roll.'),
+              const SizedBox(height: 14),
+              const Text('Need additional assistance? Contact support at support@avanapp.com', style: TextStyle(fontSize: 12, color: AppColors.textSecondary, fontStyle: FontStyle.italic)),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
   Widget _buildFaqItem(String question, String answer) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10.0),
+      padding: const EdgeInsets.only(bottom: 12.0),
       child: CustomCard(
-        backgroundColor: AppColors.surfaceElevated,
         padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(question, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: AppColors.textPrimary)),
-            const SizedBox(height: 6),
-            Text(answer, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.45)),
+            Text(question, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary)),
+            const SizedBox(height: 4),
+            Text(answer, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.4)),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showResetDataDialog(BuildContext context, AppProvider appProvider) {
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Text('Reset App & Clear Memory?', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: const Text(
+          'This will wipe all saved journal entries, user recordings, survey choices, and streak data, restarting AVAN back to onboarding.',
+          style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () {
+              Navigator.pop(dialogCtx);
+              appProvider.resetAppData();
+            },
+            child: const Text('Reset Everything', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
       ),
     );
   }
