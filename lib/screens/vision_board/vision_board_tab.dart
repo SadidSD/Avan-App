@@ -1,184 +1,98 @@
+import 'dart:io';
+import 'dart:ui' as ui;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+
+import '../../data/affirmation_library.dart';
+import '../../models/affirmation.dart';
+import '../../models/vision_board.dart';
 import '../../providers/app_provider.dart';
 import '../../theme/app_colors.dart';
+import '../../widgets/custom_card.dart';
 
-class VisionBoardTab extends StatelessWidget {
+class VisionBoardTab extends StatefulWidget {
   const VisionBoardTab({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => VisionBoardState(),
-      child: const VisionBoardContent(),
-    );
-  }
+  State<VisionBoardTab> createState() => _VisionBoardTabState();
 }
 
-class GoalBlock {
-  String id;
-  String title;
-  String category;
-  String bgImageUrl;
-  Color tint;
-  String quote;
+class _VisionBoardTabState extends State<VisionBoardTab> {
+  bool _showSavedBoards = false;
+  final GlobalKey _gridKey = GlobalKey();
 
-  GoalBlock({
-    required this.id,
-    required this.title,
-    required this.category,
-    required this.bgImageUrl,
-    required this.tint,
-    required this.quote,
-  });
-}
-
-class VisionBoardState extends ChangeNotifier {
-  String activeTemplate = '4 Blocks';
-  bool showSavedBoards = false;
-
-  final List<String> templates = [
+  final List<String> _templates = [
     '2 Blocks',
     '4 Blocks',
     '6 Blocks',
     '8 Blocks',
     'Minimal Layout',
-    'Free Layout'
+    'Single Hero',
   ];
-
-  final List<String> categories = [
-    'Mindset',
-    'Wealth',
-    'Health',
-    'Relationships',
-    'Career'
-  ];
-
-  final Map<String, String> backgroundLibrary = {
-    'Archway Sun': 'assets/images/onboarding_archway_sun.jpg',
-    'Girl Profile': 'assets/images/onboarding_girl_profile.jpg',
-    'Moon & Clouds': 'assets/images/onboarding_moon_clouds.jpg',
-    'Featured Meditation': 'assets/images/featured_meditation.jpg',
-    'Sleep Night Sky': 'assets/images/sleep_story_night.jpg',
-  };
-
-  List<GoalBlock> activeBlocks = [
-    GoalBlock(
-      id: '1',
-      title: 'Inner Peace & Wealth',
-      category: 'Mindset',
-      bgImageUrl: 'assets/images/onboarding_archway_sun.jpg',
-      tint: AppColors.tanAccent,
-      quote: 'I am a magnet for abundance.',
-    ),
-    GoalBlock(
-      id: '2',
-      title: 'Daily Meditation Habit',
-      category: 'Health',
-      bgImageUrl: 'assets/images/featured_meditation.jpg',
-      tint: AppColors.nudeAccent,
-      quote: 'Peace is my priority.',
-    ),
-  ];
-
-  final List<String> savedBoards = [
-    'Morning Focus 2026',
-    'Abundance & Serenity',
-    'Ideal Self'
-  ];
-
-  void setTemplate(String t) {
-    activeTemplate = t;
-    notifyListeners();
-  }
-
-  void toggleSavedBoards(bool val) {
-    showSavedBoards = val;
-    notifyListeners();
-  }
-
-  void addBlock() {
-    activeBlocks.add(
-      GoalBlock(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        title: 'New Goal',
-        category: 'Mindset',
-        bgImageUrl: backgroundLibrary['Moon & Clouds']!,
-        tint: AppColors.softBeige,
-        quote: 'Believe in yourself.',
-      ),
-    );
-    notifyListeners();
-  }
-
-  void updateBlock(String id, GoalBlock updated) {
-    final index = activeBlocks.indexWhere((b) => b.id == id);
-    if (index != -1) {
-      activeBlocks[index] = updated;
-      notifyListeners();
-    }
-  }
-
-  void clearAll() {
-    activeBlocks.clear();
-    notifyListeners();
-  }
-
-  int getCrossAxisCount() {
-    if (activeTemplate == '2 Blocks' || activeTemplate == '4 Blocks' || activeTemplate == 'Minimal Layout') {
-      return 2;
-    }
-    if (activeTemplate == '6 Blocks' || activeTemplate == '8 Blocks') {
-      return 2;
-    }
-    return 1;
-  }
-}
-
-class VisionBoardContent extends StatelessWidget {
-  const VisionBoardContent({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final state = context.watch<VisionBoardState>();
     final appProvider = context.watch<AppProvider>();
+    final isGrowth = appProvider.isGrowthMode;
+    final accent = AppColors.accentForMode(isGrowth);
+    final activeBoard = appProvider.activeVisionBoard;
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Vision Board',
-          style: TextStyle(
-            fontFamily: 'Plus Jakarta Sans',
-            fontWeight: FontWeight.bold,
+          style: GoogleFonts.cormorantGaramond(
+            fontSize: 26,
+            fontWeight: FontWeight.w700,
+            fontStyle: FontStyle.italic,
             color: AppColors.textPrimary,
           ),
         ),
         centerTitle: true,
+        actions: [
+          if (!_showSavedBoards)
+            IconButton(
+              icon: const Icon(Icons.wallpaper_rounded, color: AppColors.textPrimary),
+              tooltip: 'Export as Lock Screen Wallpaper',
+              onPressed: () => _exportAsWallpaper(context),
+            ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
             child: Row(
               children: [
                 Expanded(
                   child: SegmentedButton<bool>(
-                    segments: const [
-                      ButtonSegment(value: false, label: Text('Active Board')),
-                      ButtonSegment(value: true, label: Text('Saved Boards')),
+                    segments: [
+                      const ButtonSegment(
+                        value: false,
+                        icon: Icon(Icons.dashboard_rounded, size: 16),
+                        label: Text('Active Canvas'),
+                      ),
+                      ButtonSegment(
+                        value: true,
+                        icon: const Icon(Icons.collections_bookmark_rounded, size: 16),
+                        label: Text('Saved (${appProvider.savedVisionBoards.length})'),
+                      ),
                     ],
-                    selected: {state.showSavedBoards},
-                    onSelectionChanged: (val) => state.toggleSavedBoards(val.first),
+                    selected: {_showSavedBoards},
+                    onSelectionChanged: (val) => setState(() => _showSavedBoards = val.first),
                     style: SegmentedButton.styleFrom(
                       backgroundColor: AppColors.surfaceElevated,
-                      selectedBackgroundColor: AppColors.accentForMode(appProvider.isGrowthMode),
+                      selectedBackgroundColor: accent,
                       selectedForegroundColor: Colors.white,
                       foregroundColor: AppColors.textPrimary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24),
-                      ),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                     ),
                   ),
                 ),
@@ -188,159 +102,204 @@ class VisionBoardContent extends StatelessWidget {
         ),
       ),
       body: SafeArea(
-        child: state.showSavedBoards ? const SavedBoardsView() : const ActiveBoardView(),
+        child: _showSavedBoards
+            ? const _SavedBoardsView()
+            : _ActiveBoardView(
+                gridKey: _gridKey,
+                templates: _templates,
+                onExportWallpaper: () => _exportAsWallpaper(context),
+              ),
       ),
     );
   }
-}
 
-class SavedBoardsView extends StatelessWidget {
-  const SavedBoardsView({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    final state = context.watch<VisionBoardState>();
-    return ListView.builder(
-      padding: const EdgeInsets.all(20),
-      itemCount: state.savedBoards.length,
-      itemBuilder: (ctx, i) {
-        return Card(
-          margin: const EdgeInsets.only(bottom: 16),
+  Future<void> _exportAsWallpaper(BuildContext context) async {
+    try {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-          color: AppColors.surfaceElevated,
-          elevation: 0,
-          child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            leading: const Icon(Icons.dashboard_customize_rounded, color: AppColors.goldAccent),
-            title: Text(
-              state.savedBoards[i],
-              style: const TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: AppColors.textSecondary),
+          title: Row(
+            children: const [
+              Icon(Icons.wallpaper_rounded, color: AppColors.goldAccent),
+              SizedBox(width: 8),
+              Text('Lock Screen Wallpaper ✨', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            ],
           ),
-        );
-      },
-    );
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: const [
+              Text(
+                'Your personalized vision board layout is optimized for high-resolution lock screen viewing.',
+                style: TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4),
+              ),
+              SizedBox(height: 12),
+              Text(
+                'Tip: Capture or save this layout to keep your subconscious focused on your goals every time you unlock your phone!',
+                style: TextStyle(fontSize: 12, color: AppColors.textMuted, fontStyle: FontStyle.italic),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Done', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      debugPrint("Export wallpaper note: $e");
+    }
   }
 }
 
-class ActiveBoardView extends StatelessWidget {
-  const ActiveBoardView({Key? key}) : super(key: key);
+// =============================================================================
+// ACTIVE BOARD CANVAS VIEW
+// =============================================================================
+class _ActiveBoardView extends StatelessWidget {
+  final GlobalKey gridKey;
+  final List<String> templates;
+  final VoidCallback onExportWallpaper;
+
+  const _ActiveBoardView({
+    Key? key,
+    required this.gridKey,
+    required this.templates,
+    required this.onExportWallpaper,
+  }) : super(key: key);
+
+  int _getCrossAxisCount(String template) {
+    if (template == 'Single Hero') return 1;
+    return 2;
+  }
+
+  double _getAspectRatio(String template) {
+    if (template == 'Single Hero') return 1.5;
+    if (template == 'Minimal Layout') return 0.95;
+    return 0.82;
+  }
 
   @override
   Widget build(BuildContext context) {
-    final state = context.watch<VisionBoardState>();
+    final appProvider = context.watch<AppProvider>();
+    final activeBoard = appProvider.activeVisionBoard;
+    final accent = AppColors.accentForMode(appProvider.isGrowthMode);
 
     return Column(
       children: [
-        // Template Selection Header
+        // Template Selector Chips
         SizedBox(
-          height: 60,
+          height: 52,
           child: ListView.separated(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             scrollDirection: Axis.horizontal,
-            itemCount: state.templates.length,
+            itemCount: templates.length,
             separatorBuilder: (_, __) => const SizedBox(width: 8),
             itemBuilder: (ctx, i) {
-              final t = state.templates[i];
-              final isSelected = t == state.activeTemplate;
+              final t = templates[i];
+              final isSelected = t == activeBoard.template;
               return ChoiceChip(
                 label: Text(
                   t,
-                  style: TextStyle(
-                    fontFamily: 'Inter',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
                     color: isSelected ? Colors.white : AppColors.textPrimary,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                   ),
                 ),
                 selected: isSelected,
                 onSelected: (val) {
-                  if (val) state.setTemplate(t);
+                  if (val) appProvider.setActiveTemplate(t);
                 },
-                selectedColor: AppColors.accentForMode(context.watch<AppProvider>().isGrowthMode),
+                selectedColor: accent,
                 backgroundColor: AppColors.surfaceElevated,
-                side: BorderSide(
-                  color: isSelected ? Colors.transparent : AppColors.border,
-                ),
+                side: BorderSide(color: isSelected ? Colors.transparent : AppColors.border),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               );
             },
           ),
         ),
-        
-        // Active Grid
+
+        // Grid Area
         Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: state.activeBlocks.isEmpty
-                ? const Center(
-                    child: Text(
-                      'No goals yet. Add a block to start.',
-                      style: TextStyle(fontFamily: 'Inter', color: AppColors.textSecondary),
+          child: RepaintBoundary(
+            key: gridKey,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: activeBoard.blocks.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.dashboard_customize_outlined, size: 48, color: AppColors.textSecondary),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Your Vision Canvas is Empty',
+                            style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.textPrimary),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Add your first dream goal card or upload custom photos below!',
+                            style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    )
+                  : GridView.builder(
+                      physics: const BouncingScrollPhysics(),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: _getCrossAxisCount(activeBoard.template),
+                        crossAxisSpacing: 14,
+                        mainAxisSpacing: 14,
+                        childAspectRatio: _getAspectRatio(activeBoard.template),
+                      ),
+                      itemCount: activeBoard.blocks.length,
+                      itemBuilder: (ctx, i) {
+                        final block = activeBoard.blocks[i];
+                        return _GoalCard(block: block);
+                      },
                     ),
-                  )
-                : GridView.builder(
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: state.getCrossAxisCount(),
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
-                      childAspectRatio: 0.8,
-                    ),
-                    itemCount: state.activeBlocks.length,
-                    itemBuilder: (ctx, i) {
-                      final block = state.activeBlocks[i];
-                      return GoalCard(block: block);
-                    },
-                  ),
+            ),
           ),
         ),
 
-        // Editor Actions Bar
+        // Bottom Editor Actions Bar
         Container(
-          padding: const EdgeInsets.all(20),
-          decoration: const BoxDecoration(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          decoration: BoxDecoration(
             color: AppColors.surfaceElevated,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black12,
-                blurRadius: 10,
-                offset: Offset(0, -2),
-              ),
-            ],
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            border: Border.all(color: AppColors.border),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _buildActionBtn(
-                context: context,
-                icon: Icons.add_rounded,
-                label: 'Add Block',
-                iconColor: AppColors.accentForMode(context.read<AppProvider>().isGrowthMode),
-                onTap: () => state.addBlock(),
+                icon: Icons.add_photo_alternate_rounded,
+                label: 'Add Goal',
+                color: accent,
+                onTap: () => _addNewBlock(context),
               ),
               _buildActionBtn(
-                context: context,
-                icon: Icons.save_rounded,
+                icon: Icons.bookmark_add_rounded,
                 label: 'Save Board',
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Board saved successfully!'),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                },
+                color: AppColors.textPrimary,
+                onTap: () => _showSaveBoardDialog(context),
               ),
               _buildActionBtn(
-                context: context,
-                icon: Icons.delete_outline_rounded,
-                label: 'Clear All',
-                onTap: () => state.clearAll(),
+                icon: Icons.wallpaper_rounded,
+                label: 'Wallpaper',
+                color: AppColors.textPrimary,
+                onTap: onExportWallpaper,
+              ),
+              _buildActionBtn(
+                icon: Icons.delete_sweep_rounded,
+                label: 'Clear Canvas',
+                color: AppColors.textSecondary,
+                onTap: () => _confirmClearAll(context),
               ),
             ],
           ),
@@ -349,32 +308,110 @@ class ActiveBoardView extends StatelessWidget {
     );
   }
 
+  void _addNewBlock(BuildContext context) {
+    final appProvider = context.read<AppProvider>();
+    final newBlock = GoalBlock(
+      id: 'gb_${DateTime.now().millisecondsSinceEpoch}',
+      title: 'New Manifestation Goal',
+      category: 'Mindset',
+      bgImageUrl: 'assets/images/onboarding_moon_clouds.jpg',
+      tintValue: 0xFF8A85A0,
+      quote: 'I have the courage and focus to bring this vision into reality.',
+      targetDate: '2026',
+    );
+    appProvider.addGoalBlock(newBlock);
+  }
+
+  void _showSaveBoardDialog(BuildContext context) {
+    final appProvider = context.read<AppProvider>();
+    final controller = TextEditingController(
+      text: 'Vision Board ${DateFormat('MMM yyyy').format(DateTime.now())}',
+    );
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Text('Save Board Snapshot 📁', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Give your vision board collection a distinct title:', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              decoration: InputDecoration(
+                hintText: 'e.g., 2026 Career & Freedom',
+                filled: true,
+                fillColor: AppColors.background,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              appProvider.saveActiveBoardAsNew(controller.text);
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Board saved to Saved Boards collection! ✨'), behavior: SnackBarBehavior.floating),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.buttonDark,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            ),
+            child: const Text('Save Board', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmClearAll(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Text('Clear Active Canvas?'),
+        content: const Text('This will remove all blocks from your current active canvas. Saved boards will remain safe.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () {
+              context.read<AppProvider>().clearActiveBoard();
+              Navigator.pop(ctx);
+            },
+            child: const Text('Clear All', style: TextStyle(color: Colors.redAccent)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildActionBtn({
-    required BuildContext context,
     required IconData icon,
     required String label,
+    required Color color,
     required VoidCallback onTap,
-    Color? iconColor,
   }) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: iconColor ?? AppColors.iconColor),
+            Icon(icon, color: color, size: 22),
             const SizedBox(height: 4),
-            Text(
-              label,
-              style: const TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 12,
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+            Text(label, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
           ],
         ),
       ),
@@ -382,82 +419,111 @@ class ActiveBoardView extends StatelessWidget {
   }
 }
 
-class GoalCard extends StatelessWidget {
+// =============================================================================
+// GOAL CARD WIDGET
+// =============================================================================
+class _GoalCard extends StatelessWidget {
   final GoalBlock block;
-  const GoalCard({Key? key, required this.block}) : super(key: key);
+  const _GoalCard({Key? key, required this.block}) : super(key: key);
+
+  ImageProvider _resolveImageProvider(String path) {
+    if (path.startsWith('assets/')) {
+      return AssetImage(path);
+    } else if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('blob:')) {
+      return NetworkImage(path);
+    } else {
+      if (!kIsWeb && path.isNotEmpty) {
+        final file = File(path);
+        if (file.existsSync()) return FileImage(file);
+      }
+      return const AssetImage('assets/images/onboarding_archway_sun.jpg');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () => _showEditDialog(context, block),
-      borderRadius: BorderRadius.circular(24),
+    return GestureDetector(
+      onTap: () => _openEditModal(context),
+      onLongPress: () => _showQuickDeleteMenu(context),
       child: Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          color: block.tint.withOpacity(0.3),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: AppColors.border),
           image: DecorationImage(
-            image: block.bgImageUrl.startsWith('assets/')
-                ? AssetImage(block.bgImageUrl) as ImageProvider
-                : NetworkImage(block.bgImageUrl) as ImageProvider,
+            image: _resolveImageProvider(block.bgImageUrl),
             fit: BoxFit.cover,
             colorFilter: ColorFilter.mode(
-              block.tint.withOpacity(0.5),
+              block.tint.withOpacity(0.35),
               BlendMode.darken,
             ),
           ),
         ),
         child: Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(22),
             gradient: const LinearGradient(
               colors: [Colors.black54, Colors.transparent, Colors.black87],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
             ),
           ),
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white30,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  block.category,
-                  style: const TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
+              // Header Row: Category Badge + Target Tag
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      block.category,
+                      style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
                   ),
-                ),
+                  if (block.targetDate.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.goldAccent.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppColors.goldAccent.withOpacity(0.6), width: 0.8),
+                      ),
+                      child: Text(
+                        block.targetDate,
+                        style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.goldAccent),
+                      ),
+                    ),
+                ],
               ),
+
+              // Title & Affirmative Quote
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     block.title,
-                    style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
+                    style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    block.quote,
-                    style: const TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 12,
+                    '"${block.quote}"',
+                    style: GoogleFonts.cormorantGaramond(
+                      fontSize: 13,
                       fontStyle: FontStyle.italic,
-                      color: Colors.white70,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white.withOpacity(0.85),
+                      height: 1.25,
                     ),
-                    maxLines: 2,
+                    maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
@@ -469,104 +535,277 @@ class GoalCard extends StatelessWidget {
     );
   }
 
-  void _showEditDialog(BuildContext context, GoalBlock block) {
+  void _openEditModal(BuildContext context) {
     showDialog(
       context: context,
-      builder: (_) => EditGoalDialog(
-        block: block,
-        state: context.read<VisionBoardState>(),
+      builder: (_) => _EditGoalModal(block: block),
+    );
+  }
+
+  void _showQuickDeleteMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surfaceElevated,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit_rounded, color: AppColors.textPrimary),
+              title: const Text('Edit Goal Block'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _openEditModal(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
+              title: const Text('Delete This Block', style: TextStyle(color: Colors.redAccent)),
+              onTap: () {
+                context.read<AppProvider>().deleteGoalBlock(block.id);
+                Navigator.pop(ctx);
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-class EditGoalDialog extends StatefulWidget {
+// =============================================================================
+// EDIT GOAL MODAL WITH PHOTO PICKER & AFFIRMATION LIBRARY PICKER
+// =============================================================================
+class _EditGoalModal extends StatefulWidget {
   final GoalBlock block;
-  final VisionBoardState state;
-
-  const EditGoalDialog({Key? key, required this.block, required this.state}) : super(key: key);
+  const _EditGoalModal({Key? key, required this.block}) : super(key: key);
 
   @override
-  _EditGoalDialogState createState() => _EditGoalDialogState();
+  State<_EditGoalModal> createState() => _EditGoalModalState();
 }
 
-class _EditGoalDialogState extends State<EditGoalDialog> {
+class _EditGoalModalState extends State<_EditGoalModal> {
   late TextEditingController _titleCtrl;
   late TextEditingController _quoteCtrl;
+  late TextEditingController _targetDateCtrl;
   late String _category;
-  late String _bgKey;
-  late Color _tint;
+  late String _bgImageUrl;
+  late int _tintValue;
+
+  final ImagePicker _picker = ImagePicker();
+
+  final List<String> _categories = [
+    'Mindset',
+    'Wealth',
+    'Health',
+    'Relationships',
+    'Career',
+    'Spiritual',
+    'Travel',
+  ];
+
+  final Map<String, String> _curatedPresets = {
+    'Archway Sun': 'assets/images/onboarding_archway_sun.jpg',
+    'Girl Profile': 'assets/images/onboarding_girl_profile.jpg',
+    'Moon & Clouds': 'assets/images/onboarding_moon_clouds.jpg',
+    'Deep Meditation': 'assets/images/featured_meditation.jpg',
+    'Night Sky': 'assets/images/sleep_story_night.jpg',
+  };
 
   @override
   void initState() {
     super.initState();
     _titleCtrl = TextEditingController(text: widget.block.title);
     _quoteCtrl = TextEditingController(text: widget.block.quote);
+    _targetDateCtrl = TextEditingController(text: widget.block.targetDate);
     _category = widget.block.category;
-    
-    // Find bgKey from URL
-    _bgKey = widget.state.backgroundLibrary.entries
-        .firstWhere((e) => e.value == widget.block.bgImageUrl, orElse: () => widget.state.backgroundLibrary.entries.first)
-        .key;
-    _tint = widget.block.tint;
+    _bgImageUrl = widget.block.bgImageUrl;
+    _tintValue = widget.block.tintValue;
+  }
+
+  Future<void> _pickCustomImage(ImageSource source) async {
+    try {
+      final XFile? file = await _picker.pickImage(
+        source: source,
+        maxWidth: 1400,
+        maxHeight: 1400,
+        imageQuality: 88,
+      );
+      if (file != null) {
+        setState(() {
+          _bgImageUrl = file.path;
+        });
+      }
+    } catch (e) {
+      debugPrint("Photo picker error: $e");
+    }
+  }
+
+  void _openAffirmationPicker() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.background,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.75,
+        maxChildSize: 0.92,
+        minChildSize: 0.5,
+        expand: false,
+        builder: (context, scrollController) {
+          final quotes = comprehensiveAffirmationLibrary
+              .where((a) => a.category.toLowerCase().contains(_category.toLowerCase()) || a.category.isNotEmpty)
+              .toList();
+
+          return Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(width: 40, height: 4, decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2))),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Select Affirmation for $_category ✨',
+                  style: GoogleFonts.cormorantGaramond(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: ListView.builder(
+                    controller: scrollController,
+                    itemCount: quotes.length,
+                    itemBuilder: (ctx, idx) {
+                      final aff = quotes[idx];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: CustomCard(
+                          padding: const EdgeInsets.all(14),
+                          onTap: () {
+                            setState(() {
+                              _quoteCtrl.text = aff.quote;
+                            });
+                            Navigator.pop(ctx);
+                          },
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('"${aff.quote}"', style: GoogleFonts.cormorantGaramond(fontSize: 16, fontStyle: FontStyle.italic, color: AppColors.textPrimary)),
+                              const SizedBox(height: 4),
+                              Text(aff.category, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final appProvider = context.watch<AppProvider>();
+    final accent = AppColors.accentForMode(appProvider.isGrowthMode);
+
     return Dialog(
       backgroundColor: AppColors.background,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(22),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Edit Goal Block',
-              style: TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Edit Goal Block 🎯',
+                  style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 20),
+                  tooltip: 'Delete Block',
+                  onPressed: () {
+                    appProvider.deleteGoalBlock(widget.block.id);
+                    Navigator.pop(context);
+                  },
+                ),
+              ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
+
+            // Goal Title
             TextField(
               controller: _titleCtrl,
               decoration: InputDecoration(
                 labelText: 'Goal Title',
-                labelStyle: const TextStyle(fontFamily: 'Inter', color: AppColors.textSecondary),
+                labelStyle: const TextStyle(color: AppColors.textSecondary),
                 filled: true,
                 fillColor: AppColors.surfaceElevated,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
               ),
-              style: const TextStyle(fontFamily: 'Inter', color: AppColors.textPrimary),
+              style: const TextStyle(color: AppColors.textPrimary),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
+
+            // Affirmative Quote + Library Quick-Pick Button
             TextField(
               controller: _quoteCtrl,
+              maxLines: 2,
               decoration: InputDecoration(
                 labelText: 'Affirmative Quote',
-                labelStyle: const TextStyle(fontFamily: 'Inter', color: AppColors.textSecondary),
+                labelStyle: const TextStyle(color: AppColors.textSecondary),
                 filled: true,
                 fillColor: AppColors.surfaceElevated,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
               ),
-              style: const TextStyle(fontFamily: 'Inter', color: AppColors.textPrimary),
+              style: const TextStyle(color: AppColors.textPrimary),
+            ),
+            const SizedBox(height: 6),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: _openAffirmationPicker,
+                icon: const Icon(Icons.auto_awesome_rounded, size: 14, color: AppColors.goldAccent),
+                label: const Text('Pick from Affirmation Library', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.goldAccent)),
+              ),
+            ),
+
+            // Target Date Tag
+            TextField(
+              controller: _targetDateCtrl,
+              decoration: InputDecoration(
+                labelText: 'Target Date / Milestone (e.g. Dec 2026, Daily)',
+                labelStyle: const TextStyle(color: AppColors.textSecondary),
+                filled: true,
+                fillColor: AppColors.surfaceElevated,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+              ),
+              style: const TextStyle(color: AppColors.textPrimary),
             ),
             const SizedBox(height: 16),
-            const Text('Category', style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+
+            // Category Chips
+            Text('Category', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary)),
             const SizedBox(height: 8),
             Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: widget.state.categories.map((c) {
-                final isSelected = c == _category;
+              spacing: 6,
+              runSpacing: 6,
+              children: _categories.map((c) {
+                final isSel = c == _category;
                 return ChoiceChip(
-                  label: Text(c, style: TextStyle(fontFamily: 'Inter', fontSize: 12, color: isSelected ? Colors.white : AppColors.textPrimary)),
-                  selected: isSelected,
-                  selectedColor: AppColors.accentForMode(context.watch<AppProvider>().isGrowthMode),
+                  label: Text(c, style: TextStyle(fontSize: 11, color: isSel ? Colors.white : AppColors.textPrimary)),
+                  selected: isSel,
+                  selectedColor: accent,
                   backgroundColor: AppColors.surfaceElevated,
                   onSelected: (val) {
                     if (val) setState(() => _category = c);
@@ -575,79 +814,124 @@ class _EditGoalDialogState extends State<EditGoalDialog> {
               }).toList(),
             ),
             const SizedBox(height: 16),
-            const Text('Background Image', style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
-            const SizedBox(height: 8),
-            SizedBox(
-              height: 80,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                children: widget.state.backgroundLibrary.entries.map((e) {
-                  final isSelected = e.key == _bgKey;
-                  return GestureDetector(
-                    onTap: () => setState(() => _bgKey = e.key),
-                    child: Container(
-                      width: 80,
-                      margin: const EdgeInsets.only(right: 12),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: isSelected ? AppColors.goldAccent : Colors.transparent,
-                          width: 3,
-                        ),
-                        image: DecorationImage(
-                          image: e.value.startsWith('assets/')
-                              ? AssetImage(e.value) as ImageProvider
-                              : NetworkImage(e.value) as ImageProvider,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text('Card Tint', style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 12,
+
+            // Background Image Section (Gallery / Camera Upload + Presets)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildColorTint(AppColors.tanAccent),
-                _buildColorTint(AppColors.nudeAccent),
-                _buildColorTint(AppColors.goldAccent),
-                _buildColorTint(AppColors.greenAccent),
-                _buildColorTint(AppColors.buttonDark),
+                Text('Background Photo', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary)),
+                Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.photo_library_rounded, color: AppColors.goldAccent, size: 20),
+                      tooltip: 'Pick from Phone Gallery',
+                      onPressed: () => _pickCustomImage(ImageSource.gallery),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.camera_alt_rounded, color: AppColors.goldAccent, size: 20),
+                      tooltip: 'Take a Photo',
+                      onPressed: () => _pickCustomImage(ImageSource.camera),
+                    ),
+                  ],
+                ),
               ],
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 8),
+
+            // Curated Presets Scroll
+            SizedBox(
+              height: 70,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: [
+                  // Upload custom photo card
+                  GestureDetector(
+                    onTap: () => _pickCustomImage(ImageSource.gallery),
+                    child: Container(
+                      width: 70,
+                      margin: const EdgeInsets.only(right: 10),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceElevated,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Icon(Icons.add_a_photo_rounded, size: 20, color: AppColors.goldAccent),
+                          SizedBox(height: 4),
+                          Text('Upload', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Presets
+                  ..._curatedPresets.entries.map((e) {
+                    final isSel = e.value == _bgImageUrl;
+                    return GestureDetector(
+                      onTap: () => setState(() => _bgImageUrl = e.value),
+                      child: Container(
+                        width: 70,
+                        margin: const EdgeInsets.only(right: 10),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: isSel ? AppColors.goldAccent : Colors.transparent, width: 2.5),
+                          image: DecorationImage(image: AssetImage(e.value), fit: BoxFit.cover),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ],
+              ),
+            ),
+            const SizedBox(height: 18),
+
+            // Card Color Tint Swatches
+            Text('Card Color Atmosphere', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary)),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 10,
+              children: [
+                _buildColorSwatch(0xFF8A85A0), // Lavender Grey
+                _buildColorSwatch(0xFF2A2A3E), // Midnight Navy
+                _buildColorSwatch(0xFFFFD700), // Pure Gold
+                _buildColorSwatch(0xFF00E5CC), // Electric Teal
+                _buildColorSwatch(0xFFFF7BAC), // Rose Quartz
+                _buildColorSwatch(0xFF0F1B4C), // Deep Sapphire
+              ],
+            ),
+            const SizedBox(height: 26),
+
+            // Save & Cancel Actions
             Row(
               children: [
                 Expanded(
                   child: TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancel', style: TextStyle(fontFamily: 'Inter', color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
+                    child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.bold)),
                   ),
                 ),
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
-                      final updated = GoalBlock(
-                        id: widget.block.id,
-                        title: _titleCtrl.text,
+                      final updated = widget.block.copyWith(
+                        title: _titleCtrl.text.trim().isNotEmpty ? _titleCtrl.text.trim() : 'Goal',
+                        quote: _quoteCtrl.text.trim(),
                         category: _category,
-                        bgImageUrl: widget.state.backgroundLibrary[_bgKey]!,
-                        tint: _tint,
-                        quote: _quoteCtrl.text,
+                        bgImageUrl: _bgImageUrl,
+                        tintValue: _tintValue,
+                        targetDate: _targetDateCtrl.text.trim(),
                       );
-                      widget.state.updateBlock(widget.block.id, updated);
+                      appProvider.updateGoalBlock(widget.block.id, updated);
                       Navigator.pop(context);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.accentForMode(context.read<AppProvider>().isGrowthMode),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                      backgroundColor: accent,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
-                    child: const Text('Save', style: TextStyle(fontFamily: 'Inter', color: Colors.white, fontWeight: FontWeight.w600)),
+                    child: const Text('Save Changes', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],
@@ -658,22 +942,99 @@ class _EditGoalDialogState extends State<EditGoalDialog> {
     );
   }
 
-  Widget _buildColorTint(Color color) {
-    final isSelected = _tint == color;
+  Widget _buildColorSwatch(int val) {
+    final isSelected = _tintValue == val;
     return GestureDetector(
-      onTap: () => setState(() => _tint = color),
+      onTap: () => setState(() => _tintValue = val),
       child: Container(
-        width: 32,
-        height: 32,
+        width: 28,
+        height: 28,
         decoration: BoxDecoration(
-          color: color,
+          color: Color(val),
           shape: BoxShape.circle,
-          border: Border.all(
-            color: isSelected ? AppColors.textPrimary : Colors.transparent,
-            width: 2,
-          ),
+          border: Border.all(color: isSelected ? Colors.white : Colors.transparent, width: 2),
         ),
       ),
+    );
+  }
+}
+
+// =============================================================================
+// SAVED BOARDS GALLERY VIEW
+// =============================================================================
+class _SavedBoardsView extends StatelessWidget {
+  const _SavedBoardsView({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final appProvider = context.watch<AppProvider>();
+    final boards = appProvider.savedVisionBoards;
+
+    if (boards.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.collections_bookmark_outlined, size: 54, color: AppColors.textSecondary),
+            const SizedBox(height: 12),
+            Text('No Saved Boards Yet', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+            const SizedBox(height: 6),
+            const Text('Tap "Save Board" in the active canvas to preserve named snapshots.', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(20),
+      itemCount: boards.length,
+      itemBuilder: (ctx, i) {
+        final b = boards[i];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: CustomCard(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceElevated,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Icon(Icons.dashboard_rounded, color: AppColors.goldAccent),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(b.title, style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary)),
+                      const SizedBox(height: 3),
+                      Text('${b.blocks.length} Goals • ${b.template} • ${DateFormat('MMM d, yyyy').format(b.lastModified)}', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.open_in_browser_rounded, color: AppColors.goldAccent, size: 22),
+                  tooltip: 'Load into Canvas',
+                  onPressed: () {
+                    appProvider.loadSavedBoard(b.id);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Loaded "${b.title}" into active canvas! ✨'), behavior: SnackBarBehavior.floating),
+                    );
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline_rounded, color: AppColors.textSecondary, size: 20),
+                  tooltip: 'Delete Board',
+                  onPressed: () => appProvider.deleteSavedBoard(b.id),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

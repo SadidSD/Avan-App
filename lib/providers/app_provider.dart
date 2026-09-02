@@ -6,6 +6,7 @@ import '../models/streak.dart';
 import '../models/user_archetype.dart';
 import '../models/user_profile_vector.dart';
 import '../models/user_recording.dart';
+import '../models/vision_board.dart';
 import '../services/storage_service.dart';
 import '../services/personalization_engine.dart';
 import '../data/playlists_data.dart';
@@ -38,6 +39,14 @@ class AppProvider with ChangeNotifier {
   List<String> _favoriteAffirmations = [];
   List<UserRecording> _userRecordings = [];
 
+  VisionBoard _activeVisionBoard = VisionBoard(
+    id: 'active_default',
+    title: 'My Vision Board 2026',
+    createdAt: DateTime.now(),
+    lastModified: DateTime.now(),
+  );
+  List<VisionBoard> _savedBoards = [];
+
   bool get isPremium => true;
   bool get isOnboardingCompleted => _isOnboardingCompleted;
   int get currentNavIndex => _currentNavIndex;
@@ -48,6 +57,9 @@ class AppProvider with ChangeNotifier {
 
   AppMode get appModeSetting => _appModeSetting;
   String get selectedMood => _selectedMood;
+
+  VisionBoard get activeVisionBoard => _activeVisionBoard;
+  List<VisionBoard> get savedVisionBoards => _savedBoards;
   UserProfileVector get userProfileVector => _userProfileVector;
 
   /// Resolves active mode (handles 'auto' mode based on current time of day)
@@ -113,6 +125,8 @@ class AppProvider with ChangeNotifier {
     _journalEntries = _storageService.getJournalEntries();
     _favoriteAffirmations = _storageService.getFavoriteAffirmations();
     _userRecordings = _storageService.getUserRecordings();
+    _activeVisionBoard = _storageService.getActiveVisionBoard();
+    _savedBoards = _storageService.getSavedVisionBoards();
 
     notifyListeners();
   }
@@ -359,6 +373,114 @@ class AppProvider with ChangeNotifier {
         title: newTitle,
       );
       await _storageService.saveUserRecordings(_userRecordings);
+      notifyListeners();
+    }
+  }
+
+  // ===========================================================================
+  // VISION BOARD OPERATIONS
+  // ===========================================================================
+  Future<void> updateActiveVisionBoard(VisionBoard board) async {
+    _activeVisionBoard = board.copyWith(lastModified: DateTime.now());
+    await _storageService.saveActiveVisionBoard(_activeVisionBoard);
+    notifyListeners();
+  }
+
+  Future<void> setActiveTemplate(String template) async {
+    _activeVisionBoard = _activeVisionBoard.copyWith(
+      template: template,
+      lastModified: DateTime.now(),
+    );
+    await _storageService.saveActiveVisionBoard(_activeVisionBoard);
+    notifyListeners();
+  }
+
+  Future<void> addGoalBlock(GoalBlock block) async {
+    final updatedBlocks = List<GoalBlock>.from(_activeVisionBoard.blocks)..add(block);
+    _activeVisionBoard = _activeVisionBoard.copyWith(
+      blocks: updatedBlocks,
+      lastModified: DateTime.now(),
+    );
+    await _storageService.saveActiveVisionBoard(_activeVisionBoard);
+    notifyListeners();
+  }
+
+  Future<void> updateGoalBlock(String id, GoalBlock updated) async {
+    final index = _activeVisionBoard.blocks.indexWhere((b) => b.id == id);
+    if (index != -1) {
+      final updatedBlocks = List<GoalBlock>.from(_activeVisionBoard.blocks);
+      updatedBlocks[index] = updated;
+      _activeVisionBoard = _activeVisionBoard.copyWith(
+        blocks: updatedBlocks,
+        lastModified: DateTime.now(),
+      );
+      await _storageService.saveActiveVisionBoard(_activeVisionBoard);
+      notifyListeners();
+    }
+  }
+
+  Future<void> deleteGoalBlock(String id) async {
+    final updatedBlocks = List<GoalBlock>.from(_activeVisionBoard.blocks)
+      ..removeWhere((b) => b.id == id);
+    _activeVisionBoard = _activeVisionBoard.copyWith(
+      blocks: updatedBlocks,
+      lastModified: DateTime.now(),
+    );
+    await _storageService.saveActiveVisionBoard(_activeVisionBoard);
+    notifyListeners();
+  }
+
+  Future<void> clearActiveBoard() async {
+    _activeVisionBoard = _activeVisionBoard.copyWith(
+      blocks: [],
+      lastModified: DateTime.now(),
+    );
+    await _storageService.saveActiveVisionBoard(_activeVisionBoard);
+    notifyListeners();
+  }
+
+  Future<void> saveActiveBoardAsNew(String title) async {
+    final newBoard = VisionBoard(
+      id: 'board_${DateTime.now().millisecondsSinceEpoch}',
+      title: title.trim().isNotEmpty ? title.trim() : 'Vision Board ${DateTime.now().year}',
+      template: _activeVisionBoard.template,
+      createdAt: DateTime.now(),
+      lastModified: DateTime.now(),
+      blocks: List<GoalBlock>.from(_activeVisionBoard.blocks),
+    );
+    _savedBoards.insert(0, newBoard);
+    await _storageService.saveVisionBoards(_savedBoards);
+    notifyListeners();
+  }
+
+  Future<void> loadSavedBoard(String id) async {
+    final board = _savedBoards.firstWhere((b) => b.id == id, orElse: () => _activeVisionBoard);
+    _activeVisionBoard = VisionBoard(
+      id: 'active_${DateTime.now().millisecondsSinceEpoch}',
+      title: board.title,
+      template: board.template,
+      createdAt: board.createdAt,
+      lastModified: DateTime.now(),
+      blocks: List<GoalBlock>.from(board.blocks),
+    );
+    await _storageService.saveActiveVisionBoard(_activeVisionBoard);
+    notifyListeners();
+  }
+
+  Future<void> deleteSavedBoard(String id) async {
+    _savedBoards.removeWhere((b) => b.id == id);
+    await _storageService.saveVisionBoards(_savedBoards);
+    notifyListeners();
+  }
+
+  Future<void> renameSavedBoard(String id, String newTitle) async {
+    final index = _savedBoards.indexWhere((b) => b.id == id);
+    if (index != -1) {
+      _savedBoards[index] = _savedBoards[index].copyWith(
+        title: newTitle.trim(),
+        lastModified: DateTime.now(),
+      );
+      await _storageService.saveVisionBoards(_savedBoards);
       notifyListeners();
     }
   }

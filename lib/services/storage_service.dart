@@ -4,6 +4,7 @@ import '../models/journal_entry.dart';
 import '../models/streak.dart';
 import '../models/user_recording.dart';
 import '../models/user_profile_vector.dart';
+import '../models/vision_board.dart';
 
 class StorageService {
   SharedPreferences? _prefs;
@@ -90,6 +91,85 @@ class StorageService {
     await init();
     final List<String> recsStr = recordings.map((e) => jsonEncode(e.toJson())).toList();
     await _prefs?.setStringList('userRecordings', recsStr);
+  }
+
+  // Vision Boards Persistence
+  List<VisionBoard> getSavedVisionBoards() {
+    final List<String>? boardsStr = _prefs?.getStringList('savedVisionBoards');
+    if (boardsStr == null) return [];
+    return boardsStr.map((e) => VisionBoard.fromJson(jsonDecode(e))).toList();
+  }
+
+  Future<void> saveVisionBoards(List<VisionBoard> boards) async {
+    await init();
+    final List<String> boardsStr = boards.map((e) => jsonEncode(e.toJson())).toList();
+    await _prefs?.setStringList('savedVisionBoards', boardsStr);
+  }
+
+  VisionBoard getActiveVisionBoard() {
+    final String? boardStr = _prefs?.getString('activeVisionBoard');
+    if (boardStr == null) {
+      return VisionBoard(
+        id: 'active_default',
+        title: 'My Vision Board 2026',
+        template: '4 Blocks',
+        createdAt: DateTime.now(),
+        lastModified: DateTime.now(),
+        blocks: [
+          GoalBlock(
+            id: 'gb_1',
+            title: 'Inner Peace & Wealth',
+            category: 'Mindset',
+            bgImageUrl: 'assets/images/onboarding_archway_sun.jpg',
+            tintValue: 0xFF8A85A0,
+            quote: 'I am a magnet for extraordinary abundance and peace.',
+            targetDate: '2026',
+          ),
+          GoalBlock(
+            id: 'gb_2',
+            title: 'Peak Energy & Vitality',
+            category: 'Health',
+            bgImageUrl: 'assets/images/featured_meditation.jpg',
+            tintValue: 0xFF2A2A3E,
+            quote: 'My mind and body vibrate with vibrant health.',
+            targetDate: 'Daily Habit',
+          ),
+          GoalBlock(
+            id: 'gb_3',
+            title: 'Financial Freedom',
+            category: 'Wealth',
+            bgImageUrl: 'assets/images/onboarding_girl_profile.jpg',
+            tintValue: 0xFFFFD700,
+            quote: 'I attract wealth and build multiple streams of prosperity.',
+            targetDate: 'Dec 2026',
+          ),
+          GoalBlock(
+            id: 'gb_4',
+            title: 'Deep Rest & Sleep',
+            category: 'Mindset',
+            bgImageUrl: 'assets/images/sleep_story_night.jpg',
+            tintValue: 0xFF060D2E,
+            quote: 'I surrender to tranquil peace and restore my mind.',
+            targetDate: 'Nightly',
+          ),
+        ],
+      );
+    }
+    try {
+      return VisionBoard.fromJson(jsonDecode(boardStr));
+    } catch (_) {
+      return VisionBoard(
+        id: 'active_default',
+        title: 'My Vision Board',
+        createdAt: DateTime.now(),
+        lastModified: DateTime.now(),
+      );
+    }
+  }
+
+  Future<void> saveActiveVisionBoard(VisionBoard board) async {
+    await init();
+    await _prefs?.setString('activeVisionBoard', jsonEncode(board.toJson()));
   }
 
   // Mode & Mood
