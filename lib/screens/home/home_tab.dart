@@ -370,9 +370,13 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                           // Playlist Header Row
                           Row(
                             children: [
-                              Text(
-                                playlist.title,
-                                style: AppTextStyles.sectionHeader,
+                              Expanded(
+                                child: Text(
+                                  playlist.title,
+                                  style: AppTextStyles.sectionHeader,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
                               if (playlist.isPremium) ...[
                                 const SizedBox(width: 8),
@@ -408,7 +412,7 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                                   ),
                                 ),
                               ],
-                              const Spacer(),
+                              const SizedBox(width: 12),
                               GestureDetector(
                                 onTap: () {
                                   if (playlist.isPremium && !isPremium) {

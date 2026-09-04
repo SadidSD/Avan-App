@@ -20,8 +20,9 @@ class Affirmation {
   Affirmation({
     required this.id,
     this.title = '',
-    required this.quote,
-    required this.category,
+    String? quote,
+    String? text,
+    String? category,
     this.author = 'AVAN',
     this.isFavorite = false,
     this.primaryArchetypes = const [],
@@ -31,7 +32,8 @@ class Affirmation {
     this.embeddingVector = const [],
     this.believabilityScore = 0.8,
     this.tags = const [],
-  });
+  })  : quote = quote ?? text ?? '',
+        category = category ?? (tags.isNotEmpty ? tags.first : 'Personal Growth');
 
   String get displayTitle {
     if (title.isNotEmpty) return title;

@@ -9,7 +9,7 @@ import '../models/user_recording.dart';
 import '../models/vision_board.dart';
 import '../services/storage_service.dart';
 import '../services/personalization_engine.dart';
-import '../data/playlists_data.dart';
+import '../data/playlists_data.dart' as playlists_data;
 
 enum AppMode { growth, healing, auto }
 
@@ -230,7 +230,7 @@ class AppProvider with ChangeNotifier {
 
   /// Returns all available affirmations across playlists and scientific library
   List<Affirmation> getAllGlobalAffirmations() {
-    return allPlaylists.expand((p) => p.affirmations).toList();
+    return playlists_data.getAllGlobalAffirmations();
   }
 
   void setNavIndex(int index) {

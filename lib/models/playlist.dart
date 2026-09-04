@@ -1,4 +1,5 @@
 import 'affirmation.dart';
+import 'user_archetype.dart';
 import '../services/audio_engine_service.dart';
 
 class Playlist {
@@ -10,15 +11,37 @@ class Playlist {
   final bool isPremium;
   final List<Affirmation> affirmations;
   final AmbientSound defaultAmbientSound;
+  final String? description;
+  final List<UserArchetype>? targetArchetypes;
+  final List<String>? targetSubLevels;
+  final List<String>? tags;
+  final String? archetypeId;
 
   Playlist({
     required this.id,
     required this.title,
-    required this.duration,
-    required this.category,
-    required this.imagePath,
+    String? duration,
+    String? estimatedDuration,
+    String? totalDuration,
+    String? durationText,
+    String? durationString,
+    String? category,
+    String? imagePath,
+    String? coverImageUrl,
+    String? thumbnailUrl,
     this.isPremium = false,
     required this.affirmations,
-    this.defaultAmbientSound = AmbientSound.solfeggio528,
-  });
+    AmbientSound? defaultAmbientSound,
+    AmbientSound? ambientSound,
+    this.description,
+    List<UserArchetype>? targetArchetypes,
+    List<UserArchetype>? primaryArchetypes,
+    this.targetSubLevels,
+    this.tags,
+    this.archetypeId,
+  })  : duration = duration ?? estimatedDuration ?? totalDuration ?? durationText ?? durationString ?? '10 min',
+        category = category ?? (tags != null && tags.isNotEmpty ? tags.first : 'Personal Growth'),
+        imagePath = imagePath ?? coverImageUrl ?? thumbnailUrl ?? 'assets/images/featured_meditation.jpg',
+        defaultAmbientSound = defaultAmbientSound ?? ambientSound ?? AmbientSound.solfeggio528,
+        targetArchetypes = targetArchetypes ?? primaryArchetypes;
 }
