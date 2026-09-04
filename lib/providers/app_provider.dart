@@ -89,11 +89,18 @@ class AppProvider with ChangeNotifier {
   List<String> get favoriteAffirmations => _favoriteAffirmations;
   List<UserRecording> get userRecordings => _userRecordings;
 
+  Future<void>? _loadStateFuture;
+
   AppProvider() {
     loadState();
   }
 
-  Future<void> loadState() async {
+  Future<void> loadState() {
+    _loadStateFuture ??= _loadStateInternal();
+    return _loadStateFuture!;
+  }
+
+  Future<void> _loadStateInternal() async {
     await _storageService.init();
 
     _isOnboardingCompleted = _storageService.getOnboardingStatus();
@@ -304,7 +311,9 @@ class AppProvider with ChangeNotifier {
     required List<UserArchetype> secondary,
     required List<String> subLevels,
     required AffirmationTone tone,
+    double believabilityPreference = 0.8,
   }) async {
+    await loadState();
     final baseVector = PersonalizationEngine.buildArchetypeBaseVector(
       primary: primary,
       secondary: secondary,
@@ -327,11 +336,24 @@ class AppProvider with ChangeNotifier {
       vector: baseVector,
       baselineVector: baseVector,
       stateVector: baseVector,
+      believabilityPreference: believabilityPreference,
       lastUpdated: DateTime.now(),
       completedSessionsCount: _completedSessionsCount,
       recentSkipCount: _recentSkipCount,
     );
     await _storageService.saveUserProfileVector(_userProfileVector);
+
+    // Unify survey persistence with selected archetypes and tone
+    final primaryMeta = ArchetypeRegistry.getMetadata(
+        primary.isNotEmpty ? primary.first : UserArchetype.careerProfessional);
+    _selectedGoal = primaryMeta.title;
+    _selectedChallenge =
+        subLevels.isNotEmpty ? subLevels.first : primaryMeta.shortDescription;
+    _selectedVision = tone.name;
+    _selectedCommitment = 'Daily Routine';
+    await _storageService.setSurveyAnswers(
+        _selectedGoal, _selectedChallenge, _selectedVision, _selectedCommitment);
+
     notifyListeners();
   }
 

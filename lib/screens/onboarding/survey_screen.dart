@@ -17,12 +17,14 @@ class SurveyScreen extends StatefulWidget {
 
 class _SurveyScreenState extends State<SurveyScreen> {
   int _step = 0;
+  static const int _totalSteps = 5;
 
   // Selected State
   UserArchetype _primaryArchetype = UserArchetype.careerProfessional;
   final List<String> _selectedSubLevels = [];
   final List<UserArchetype> _secondaryArchetypes = [];
   AffirmationTone _preferredTone = AffirmationTone.empowering;
+  double _believabilityPreference = 0.75;
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +35,8 @@ class _SurveyScreenState extends State<SurveyScreen> {
         elevation: 0,
         leading: _step > 0
             ? IconButton(
-                icon: const Icon(Icons.arrow_back_ios_rounded, color: AppColors.textPrimary),
+                icon: const Icon(Icons.arrow_back_ios_rounded,
+                    color: AppColors.textPrimary),
                 onPressed: () {
                   setState(() {
                     _step--;
@@ -42,8 +45,11 @@ class _SurveyScreenState extends State<SurveyScreen> {
               )
             : null,
         title: Text(
-          'Step ${_step + 1} of 4',
-          style: GoogleFonts.inter(fontSize: 14, color: AppColors.textSecondary, fontWeight: FontWeight.w600),
+          'Step ${_step + 1} of $_totalSteps',
+          style: GoogleFonts.inter(
+              fontSize: 14,
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w600),
         ),
         centerTitle: true,
       ),
@@ -57,9 +63,10 @@ class _SurveyScreenState extends State<SurveyScreen> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(4),
                 child: LinearProgressIndicator(
-                  value: (_step + 1) / 4,
+                  value: (_step + 1) / _totalSteps,
                   backgroundColor: AppColors.border,
-                  valueColor: const AlwaysStoppedAnimation<Color>(AppColors.goldAccent),
+                  valueColor:
+                      const AlwaysStoppedAnimation<Color>(AppColors.goldAccent),
                   minHeight: 6,
                 ),
               ),
@@ -77,7 +84,9 @@ class _SurveyScreenState extends State<SurveyScreen> {
               const SizedBox(height: 12),
               // Action Button
               CustomButton(
-                text: _step == 3 ? 'Generate My Affirmation Matrix ✨' : 'Continue',
+                text: _step == _totalSteps - 1
+                    ? 'Generate My Affirmation Matrix ✨'
+                    : 'Continue',
                 backgroundColor: AppColors.buttonDark,
                 textColor: Colors.white,
                 onPressed: _onNextStep,
@@ -96,20 +105,29 @@ class _SurveyScreenState extends State<SurveyScreen> {
     switch (_step) {
       case 0:
         title = 'What describes your current chapter?';
-        subtitle = 'Select the primary identity or challenge you want to focus on.';
+        subtitle =
+            'Select the primary identity or challenge you want to focus on.';
         break;
       case 1:
         final meta = ArchetypeRegistry.getMetadata(_primaryArchetype);
         title = 'Specify your stage or focus area';
-        subtitle = 'Personalize for your exact experience within ${meta.title}.';
+        subtitle =
+            'Personalize for your exact experience within ${meta.title}.';
         break;
       case 2:
         title = 'Any intersecting areas to support?';
-        subtitle = 'Select all secondary habits, background, or life areas that apply.';
+        subtitle =
+            'Select all secondary habits, background, or life areas that apply.';
         break;
       case 3:
         title = 'What affirmation tone works best?';
-        subtitle = 'Science shows believability is essential for neural rewiring.';
+        subtitle =
+            'Choose the voice that feels most resonant and respectful.';
+        break;
+      case 4:
+        title = 'How does your mind react to positive affirmations?';
+        subtitle =
+            'Science shows believability is essential for neural rewiring.';
         break;
     }
 
@@ -149,6 +167,8 @@ class _SurveyScreenState extends State<SurveyScreen> {
         return _buildSecondaryArchetypeList();
       case 3:
         return _buildToneList();
+      case 4:
+        return _buildBelievabilityList();
       default:
         return const SizedBox.shrink();
     }
@@ -167,7 +187,8 @@ class _SurveyScreenState extends State<SurveyScreen> {
           padding: const EdgeInsets.only(bottom: 10.0),
           child: CustomCard(
             backgroundColor: isSelected ? Colors.white : AppColors.surfaceSolid,
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
             onTap: () {
               setState(() {
                 _primaryArchetype = meta.archetype;
@@ -201,7 +222,8 @@ class _SurveyScreenState extends State<SurveyScreen> {
                         meta.title,
                         style: GoogleFonts.inter(
                           fontSize: 15,
-                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                          fontWeight:
+                              isSelected ? FontWeight.w700 : FontWeight.w600,
                           color: AppColors.textPrimary,
                         ),
                       ),
@@ -219,7 +241,9 @@ class _SurveyScreenState extends State<SurveyScreen> {
                   ),
                 ),
                 Icon(
-                  isSelected ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                  isSelected
+                      ? Icons.check_circle_rounded
+                      : Icons.radio_button_unchecked_rounded,
                   color: isSelected ? AppColors.goldAccent : AppColors.textMuted,
                   size: 22,
                 ),
@@ -246,7 +270,8 @@ class _SurveyScreenState extends State<SurveyScreen> {
           padding: const EdgeInsets.only(bottom: 10.0),
           child: CustomCard(
             backgroundColor: isSelected ? Colors.white : AppColors.surfaceSolid,
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
             onTap: () {
               setState(() {
                 if (isSelected) {
@@ -259,7 +284,9 @@ class _SurveyScreenState extends State<SurveyScreen> {
             child: Row(
               children: [
                 Icon(
-                  isSelected ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
+                  isSelected
+                      ? Icons.check_box_rounded
+                      : Icons.check_box_outline_blank_rounded,
                   color: isSelected ? AppColors.goldAccent : AppColors.textMuted,
                   size: 22,
                 ),
@@ -269,7 +296,8 @@ class _SurveyScreenState extends State<SurveyScreen> {
                     sub,
                     style: GoogleFonts.inter(
                       fontSize: 14.5,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.w500,
                       color: AppColors.textPrimary,
                     ),
                   ),
@@ -299,7 +327,8 @@ class _SurveyScreenState extends State<SurveyScreen> {
           padding: const EdgeInsets.only(bottom: 10.0),
           child: CustomCard(
             backgroundColor: isSelected ? Colors.white : AppColors.surfaceSolid,
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
             onTap: () {
               setState(() {
                 if (isSelected) {
@@ -318,13 +347,16 @@ class _SurveyScreenState extends State<SurveyScreen> {
                     meta.title,
                     style: GoogleFonts.inter(
                       fontSize: 14,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.w500,
                       color: AppColors.textPrimary,
                     ),
                   ),
                 ),
                 Icon(
-                  isSelected ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
+                  isSelected
+                      ? Icons.check_box_rounded
+                      : Icons.check_box_outline_blank_rounded,
                   color: isSelected ? AppColors.goldAccent : AppColors.textMuted,
                   size: 20,
                 ),
@@ -336,7 +368,7 @@ class _SurveyScreenState extends State<SurveyScreen> {
     );
   }
 
-  // Step 4: Affirmation Tone & Believability
+  // Step 4: Affirmation Tone & Modality
   Widget _buildToneList() {
     final tones = [
       {
@@ -383,7 +415,8 @@ class _SurveyScreenState extends State<SurveyScreen> {
           padding: const EdgeInsets.only(bottom: 10.0),
           child: CustomCard(
             backgroundColor: isSelected ? Colors.white : AppColors.surfaceSolid,
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
             onTap: () {
               setState(() {
                 _preferredTone = tone;
@@ -401,7 +434,8 @@ class _SurveyScreenState extends State<SurveyScreen> {
                         item['title'] as String,
                         style: GoogleFonts.inter(
                           fontSize: 14.5,
-                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                          fontWeight:
+                              isSelected ? FontWeight.w700 : FontWeight.w600,
                           color: AppColors.textPrimary,
                         ),
                       ),
@@ -417,7 +451,95 @@ class _SurveyScreenState extends State<SurveyScreen> {
                   ),
                 ),
                 Icon(
-                  isSelected ? Icons.radio_button_checked_rounded : Icons.radio_button_unchecked_rounded,
+                  isSelected
+                      ? Icons.radio_button_checked_rounded
+                      : Icons.radio_button_unchecked_rounded,
+                  color: isSelected ? AppColors.goldAccent : AppColors.textMuted,
+                  size: 22,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // Step 5: Believability & Skepticism Calibration (NEW!)
+  Widget _buildBelievabilityList() {
+    final options = [
+      {
+        'val': 0.55,
+        'title': 'Energized & Ambitious',
+        'subtitle': 'I embrace bold stretch goals and high agency.',
+        'icon': '🚀',
+      },
+      {
+        'val': 0.75,
+        'title': 'Cautiously Open',
+        'subtitle': 'I need realistic, progressive CBT cognitive reframing.',
+        'icon': '⚖️',
+      },
+      {
+        'val': 0.92,
+        'title': 'Guarded & Sensitive',
+        'subtitle': 'My inner critic rejects cheesy statements; I need safe grounding.',
+        'icon': '🛡️',
+      },
+    ];
+
+    return ListView.builder(
+      physics: const BouncingScrollPhysics(),
+      itemCount: options.length,
+      itemBuilder: (context, index) {
+        final opt = options[index];
+        final val = opt['val'] as double;
+        final isSelected = (_believabilityPreference - val).abs() < 0.05;
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12.0),
+          child: CustomCard(
+            backgroundColor: isSelected ? Colors.white : AppColors.surfaceSolid,
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+            onTap: () {
+              setState(() {
+                _believabilityPreference = val;
+              });
+            },
+            child: Row(
+              children: [
+                Text(opt['icon'] as String, style: const TextStyle(fontSize: 24)),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        opt['title'] as String,
+                        style: GoogleFonts.inter(
+                          fontSize: 15,
+                          fontWeight:
+                              isSelected ? FontWeight.w700 : FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        opt['subtitle'] as String,
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                          height: 1.35,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  isSelected
+                      ? Icons.radio_button_checked_rounded
+                      : Icons.radio_button_unchecked_rounded,
                   color: isSelected ? AppColors.goldAccent : AppColors.textMuted,
                   size: 22,
                 ),
@@ -430,8 +552,7 @@ class _SurveyScreenState extends State<SurveyScreen> {
   }
 
   void _onNextStep() {
-    if (_step < 3) {
-      // If primary archetype sub-levels empty, auto-select the first one
+    if (_step < _totalSteps - 1) {
       if (_step == 0 && _selectedSubLevels.isEmpty) {
         final meta = ArchetypeRegistry.getMetadata(_primaryArchetype);
         if (meta.subLevels.isNotEmpty) {
@@ -442,13 +563,13 @@ class _SurveyScreenState extends State<SurveyScreen> {
         _step++;
       });
     } else {
-      // Finalize and save vector profile
       final appProvider = Provider.of<AppProvider>(context, listen: false);
       appProvider.setUserArchetypeProfile(
         primary: [_primaryArchetype],
         secondary: _secondaryArchetypes,
         subLevels: _selectedSubLevels,
         tone: _preferredTone,
+        believabilityPreference: _believabilityPreference,
       );
 
       Navigator.pushReplacement(

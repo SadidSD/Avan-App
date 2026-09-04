@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../providers/app_provider.dart';
 import '../../models/user_archetype.dart';
 import '../../theme/app_colors.dart';
-import '../main_navigation_screen.dart';
+import 'prescription_reveal_screen.dart';
 
 class LoadingScreen extends StatefulWidget {
   const LoadingScreen({Key? key}) : super(key: key);
@@ -30,17 +30,21 @@ class _LoadingScreenState extends State<LoadingScreen> {
   @override
   void initState() {
     super.initState();
-    _timer = Timer.periodic(const Duration(milliseconds: 750), (timer) {
+    _timer = Timer.periodic(const Duration(milliseconds: 450), (timer) {
       if (_currentStepIndex < _steps.length - 1) {
         setState(() {
           _currentStepIndex++;
         });
       } else {
         _timer?.cancel();
-        Provider.of<AppProvider>(context, listen: false).completeOnboarding();
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => MainNavigationScreen()),
+          PageRouteBuilder(
+            pageBuilder: (_, __, ___) => const PrescriptionRevealScreen(),
+            transitionsBuilder: (_, animation, __, child) =>
+                FadeTransition(opacity: animation, child: child),
+            transitionDuration: const Duration(milliseconds: 600),
+          ),
         );
       }
     });
