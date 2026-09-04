@@ -13,20 +13,22 @@ import 'playlists/wealth_career_pivot_playlists.dart' as wealth;
 import 'playlists/relationships_loneliness_playlists.dart' as relationships;
 import 'playlists/body_mind_sleep_playlists.dart' as body_mind;
 import 'playlists/advanced_habits_flow_playlists.dart' as advanced_habits;
+import 'playlists/high_agency_mastery_playlists.dart' as high_agency;
 
-/// Master playlist registry — aggregates all 60 scientifically-grounded playlists
-/// from 12 category modules into a single ordered list.
+/// Master playlist registry — aggregates all 63 scientifically-grounded playlists
+/// from 13 category modules into a single ordered list.
 ///
 /// Structure:
 ///    6 FREE  playlists (Morning Neural, Deep Flow, Sleep Onset, Stress SOS, Gratitude, Self-Worth)
-///   54 PREMIUM playlists across Anxiety, Heartbreak/Grief, Career/Identity,
+///   57 PREMIUM playlists across Anxiety, Heartbreak/Grief, Career/Identity,
 ///                        Performance/Student, Parenting/Spiritual/Accessible,
 ///                        Neurodiversity/ADHD, Trauma/Somatics, Wealth/Career Pivot,
-///                        Relationships/Loneliness, Body/Mind/Transitions, Advanced Habits/Flow
+///                        Relationships/Loneliness, Body/Mind/Transitions, Advanced Habits/Flow,
+///                        High-Agency Mastery (b in [0.45, 0.65])
 ///
-/// Total: 600 affirmations across 60 playlists + 57 scientific library affirmations = 657 affirmations.
+/// Total: 630 affirmations across 63 playlists + 57 scientific library affirmations = 687 affirmations.
 /// Every single affirmation includes a full 16D embedding vector, therapeutic modalities,
-/// archetype targeting, and believability scores.
+/// archetype targeting, and believability scores spanning the complete 0.45 - 1.00 ZPD range.
 
 final List<Playlist> allPlaylists = [
   ...free.freePlaylists,
@@ -41,6 +43,7 @@ final List<Playlist> allPlaylists = [
   ...relationships.relationshipsLonelinessPlaylists,
   ...body_mind.bodyMindSleepPlaylists,
   ...advanced_habits.advancedHabitsFlowPlaylists,
+  ...high_agency.highAgencyMasteryPlaylists,
 ];
 
 List<Playlist> get freePlaylists =>

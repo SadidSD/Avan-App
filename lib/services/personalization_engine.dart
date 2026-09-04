@@ -600,12 +600,13 @@ class PersonalizationEngine {
       final double cohesionFactor = 0.90 + 0.10 * playlist.cohesionScore;
 
       // 3. Multiplicative Confidence Modulators (Fix for Flaw 4 - Hybrid Metric Distortion)
-      // Archetype affinity: x1.15 multiplier instead of additive scalar
+      // Archetype affinity: x1.15 multiplier using effectiveTargetArchetypes to eliminate metadata blind spots
       double archetypeFactor = 1.0;
       bool hasArchetypeAffinity = false;
-      if (playlist.targetArchetypes != null && profile.primaryArchetypes.isNotEmpty) {
+      final effectiveArchetypes = playlist.effectiveTargetArchetypes;
+      if (effectiveArchetypes.isNotEmpty && profile.primaryArchetypes.isNotEmpty) {
         for (var primary in profile.primaryArchetypes) {
-          if (playlist.targetArchetypes!.contains(primary)) {
+          if (effectiveArchetypes.contains(primary)) {
             hasArchetypeAffinity = true;
             archetypeFactor = 1.15;
             break;
@@ -613,12 +614,13 @@ class PersonalizationEngine {
         }
       }
 
-      // Sub-level affinity: x1.10 multiplier instead of additive scalar (with robust string match)
+      // Sub-level affinity: x1.10 multiplier using effectiveTargetSubLevels (with robust string match)
       double subLevelFactor = 1.0;
-      if (playlist.targetSubLevels != null) {
+      final effectiveSubLevels = playlist.effectiveTargetSubLevels;
+      if (effectiveSubLevels.isNotEmpty) {
         for (var sub in profile.selectedSubLevels) {
           final lowerSub = sub.toLowerCase();
-          if (playlist.targetSubLevels!.any((ts) {
+          if (effectiveSubLevels.any((ts) {
             final lowerTs = ts.toLowerCase();
             return lowerTs.contains(lowerSub) || lowerSub.contains(lowerTs);
           })) {

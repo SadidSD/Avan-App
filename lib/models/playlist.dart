@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'affirmation.dart';
 import 'user_archetype.dart';
+import 'user_profile_vector.dart';
 import '../services/audio_engine_service.dart';
 
 class Playlist {
@@ -89,6 +90,97 @@ class Playlist {
     }
     _cachedAverageBelievability = sum / affirmations.length;
     return _cachedAverageBelievability!;
+  }
+
+  /// Returns the declared target archetypes, or dynamically aggregates distinct archetypes
+  /// from all constituent affirmations to eliminate ranking metadata blind spots.
+  List<UserArchetype> get effectiveTargetArchetypes {
+    if (targetArchetypes != null && targetArchetypes!.isNotEmpty) {
+      return targetArchetypes!;
+    }
+    final Set<UserArchetype> derived = {};
+    for (final aff in affirmations) {
+      derived.addAll(aff.primaryArchetypes);
+    }
+    return derived.toList();
+  }
+
+  /// Returns the declared target sub-levels, or dynamically aggregates distinct sub-levels
+  /// from all constituent affirmations.
+  List<String> get effectiveTargetSubLevels {
+    if (targetSubLevels != null && targetSubLevels!.isNotEmpty) {
+      return targetSubLevels!;
+    }
+    final Set<String> derived = {};
+    for (final aff in affirmations) {
+      derived.addAll(aff.subLevels);
+    }
+    return derived.toList();
+  }
+
+  /// Returns a dynamically adapted copy of this playlist sequenced specifically
+  /// for the active user's current habituation state and ZPD therapeutic arc.
+  Playlist adaptForUser({
+    required UserProfileVector profile,
+    Map<String, int>? lastListenedTimestamps,
+    bool isGrowthMode = true,
+    DateTime? now,
+  }) {
+    if (affirmations.length <= 2) return this;
+
+    final currentTime = now ?? DateTime.now();
+
+    // 1. Calculate each affirmation's habituation freshness H in [0.20, 1.0]
+    final scoredAffirmations = affirmations.map((aff) {
+      final lastHeard = lastListenedTimestamps?[aff.id];
+      double habituation = 1.0;
+      if (lastHeard != null && lastHeard > 0) {
+        final elapsedMs = currentTime.millisecondsSinceEpoch - lastHeard;
+        if (elapsedMs > 0) {
+          final elapsedHours = elapsedMs / (3600.0 * 1000.0);
+          final decay = math.exp(-elapsedHours / 40.0);
+          habituation = (1.0 - 0.80 * decay).clamp(0.20, 1.0);
+        }
+      }
+
+      return (
+        affirmation: aff,
+        habituation: habituation,
+        believability: aff.believabilityScore,
+      );
+    }).toList();
+
+    // 2. Split into fresh vs recently heard (stale) affirmations
+    // Affirmations with H >= 0.50 are fresh. Stale ones (H < 0.50) are moved toward the end.
+    final fresh = scoredAffirmations.where((s) => s.habituation >= 0.50).toList();
+    final stale = scoredAffirmations.where((s) => s.habituation < 0.50).toList();
+
+    // 3. Sort fresh affirmations into a clinical therapeutic arc:
+    // Grounding (high believability >= 0.85) -> Reframing -> High Agency / Action
+    fresh.sort((a, b) => b.believability.compareTo(a.believability));
+    stale.sort((a, b) => b.believability.compareTo(a.believability));
+
+    final reordered = [
+      ...fresh.map((s) => s.affirmation),
+      ...stale.map((s) => s.affirmation),
+    ];
+
+    return Playlist(
+      id: id,
+      title: title,
+      duration: duration,
+      category: category,
+      imagePath: imagePath,
+      isPremium: isPremium,
+      defaultAmbientSound: defaultAmbientSound,
+      description: description,
+      subtitle: subtitle,
+      targetArchetypes: targetArchetypes,
+      targetSubLevels: targetSubLevels,
+      tags: tags,
+      archetypeId: archetypeId,
+      affirmations: reordered,
+    );
   }
 
   Playlist({

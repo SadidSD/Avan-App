@@ -467,7 +467,10 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                               accentColor: accent,
                               glowIntensity: 0.35,
                               onTap: () {
-                                audioProvider.openPlaylist(tailoredPlaylist, context);
+                                audioProvider.openPlaylist(
+                                  appProvider.adaptPlaylistForUser(tailoredPlaylist),
+                                  context,
+                                );
                               },
                               child: Row(
                                 children: [
@@ -840,7 +843,10 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                     if (playlist.isPremium && !isPremium) {
                       PaywallModal.show(context);
                     } else {
-                      audioProvider.openPlaylist(playlist, context);
+                      audioProvider.openPlaylist(
+                        appProvider.adaptPlaylistForUser(playlist),
+                        context,
+                      );
                     }
                   },
                   child: Row(

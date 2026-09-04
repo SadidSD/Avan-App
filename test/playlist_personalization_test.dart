@@ -6,8 +6,8 @@ import 'package:avan_app/services/personalization_engine.dart';
 
 void main() {
   group('Playlist Dimensional Personification Suite', () {
-    test('Every one of the 60 playlists computes a valid 16D centroid vector', () {
-      expect(allPlaylists.length, equals(60));
+    test('Every one of the 63 playlists computes a valid 16D centroid vector', () {
+      expect(allPlaylists.length, equals(63));
 
       for (var playlist in allPlaylists) {
         final centroid = playlist.centroidVector;

@@ -289,6 +289,16 @@ class AppProvider with ChangeNotifier {
     );
   }
 
+  /// Adapts any playlist specifically for the active user: prunes habituated quotes and sequences
+  /// affirmations into an escalating clinical therapeutic arc matched to user's ZPD state.
+  Playlist adaptPlaylistForUser(Playlist playlist) {
+    return playlist.adaptForUser(
+      profile: _userProfileVector,
+      lastListenedTimestamps: _lastListenedTimestamps,
+      isGrowthMode: isGrowthMode,
+    );
+  }
+
   Future<void> setUserArchetypeProfile({
     required List<UserArchetype> primary,
     required List<UserArchetype> secondary,

@@ -5,6 +5,7 @@ import 'package:avan_app/models/affirmation.dart';
 import 'package:avan_app/models/playlist.dart';
 import 'package:avan_app/services/personalization_engine.dart';
 import 'package:avan_app/data/affirmation_library.dart';
+import 'package:avan_app/data/playlists_data.dart';
 
 void main() {
   group('PersonalizationEngine Tests', () {
@@ -578,6 +579,140 @@ void main() {
       // Defensive clamping should keep it within valid range without NaN
       expect(profile.effectiveBelievabilityPreference, closeTo(0.8, 0.01));
       expect(profile.effectiveBelievabilityPreference.isNaN, isFalse);
+    });
+
+    test('Playlists are properly indexed and ranked across archetypes', () {
+      final playlists = allPlaylists;
+      expect(playlists.length, equals(63));
+
+      for (var pl in playlists) {
+        expect(pl.affirmations.isNotEmpty, isTrue);
+        expect(pl.centroidVector.isNotEmpty, isTrue);
+        expect(pl.cohesionScore, greaterThan(0.0));
+        expect(pl.averageBelievabilityScore, greaterThan(0.0));
+      }
+
+      // Test archetype rankings produce relevant top matches
+      final archetypesToTest = [
+        UserArchetype.careerProfessional,
+        UserArchetype.anxiousOverthinker,
+        UserArchetype.heartbreakSurvivor,
+        UserArchetype.personWithIDD,
+        UserArchetype.athlete,
+        UserArchetype.spiritualSeeker,
+      ];
+
+      for (var arch in archetypesToTest) {
+        final profile = UserProfileVector(
+          primaryArchetypes: [arch],
+          vector: PersonalizationEngine.buildArchetypeBaseVector(
+            primary: [arch],
+            secondary: [],
+            subLevels: [],
+            tone: AffirmationTone.empowering,
+          ),
+        );
+        final ranked = PersonalizationEngine.rankPlaylists(
+          profile: profile,
+          playlists: playlists,
+          isGrowthMode: true,
+        );
+        expect(ranked.isNotEmpty, isTrue);
+        expect(ranked.first.matchScore, greaterThan(0.50));
+      }
+    });
+
+    test('effectiveTargetArchetypes eliminates ranking blind spots for playlists with null targetArchetypes', () {
+      // Find a playlist that had targetArchetypes: null (e.g. Morning Neural Activation)
+      final morning = allPlaylists.firstWhere((p) => p.id == 'pl_morning_neural');
+      expect(morning.targetArchetypes, isNull);
+
+      // effectiveTargetArchetypes should automatically derive from its affirmations!
+      expect(morning.effectiveTargetArchetypes.isNotEmpty, isTrue);
+
+      // Same for Deep Flow
+      final deepFlow = allPlaylists.firstWhere((p) => p.id == 'pl_deep_flow');
+      expect(deepFlow.effectiveTargetArchetypes, contains(UserArchetype.careerProfessional));
+      expect(deepFlow.effectiveTargetArchetypes, contains(UserArchetype.selfImprovement));
+    });
+
+    test('adaptForUser reorders affirmations into a clinical therapeutic arc and demotes habituated quotes', () {
+      final profile = UserProfileVector(
+        primaryArchetypes: [UserArchetype.careerProfessional],
+        completedSessionsCount: 5,
+      );
+
+      final playlist = Playlist(
+        id: 'pl_test_arc',
+        title: 'Test Therapeutic Arc',
+        affirmations: [
+          Affirmation(id: 'aff_action', text: 'Bold action', believabilityScore: 0.60),
+          Affirmation(id: 'aff_ground', text: 'Gentle breath', believabilityScore: 0.95),
+          Affirmation(id: 'aff_reframe', text: 'Cognitive shift', believabilityScore: 0.85),
+          Affirmation(id: 'aff_agency', text: 'Self efficacy', believabilityScore: 0.75),
+        ],
+      );
+
+      final now = DateTime.now();
+
+      // 1. Without habituation: should sort into descending believability arc (grounding -> action)
+      final freshSession = playlist.adaptForUser(
+        profile: profile,
+        now: now,
+      );
+      expect(freshSession.affirmations[0].id, equals('aff_ground')); // 0.95
+      expect(freshSession.affirmations[1].id, equals('aff_reframe')); // 0.85
+      expect(freshSession.affirmations[2].id, equals('aff_agency')); // 0.75
+      expect(freshSession.affirmations[3].id, equals('aff_action')); // 0.60
+
+      // 2. With habituation: aff_ground was just listened to 30 minutes ago (H < 0.50)
+      final habituatedSession = playlist.adaptForUser(
+        profile: profile,
+        lastListenedTimestamps: {
+          'aff_ground': now.subtract(const Duration(minutes: 30)).millisecondsSinceEpoch,
+        },
+        now: now,
+      );
+      // Stale aff_ground should be demoted to the end of the session!
+      expect(habituatedSession.affirmations.last.id, equals('aff_ground'));
+      // Fresh aff_reframe should now lead the session
+      expect(habituatedSession.affirmations.first.id, equals('aff_reframe'));
+    });
+
+    test('High-agency playlists match advanced ZPD users while shielding vulnerable Day-1 users', () {
+      // Day-1 vulnerable user needing gentle grounding (believability = 0.90)
+      final beginnerUser = UserProfileVector(
+        primaryArchetypes: [UserArchetype.careerProfessional],
+        believabilityPreference: 0.90,
+        completedSessionsCount: 0,
+      );
+
+      // Advanced veteran user who completed 30 sessions (ZPD ladder expanded to ~0.65-0.70)
+      final advancedUser = UserProfileVector(
+        primaryArchetypes: [UserArchetype.careerProfessional],
+        believabilityPreference: 0.80,
+        completedSessionsCount: 35,
+      );
+
+      final rankedForBeginner = PersonalizationEngine.rankPlaylists(
+        profile: beginnerUser,
+        playlists: allPlaylists,
+        isGrowthMode: true,
+      );
+
+      final rankedForAdvanced = PersonalizationEngine.rankPlaylists(
+        profile: advancedUser,
+        playlists: allPlaylists,
+        isGrowthMode: true,
+      );
+
+      // High-agency playlist 'Ruthless Execution & Strategic Leverage' (average believability ~0.55)
+      final beginnerRank = rankedForBeginner.indexWhere((m) => m.playlist.id == 'pl_ruthless_execution');
+      final advancedRank = rankedForAdvanced.indexWhere((m) => m.playlist.id == 'pl_ruthless_execution');
+
+      // Advanced user should rank Ruthless Execution significantly higher than the beginner user!
+      expect(advancedRank, lessThan(beginnerRank));
+      expect(advancedRank, lessThanOrEqualTo(3)); // In top 3 for advanced user!
     });
   });
 }

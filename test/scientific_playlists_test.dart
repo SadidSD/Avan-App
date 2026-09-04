@@ -6,10 +6,10 @@ import 'package:avan_app/services/personalization_engine.dart';
 
 void main() {
   group('Scientific Playlists Suite Tests (60 Playlists / 600+ Affirmations)', () {
-    test('All 60 playlists are registered and valid', () {
-      expect(allPlaylists.length, equals(60));
+    test('All 63 playlists are registered and valid', () {
+      expect(allPlaylists.length, equals(63));
       expect(freePlaylists.length, equals(6));
-      expect(premiumPlaylists.length, equals(54));
+      expect(premiumPlaylists.length, equals(57));
     });
 
     test('Every affirmation has a 16-dimensional embedding vector', () {
