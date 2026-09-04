@@ -360,20 +360,44 @@ class _WidgetsTabState extends State<WidgetsTab> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'How to Add AVAN Widget',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+              Row(
+                children: const [
+                  Icon(Icons.palette_rounded, color: AppColors.goldAccent, size: 22),
+                  SizedBox(width: 8),
+                  Text(
+                    'Interactive Studio Preview',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceElevated,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: const Text(
+                  '🎨 You can design and test your widget style live! Native iOS WidgetKit & Android AppWidget integration is launching in AVAN v2 for direct home screen syncing.',
+                  style: TextStyle(fontSize: 12, color: AppColors.textPrimary, height: 1.4),
                 ),
               ),
               const SizedBox(height: 16),
+              const Text(
+                'How to add when v2 arrives:',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 12),
               _buildStepItem('1', 'Go to your phone\'s Home Screen or Lock Screen.'),
               _buildStepItem('2', 'Touch and hold an empty space until apps jiggle.'),
               _buildStepItem('3', 'Tap the (+) plus button at the top corner.'),
-              _buildStepItem('4', 'Search for "AVAN" and select your custom widget layout.'),
+              _buildStepItem('4', 'Search for "AVAN" and select your customized layout.'),
               const SizedBox(height: 20),
               CustomButton(
                 text: 'Got It!',

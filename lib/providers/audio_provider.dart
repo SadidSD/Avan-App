@@ -159,7 +159,12 @@ class AudioProvider with ChangeNotifier {
     openCustomAudio(title: title, quote: quote, duration: '1 min');
   }
 
-  void openCustomAudio({required String title, required String quote, String duration = '1 min'}) {
+  void openCustomAudio({
+    required String title,
+    required String quote,
+    String duration = '1 min',
+    bool speakTts = true,
+  }) {
     final customAffirmation = Affirmation(
       id: 'custom_${DateTime.now().millisecondsSinceEpoch}',
       quote: quote,
@@ -180,8 +185,10 @@ class AudioProvider with ChangeNotifier {
     _sessionPositionSeconds = 0;
     _isPlayerOpen = true;
 
-    _playCurrentAffirmation();
-    _startSessionTicker();
+    if (speakTts) {
+      _playCurrentAffirmation();
+      _startSessionTicker();
+    }
     notifyListeners();
   }
 
@@ -265,9 +272,7 @@ class AudioProvider with ChangeNotifier {
 
   void togglePlayPause() {
     if (_audioService.isPlaying) {
-      _gapTimer?.cancel();
-      _watchdogTimer?.cancel();
-      _audioService.pause();
+      pause();
     } else {
       if (_sessionPositionSeconds >= _sessionDurationSeconds) {
         _sessionPositionSeconds = 0;
@@ -275,7 +280,25 @@ class AudioProvider with ChangeNotifier {
       }
       _playCurrentAffirmation();
       _startSessionTicker();
+      notifyListeners();
     }
+  }
+
+  void pause() {
+    if (_audioService.isPlaying) {
+      _gapTimer?.cancel();
+      _watchdogTimer?.cancel();
+      _sessionTicker?.cancel();
+      _audioService.pause();
+      notifyListeners();
+    }
+  }
+
+  void stop() {
+    _gapTimer?.cancel();
+    _watchdogTimer?.cancel();
+    _sessionTicker?.cancel();
+    _audioService.stop();
     notifyListeners();
   }
 

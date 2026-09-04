@@ -444,10 +444,14 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
     if (_currentlyPlayingId == rec.id && _isPlayingCustomRecording) {
       await _audioPlayer.pause();
     } else {
+      if (audioProvider.isPlaying) {
+        audioProvider.pause();
+      }
       audioProvider.openCustomAudio(
         title: rec.title,
         quote: 'Personal Voice Studio Recording • ${_formatDuration(rec.durationSeconds)}',
         duration: '${rec.durationSeconds}s',
+        speakTts: false,
       );
       try {
         await _audioPlayer.play(kIsWeb ? UrlSource(rec.audioPath) : DeviceFileSource(rec.audioPath));
@@ -746,6 +750,28 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
           Center(
             child: Column(
               children: [
+                if (!_isSpeechEnabled) ...[
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceElevated,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.mic_none_rounded, size: 14, color: AppColors.textSecondary),
+                        SizedBox(width: 6),
+                        Text(
+                          'Tap microphone to practice speaking aloud',
+                          style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 Text(
                   _micState == MicState.listening
                       ? 'Listening... Repeat now'

@@ -183,6 +183,80 @@ class Playlist {
     );
   }
 
+  static String resolveValidAssetPath({
+    String? rawPath,
+    required String category,
+    List<String>? tags,
+    String? title,
+  }) {
+    const validAssets = {
+      'assets/images/featured_meditation.jpg',
+      'assets/images/onboarding_archway_sun.jpg',
+      'assets/images/onboarding_girl_profile.jpg',
+      'assets/images/onboarding_moon_clouds.jpg',
+      'assets/images/sleep_story_night.jpg',
+    };
+
+    if (rawPath != null && validAssets.contains(rawPath)) {
+      return rawPath;
+    }
+
+    final combined =
+        '${category.toLowerCase()} ${(tags ?? []).join(" ").toLowerCase()} ${(title ?? "").toLowerCase()} ${(rawPath ?? "").toLowerCase()}';
+
+    // 1. Sleep, Night, Bedtime, Rest
+    if (combined.contains('sleep') ||
+        combined.contains('night') ||
+        combined.contains('bedtime') ||
+        combined.contains('rest') ||
+        combined.contains('awakening')) {
+      return 'assets/images/sleep_story_night.jpg';
+    }
+
+    // 2. Anxiety, Panic, Calm, Grief, Heartbreak, Somatic, Nervous System
+    if (combined.contains('anxiety') ||
+        combined.contains('panic') ||
+        combined.contains('calm') ||
+        combined.contains('grief') ||
+        combined.contains('heartbreak') ||
+        combined.contains('breakup') ||
+        combined.contains('trauma') ||
+        combined.contains('loneliness')) {
+      return 'assets/images/onboarding_moon_clouds.jpg';
+    }
+
+    // 3. Morning, Activation, Career, Wealth, Focus, Flow, Performance, Executive, Energy
+    if (combined.contains('morning') ||
+        combined.contains('activation') ||
+        combined.contains('career') ||
+        combined.contains('wealth') ||
+        combined.contains('focus') ||
+        combined.contains('flow') ||
+        combined.contains('performance') ||
+        combined.contains('dopamine') ||
+        combined.contains('leader') ||
+        combined.contains('student') ||
+        combined.contains('habits')) {
+      return 'assets/images/onboarding_archway_sun.jpg';
+    }
+
+    // 4. Identity, Self-Compassion, Women, Body, Matrescence, Aging, Parenting, Spiritual
+    if (combined.contains('identity') ||
+        combined.contains('compassion') ||
+        combined.contains('body') ||
+        combined.contains('parenting') ||
+        combined.contains('matrescence') ||
+        combined.contains('aging') ||
+        combined.contains('spiritual') ||
+        combined.contains('lgbtq') ||
+        combined.contains('culture')) {
+      return 'assets/images/onboarding_girl_profile.jpg';
+    }
+
+    // 5. Default / General Mindfulness
+    return 'assets/images/featured_meditation.jpg';
+  }
+
   Playlist({
     required this.id,
     required this.title,
@@ -209,7 +283,12 @@ class Playlist {
     this.archetypeId,
   })  : duration = duration ?? estimatedDuration ?? totalDuration ?? durationText ?? durationString ?? '10 min',
         category = category ?? (tags != null && tags.isNotEmpty ? tags.first : 'Personal Growth'),
-        imagePath = imagePath ?? coverImageUrl ?? thumbnailUrl ?? 'assets/images/featured_meditation.jpg',
+        imagePath = resolveValidAssetPath(
+          rawPath: imagePath ?? coverImageUrl ?? thumbnailUrl,
+          category: category ?? (tags != null && tags.isNotEmpty ? tags.first : 'Personal Growth'),
+          tags: tags,
+          title: title,
+        ),
         defaultAmbientSound = defaultAmbientSound ?? ambientSound ?? AmbientSound.solfeggio528,
         targetArchetypes = targetArchetypes ?? primaryArchetypes,
         targetSubLevels = targetSubLevels ?? subLevels,

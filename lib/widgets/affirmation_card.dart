@@ -41,7 +41,7 @@ class AffirmationCard extends StatelessWidget {
         width: double.infinity,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20.0),
-          color: Colors.white,
+          color: AppColors.surface,
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.06),
@@ -59,7 +59,7 @@ class AffirmationCard extends StatelessWidget {
           border: Border.all(
             color: isFavorite
                 ? accentColor.withOpacity(0.35)
-                : Colors.black.withOpacity(0.04),
+                : AppColors.border,
             width: 1.0,
           ),
         ),

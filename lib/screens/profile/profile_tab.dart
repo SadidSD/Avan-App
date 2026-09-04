@@ -569,7 +569,7 @@ class _ProfileTabState extends State<ProfileTab> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Growth (Deep Sapphire/Teal) for energizing motivation, or Healing (Deep Violet/Rose) for calming somatic recovery.',
+            'Growth (Earthy Forest Green) for energizing action, or Healing (Blue-Green Teal) for calming somatic recovery.',
             style: GoogleFonts.inter(fontSize: 11.5, color: AppColors.textSecondary, height: 1.35),
           ),
           const SizedBox(height: 14),
@@ -766,9 +766,9 @@ class _ProfileTabState extends State<ProfileTab> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Row(
           children: const [
-            Icon(Icons.cloud_done_rounded, color: AppColors.goldAccent),
+            Icon(Icons.shield_rounded, color: AppColors.goldAccent),
             SizedBox(width: 8),
-            Text('Cloud Sync & Backup', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Text('Data Vault & Auto-Backup', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           ],
         ),
         content: Column(
@@ -777,8 +777,8 @@ class _ProfileTabState extends State<ProfileTab> {
           children: [
             Text(
               appProvider.isCloudSyncEnabled
-                  ? 'Your journal entries, streak progress, and vision boards are backed up securely.'
-                  : 'Enable cloud sync to preserve your progress across all your iOS and Android devices.',
+                  ? 'Your journal entries, streak progress, and vision boards are safely preserved in your encrypted on-device data vault.'
+                  : 'Enable automated local backups to ensure your progress, journals, and vision boards are safely preserved on this device. (Multi-device cloud sync coming in v2).',
               style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4),
             ),
           ],
@@ -791,7 +791,7 @@ class _ProfileTabState extends State<ProfileTab> {
               Navigator.pop(ctx);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(appProvider.isCloudSyncEnabled ? 'Cloud Sync Paused' : 'Cloud Sync Activated! ☁️'),
+                  content: Text(appProvider.isCloudSyncEnabled ? 'Auto-Backup Paused' : 'Local Vault Backup Active! 💾✨'),
                   behavior: SnackBarBehavior.floating,
                 ),
               );
@@ -801,7 +801,7 @@ class _ProfileTabState extends State<ProfileTab> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
             child: Text(
-              appProvider.isCloudSyncEnabled ? 'Pause Sync' : 'Enable Backup',
+              appProvider.isCloudSyncEnabled ? 'Pause Backup' : 'Enable Backup',
               style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
             ),
           ),
@@ -973,7 +973,7 @@ class _ProfileTabState extends State<ProfileTab> {
               ),
               const SizedBox(height: 16),
               _buildFaqItem('How does the personalization algorithm work?', 'AVAN uses a 16-dimensional neuroplastic vector matching your survey identity (Career, Anxiety, Heartbreak, Grief, etc.) with science-backed affirmations and frequencies.'),
-              _buildFaqItem('What is the difference between Growth and Healing modes?', 'Growth mode uses energetic Deep Sapphire and Electric Teal with action-focused affirmations. Healing mode uses calming Deep Violet and Rose Quartz with somatic grounding.'),
+              _buildFaqItem('What is the difference between Growth and Healing modes?', 'Growth mode uses Earthy Forest Green with action-oriented neuroplastic affirmations and cognitive momentum. Healing mode uses Blue-Green Teal with somatic grounding and nervous system regulation.'),
               _buildFaqItem('How do I upload photos to my Vision Board?', 'Tap any goal card in the Vision Board tab, then tap the photo icon or "+ Upload" card to pick pictures directly from your camera roll.'),
               const SizedBox(height: 14),
               const Text('Need additional assistance? Contact support at support@avanapp.com', style: TextStyle(fontSize: 12, color: AppColors.textSecondary, fontStyle: FontStyle.italic)),

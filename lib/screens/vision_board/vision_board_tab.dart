@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -167,8 +168,8 @@ class _VisionBoardTabState extends State<VisionBoardTab> {
               const SizedBox(height: 14),
               Text(
                 pngBytes != null
-                    ? 'Rendered in 3x Retina HD. Save or screenshot this layout to anchor your subconscious goals every time you unlock your phone!'
-                    : 'Tip: Capture or save this layout to keep your subconscious focused on your goals every time you unlock your phone!',
+                    ? 'Rendered in 3x Retina HD. Take a screenshot of this preview to set as your phone lock screen wallpaper!'
+                    : 'Tip: Take a screenshot of this layout to anchor your subconscious goals every time you unlock your phone!',
                 style: const TextStyle(fontSize: 12, color: AppColors.textMuted, fontStyle: FontStyle.italic),
                 textAlign: TextAlign.center,
               ),
@@ -177,15 +178,22 @@ class _VisionBoardTabState extends State<VisionBoardTab> {
           actions: [
             TextButton(
               onPressed: () {
+                final appProvider = context.read<AppProvider>();
+                if (appProvider.activeVisionBoard.blocks.isNotEmpty) {
+                  final quote = appProvider.activeVisionBoard.blocks.first.quote;
+                  if (quote.isNotEmpty) {
+                    Clipboard.setData(ClipboardData(text: quote));
+                  }
+                }
                 Navigator.pop(ctx);
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Wallpaper generated & ready for lock screen! 📱✨'),
+                    content: Text('Wallpaper preview ready! Take a screenshot to set on lock screen. 📱✨'),
                     behavior: SnackBarBehavior.floating,
                   ),
                 );
               },
-              child: const Text('Save & Done', style: TextStyle(color: AppColors.goldAccent, fontWeight: FontWeight.bold)),
+              child: const Text('Done', style: TextStyle(color: AppColors.goldAccent, fontWeight: FontWeight.bold)),
             ),
           ],
         ),

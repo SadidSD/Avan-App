@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../models/journal_entry.dart';
 import '../../providers/app_provider.dart';
@@ -152,7 +153,12 @@ class _JournalTabState extends State<JournalTab> {
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 6),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    DateFormat('MMM d, yyyy • h:mm a').format(entry.date),
+                                    style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
+                                  ),
+                                  const SizedBox(height: 8),
                                   Text(
                                     entry.body,
                                     style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
@@ -280,18 +286,43 @@ class _JournalTabState extends State<JournalTab> {
                     CustomButton(
                       text: 'Save Entry',
                       onPressed: () {
-                        if (titleController.text.isNotEmpty) {
-                          appProvider.addJournalEntry(
-                            JournalEntry(
-                              id: DateTime.now().toString(),
-                              title: titleController.text,
-                              body: bodyController.text,
-                              mood: selectedMood,
-                              date: DateTime.now(),
+                        final title = titleController.text.trim();
+                        final body = bodyController.text.trim();
+                        if (title.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Please enter a title for your reflection ✍️'),
+                              behavior: SnackBarBehavior.floating,
                             ),
                           );
-                          Navigator.pop(context);
+                          return;
                         }
+                        if (body.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Please write your thoughts in the journal entry ✍️'),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                          return;
+                        }
+
+                        appProvider.addJournalEntry(
+                          JournalEntry(
+                            id: DateTime.now().toString(),
+                            title: title,
+                            body: body,
+                            mood: selectedMood,
+                            date: DateTime.now(),
+                          ),
+                        );
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Reflection saved to your journal! ✨'),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
                       },
                     ),
                   ],

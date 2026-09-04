@@ -175,8 +175,9 @@ class _AffirmationsTabState extends State<AffirmationsTab> {
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                       decoration: BoxDecoration(
-                                        color: Colors.white,
+                                        color: AppColors.surfaceSolid,
                                         borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(color: AppColors.border),
                                       ),
                                       child: Text(
                                         currentAff.category.toUpperCase(),
@@ -255,11 +256,16 @@ class _AffirmationsTabState extends State<AffirmationsTab> {
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                   children: [
-                                    // Refresh / Previous
+                                    // Previous Affirmation
                                     Container(
-                                      decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.surfaceElevated,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: AppColors.border),
+                                      ),
                                       child: IconButton(
-                                        icon: const Icon(Icons.refresh_rounded, color: AppColors.textPrimary),
+                                        icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textPrimary),
+                                        tooltip: 'Previous Affirmation',
                                         onPressed: () {
                                           setState(() {
                                             _currentIndex = (_currentIndex - 1 + affirmations.length) % affirmations.length;
@@ -287,9 +293,14 @@ class _AffirmationsTabState extends State<AffirmationsTab> {
 
                                     // Next Affirmation
                                     Container(
-                                      decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.surfaceElevated,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: AppColors.border),
+                                      ),
                                       child: IconButton(
                                         icon: const Icon(Icons.arrow_forward_rounded, color: AppColors.textPrimary),
+                                        tooltip: 'Next Affirmation',
                                         onPressed: () {
                                           setState(() {
                                             _currentIndex = (_currentIndex + 1) % affirmations.length;
