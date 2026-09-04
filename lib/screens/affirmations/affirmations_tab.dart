@@ -9,15 +9,22 @@ import '../../data/playlists_data.dart';
 import '../../models/affirmation.dart';
 
 class AffirmationsTab extends StatefulWidget {
-  const AffirmationsTab({Key? key}) : super(key: key);
+  final String initialTab;
+  const AffirmationsTab({Key? key, this.initialTab = 'Today'}) : super(key: key);
 
   @override
   State<AffirmationsTab> createState() => _AffirmationsTabState();
 }
 
 class _AffirmationsTabState extends State<AffirmationsTab> {
-  String _selectedTab = 'Today'; // Today, Favorites, All
+  late String _selectedTab;
   int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedTab = widget.initialTab;
+  }
 
   List<Affirmation> _getFilteredAffirmations(AppProvider appProvider) {
     if (_selectedTab == 'Favorites') {
@@ -52,6 +59,8 @@ class _AffirmationsTabState extends State<AffirmationsTab> {
     final appProvider = Provider.of<AppProvider>(context);
     final audioProvider = Provider.of<AudioProvider>(context);
     final affirmations = _getFilteredAffirmations(appProvider);
+    final accent = AppColors.accentForMode(appProvider.isGrowthMode);
+    final canPop = Navigator.canPop(context);
 
     if (_currentIndex >= affirmations.length && affirmations.isNotEmpty) {
       _currentIndex = 0;
@@ -67,18 +76,24 @@ class _AffirmationsTabState extends State<AffirmationsTab> {
               // Header
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  Icon(Icons.notes_rounded, color: AppColors.textPrimary, size: 24),
+                children: [
+                  if (canPop)
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back_ios_rounded, color: AppColors.textPrimary, size: 20),
+                      onPressed: () => Navigator.pop(context),
+                    )
+                  else
+                    const Icon(Icons.notes_rounded, color: AppColors.textPrimary, size: 24),
                   Text(
-                    'Daily Affirmations 🌿',
-                    style: TextStyle(
+                    _selectedTab == 'Favorites' ? 'Saved Favorites ❤️' : 'Daily Affirmations 🌿',
+                    style: const TextStyle(
                       fontFamily: 'Plus Jakarta Sans',
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: AppColors.textPrimary,
                     ),
                   ),
-                  Icon(Icons.auto_awesome_rounded, color: AppColors.goldAccent, size: 24),
+                  const Icon(Icons.auto_awesome_rounded, color: AppColors.goldAccent, size: 24),
                 ],
               ),
               const SizedBox(height: 20),
@@ -93,8 +108,8 @@ class _AffirmationsTabState extends State<AffirmationsTab> {
                     child: ChoiceChip(
                       label: Text(tab),
                       selected: isSelected,
-                      selectedColor: AppColors.buttonDark,
-                      backgroundColor: AppColors.cardSurface,
+                      selectedColor: accent,
+                      backgroundColor: AppColors.surfaceElevated,
                       labelStyle: TextStyle(
                         color: isSelected ? Colors.white : AppColors.textSecondary,
                         fontWeight: FontWeight.w600,
@@ -102,7 +117,7 @@ class _AffirmationsTabState extends State<AffirmationsTab> {
                       ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
-                        side: const BorderSide(color: Colors.transparent),
+                        side: BorderSide(color: isSelected ? accent : AppColors.border),
                       ),
                       onSelected: (selected) {
                         if (selected) {
@@ -122,7 +137,7 @@ class _AffirmationsTabState extends State<AffirmationsTab> {
               Expanded(
                 child: affirmations.isEmpty
                     ? CustomCard(
-                        backgroundColor: AppColors.softBeige,
+                        backgroundColor: AppColors.surfaceElevated,
                         child: Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -149,7 +164,7 @@ class _AffirmationsTabState extends State<AffirmationsTab> {
                           final isFav = appProvider.favoriteAffirmations.contains(currentAff.id);
 
                           return CustomCard(
-                            backgroundColor: AppColors.softBeige,
+                            backgroundColor: AppColors.surfaceElevated,
                             padding: const EdgeInsets.all(28.0),
                             child: Column(
                               children: [

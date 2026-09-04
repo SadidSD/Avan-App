@@ -129,9 +129,7 @@ class _JournalTabState extends State<JournalTab> {
                                           const SizedBox(width: 8),
                                           GestureDetector(
                                             onTap: () {
-                                              setState(() {
-                                                entry.isFavorite = !entry.isFavorite;
-                                              });
+                                              appProvider.toggleJournalFavorite(entry.id);
                                             },
                                             child: Icon(
                                               entry.isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,

@@ -66,8 +66,8 @@ class _AudioPlayerBarState extends State<AudioPlayerBar>
           filter: ImageFilter.blur(sigmaX: 20.0, sigmaY: 20.0),
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.92),
-              border: Border.all(color: Colors.black.withOpacity(0.06), width: 1.0),
+              color: AppColors.surface.withOpacity(0.94),
+              border: Border.all(color: AppColors.border, width: 1.0),
             ),
             child: InkWell(
               onTap: () {

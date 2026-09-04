@@ -434,6 +434,15 @@ class AppProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> toggleJournalFavorite(String id) async {
+    final index = _journalEntries.indexWhere((e) => e.id == id);
+    if (index != -1) {
+      _journalEntries[index].isFavorite = !_journalEntries[index].isFavorite;
+      await _storageService.saveJournalEntries(_journalEntries);
+      notifyListeners();
+    }
+  }
+
   Future<void> incrementStreak() async {
     _streakData.incrementStreak(DateTime.now());
     await _storageService.saveStreakData(_streakData);

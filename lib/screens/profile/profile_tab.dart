@@ -12,6 +12,8 @@ import '../../widgets/custom_card.dart';
 import '../my_voice/my_voice_tab.dart';
 import '../onboarding/survey_screen.dart';
 import '../widgets_preview/widgets_tab.dart';
+import '../affirmations/affirmations_tab.dart';
+import '../../widgets/paywall_modal.dart';
 
 class ProfileTab extends StatefulWidget {
   const ProfileTab({Key? key}) : super(key: key);
@@ -186,24 +188,47 @@ class _ProfileTabState extends State<ProfileTab> {
                           ),
                         ),
                         const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: AppColors.goldAccent.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: AppColors.goldAccent.withOpacity(0.35)),
-                          ),
-                          child: const Text(
-                            'PRO',
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 9,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.goldAccent,
-                              letterSpacing: 0.5,
+                        if (appProvider.isPremium)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.goldAccent.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: AppColors.goldAccent.withOpacity(0.35)),
+                            ),
+                            child: const Text(
+                              'PRO',
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.goldAccent,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          )
+                        else
+                          GestureDetector(
+                            onTap: () => PaywallModal.show(context),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: accent.withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: accent.withOpacity(0.3)),
+                              ),
+                              child: Text(
+                                'UPGRADE',
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 8.5,
+                                  fontWeight: FontWeight.w800,
+                                  color: accent,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
                             ),
                           ),
-                        ),
                       ],
                     ),
                     const SizedBox(height: 2),
@@ -438,7 +463,14 @@ class _ProfileTabState extends State<ProfileTab> {
                 iconColor: Colors.pinkAccent,
                 title: 'Favorites',
                 subtitle: '${appProvider.favoriteAffirmations.length} Saved Quotes',
-                onTap: () => appProvider.setNavIndex(0),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const AffirmationsTab(initialTab: 'Favorites'),
+                    ),
+                  );
+                },
               ),
             ),
             const SizedBox(width: 12),
@@ -779,48 +811,90 @@ class _ProfileTabState extends State<ProfileTab> {
   }
 
   void _showRemindersModal(BuildContext context) {
+    var settings = _notificationService.settings;
+    bool morningEnabled = settings.isMorningEnabled;
+    bool eveningEnabled = settings.isEveningEnabled;
+
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.surfaceElevated,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(22),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: const [
-                Icon(Icons.notifications_active_rounded, color: AppColors.goldAccent),
-                SizedBox(width: 8),
-                Text('Daily Mindset Reminders ⏰', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Padding(
+            padding: const EdgeInsets.all(22),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: const [
+                    Icon(Icons.notifications_active_rounded, color: AppColors.goldAccent),
+                    SizedBox(width: 8),
+                    Text('Daily Mindset Reminders ⏰', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                const Text('Configure gentle reminder notifications to build consistent daily neural rewiring habits.', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                const SizedBox(height: 18),
+                ListTile(
+                  leading: const Icon(Icons.wb_sunny_rounded, color: AppColors.goldAccent),
+                  title: Text('Morning Affirmation (${settings.morningTime.formatTimeOfDay()})', style: const TextStyle(fontSize: 14, color: AppColors.textPrimary)),
+                  trailing: Switch(
+                    value: morningEnabled,
+                    activeColor: AppColors.goldAccent,
+                    onChanged: (val) {
+                      setModalState(() {
+                        morningEnabled = val;
+                      });
+                    },
+                  ),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.nightlight_round, color: Colors.purpleAccent),
+                  title: Text('Evening Reflection (${settings.eveningTime.formatTimeOfDay()})', style: const TextStyle(fontSize: 14, color: AppColors.textPrimary)),
+                  trailing: Switch(
+                    value: eveningEnabled,
+                    activeColor: AppColors.goldAccent,
+                    onChanged: (val) {
+                      setModalState(() {
+                        eveningEnabled = val;
+                      });
+                    },
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () async {
+                    final updated = ReminderSettings(
+                      isMorningEnabled: morningEnabled,
+                      isEveningEnabled: eveningEnabled,
+                      morningTime: settings.morningTime,
+                      eveningTime: settings.eveningTime,
+                      frequency: settings.frequency,
+                    );
+                    await _notificationService.updateSettings(updated);
+                    if (context.mounted) {
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Reminder schedule saved successfully! ⏰✨'),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.buttonDark,
+                    minimumSize: const Size.fromHeight(48),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  child: const Text('Save Reminder Schedule', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
               ],
             ),
-            const SizedBox(height: 12),
-            const Text('Configure gentle reminder notifications to build consistent daily neural rewiring habits.', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-            const SizedBox(height: 18),
-            ListTile(
-              leading: const Icon(Icons.wb_sunny_rounded, color: AppColors.goldAccent),
-              title: const Text('Morning Affirmation (8:00 AM)'),
-              trailing: Switch(value: true, onChanged: (_) {}),
-            ),
-            ListTile(
-              leading: const Icon(Icons.nightlight_round, color: Colors.purpleAccent),
-              title: const Text('Evening Reflection (9:30 PM)'),
-              trailing: Switch(value: true, onChanged: (_) {}),
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(ctx),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.buttonDark,
-                minimumSize: const Size.fromHeight(48),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              ),
-              child: const Text('Save Reminder Schedule', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

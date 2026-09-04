@@ -75,10 +75,16 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
     _initSpeech();
     _initVoiceStudioPlayer();
 
-    // Load affirmations from playlists
-    _affirmations = allPlaylists.expand((p) => p.affirmations).toList();
-    _affirmations.shuffle(Random(42));
-    _affirmations = _affirmations.take(8).toList();
+    // Initial fallback affirmations from playlists
+    final fallback = allPlaylists.expand((p) => p.affirmations).toList();
+    fallback.shuffle(Random(42));
+    _affirmations = fallback.take(8).toList();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _loadPersonalizedAffirmations();
+      }
+    });
 
     _pulseController = AnimationController(
       vsync: this,
@@ -89,6 +95,20 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
       vsync: this,
       duration: const Duration(milliseconds: 500),
     );
+  }
+
+  void _loadPersonalizedAffirmations() {
+    try {
+      final appProvider = context.read<AppProvider>();
+      final personalized = appProvider.getPersonalizedFeed(limit: 8);
+      if (personalized.isNotEmpty) {
+        setState(() {
+          _affirmations = personalized;
+          _currentIndex = 0;
+        });
+        return;
+      }
+    } catch (_) {}
   }
 
   void _initTts() async {

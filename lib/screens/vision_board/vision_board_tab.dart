@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -112,42 +113,85 @@ class _VisionBoardTabState extends State<VisionBoardTab> {
 
   Future<void> _exportAsWallpaper(BuildContext context) async {
     try {
+      Uint8List? pngBytes;
+      final boundary = _gridKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary != null) {
+        final image = await boundary.toImage(pixelRatio: 3.0);
+        final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+        pngBytes = byteData?.buffer.asUint8List();
+      }
+
+      if (!context.mounted) return;
+
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
+          backgroundColor: AppColors.surfaceElevated,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           title: Row(
             children: const [
               Icon(Icons.wallpaper_rounded, color: AppColors.goldAccent),
               SizedBox(width: 8),
-              Text('Lock Screen Wallpaper ✨', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              Text(
+                'Lock Screen Wallpaper ✨',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+              ),
             ],
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              if (pngBytes != null)
+                Container(
+                  height: 240,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.goldAccent.withOpacity(0.4), width: 1.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.15),
+                        blurRadius: 16,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Image.memory(pngBytes, fit: BoxFit.cover),
+                )
+              else
+                const Text(
+                  'Your personalized vision board layout is optimized for high-resolution lock screen viewing.',
+                  style: TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4),
+                ),
+              const SizedBox(height: 14),
               Text(
-                'Your personalized vision board layout is optimized for high-resolution lock screen viewing.',
-                style: TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4),
-              ),
-              SizedBox(height: 12),
-              Text(
-                'Tip: Capture or save this layout to keep your subconscious focused on your goals every time you unlock your phone!',
-                style: TextStyle(fontSize: 12, color: AppColors.textMuted, fontStyle: FontStyle.italic),
+                pngBytes != null
+                    ? 'Rendered in 3x Retina HD. Save or screenshot this layout to anchor your subconscious goals every time you unlock your phone!'
+                    : 'Tip: Capture or save this layout to keep your subconscious focused on your goals every time you unlock your phone!',
+                style: const TextStyle(fontSize: 12, color: AppColors.textMuted, fontStyle: FontStyle.italic),
+                textAlign: TextAlign.center,
               ),
             ],
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Done', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
+              onPressed: () {
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Wallpaper generated & ready for lock screen! 📱✨'),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              },
+              child: const Text('Save & Done', style: TextStyle(color: AppColors.goldAccent, fontWeight: FontWeight.bold)),
             ),
           ],
         ),
       );
     } catch (e) {
-      debugPrint("Export wallpaper note: $e");
+      debugPrint("Export wallpaper error: $e");
     }
   }
 }

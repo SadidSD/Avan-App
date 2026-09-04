@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
 import '../theme/app_colors.dart';
 import '../widgets/audio_player_bar.dart';
-import '../widgets/paywall_modal.dart';
 
 import 'home/home_tab.dart';
 import 'profile/profile_tab.dart';
@@ -92,10 +91,10 @@ class MainNavigationScreen extends StatelessWidget {
                 height: 64,
                 padding: const EdgeInsets.symmetric(horizontal: 10),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.92),
+                  color: AppColors.surface.withOpacity(0.94),
                   borderRadius: BorderRadius.circular(40),
                   border: Border.all(
-                    color: Colors.black.withOpacity(0.06),
+                    color: AppColors.border,
                     width: 1.0,
                   ),
                 ),
@@ -116,8 +115,8 @@ class MainNavigationScreen extends StatelessWidget {
                       index: 1,
                       currentIndex: currentIndex,
                       appProvider: appProvider,
-                      icon: Icons.headphones_outlined,
-                      activeIcon: Icons.headphones_rounded,
+                      icon: Icons.mic_none_rounded,
+                      activeIcon: Icons.mic_rounded,
                       isGrowth: isGrowth,
                     ),
                     _buildNavItem(
@@ -125,8 +124,8 @@ class MainNavigationScreen extends StatelessWidget {
                       index: 2,
                       currentIndex: currentIndex,
                       appProvider: appProvider,
-                      icon: Icons.favorite_border_rounded,
-                      activeIcon: Icons.favorite_rounded,
+                      icon: Icons.edit_note_rounded,
+                      activeIcon: Icons.edit_note_rounded,
                       isGrowth: isGrowth,
                     ),
                     _buildNavItem(
@@ -173,10 +172,6 @@ class MainNavigationScreen extends StatelessWidget {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () {
-          if ([1, 3].contains(index) && !appProvider.isPremium) {
-            PaywallModal.show(context);
-            return;
-          }
           appProvider.setNavIndex(index);
         },
         child: Center(

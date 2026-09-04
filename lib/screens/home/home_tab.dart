@@ -236,6 +236,15 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                   ),
                 ),
 
+                // 1.5. Daily Mood Check-In (Dynamic Personalization Engine Catalyst)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.only(left: 20, right: 20, top: 16),
+                    child: _buildMoodCheckIn(appProvider, accent),
+                  ),
+                ),
+
                 // 2. Search Bar
                 SliverToBoxAdapter(
                   child: Padding(
@@ -250,38 +259,24 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                   ),
                 ),
 
-                // 3. Favorites Section
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding:
-                        const EdgeInsets.only(left: 20, right: 20, top: 24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              '❤️ Favorites',
-                              style: AppTextStyles.sectionHeader,
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 14),
-                        if (favoriteItems.isEmpty)
-                          GlassCard(
-                            accentColor: accent,
-                            child: Padding(
-                              padding: const EdgeInsets.all(24.0),
-                              child: Center(
-                                child: Text(
-                                  'Tap ❤️ on any affirmation to save it here',
-                                  style: AppTextStyles.cardSubtitle,
-                                  textAlign: TextAlign.center,
-                                ),
+                // 3. Favorites Section (Appears when user has saved affirmations)
+                if (favoriteItems.isNotEmpty)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding:
+                          const EdgeInsets.only(left: 20, right: 20, top: 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                '❤️ Favorites',
+                                style: AppTextStyles.sectionHeader,
                               ),
-                            ),
-                          )
-                        else
+                            ],
+                          ),
+                          const SizedBox(height: 14),
                           SizedBox(
                             height: 210,
                             child: ListView.builder(
@@ -320,10 +315,10 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                               },
                             ),
                           ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
 
                 // 4. Just for You Section
                 SliverToBoxAdapter(
@@ -746,6 +741,91 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildMoodCheckIn(AppProvider appProvider, Color accent) {
+    final moods = [
+      {'label': 'Energized', 'emoji': '⚡', 'query': 'motivated'},
+      {'label': 'Calm', 'emoji': '😌', 'query': 'peaceful'},
+      {'label': 'Anxious', 'emoji': '😰', 'query': 'anxious'},
+      {'label': 'Sad', 'emoji': '😔', 'query': 'sad'},
+      {'label': 'Tired', 'emoji': '🌙', 'query': 'tired'},
+      {'label': 'Grounded', 'emoji': '🌿', 'query': 'grounding'},
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'HOW IS YOUR HEART TODAY?',
+              style: AppTextStyles.sectionTitle,
+            ),
+            if (appProvider.selectedMood.isNotEmpty)
+              GestureDetector(
+                onTap: () => appProvider.setSelectedMood(''),
+                child: Text(
+                  'Clear',
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textMuted,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          height: 38,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            itemCount: moods.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            itemBuilder: (context, index) {
+              final m = moods[index];
+              final isSelected = appProvider.selectedMood.toLowerCase() == m['query']!.toLowerCase();
+              return GestureDetector(
+                onTap: () => appProvider.setSelectedMood(m['query']!),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: isSelected ? accent.withOpacity(0.18) : AppColors.surfaceElevated,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isSelected ? accent : AppColors.border,
+                      width: isSelected ? 1.5 : 1.0,
+                    ),
+                    boxShadow: isSelected
+                        ? [BoxShadow(color: accent.withOpacity(0.25), blurRadius: 8, offset: const Offset(0, 2))]
+                        : null,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(m['emoji']!, style: const TextStyle(fontSize: 14)),
+                      const SizedBox(width: 6),
+                      Text(
+                        m['label']!,
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                          color: isSelected ? accent : AppColors.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 
