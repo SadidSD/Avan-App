@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'dart:math' as math;
 
 import '../../providers/app_provider.dart';
 import '../../providers/audio_provider.dart';
@@ -18,6 +17,7 @@ import '../../data/playlists_data.dart';
 import '../../models/playlist.dart';
 import '../../models/affirmation.dart';
 import '../../models/user_archetype.dart';
+import '../../services/personalization_engine.dart';
 
 class HomeTab extends StatefulWidget {
   const HomeTab({Key? key}) : super(key: key);
@@ -107,10 +107,12 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
       }
     }
 
-    // Filter Playlists
-    List<Playlist> displayedPlaylists = allPlaylists;
+    // Get Ranked Personalized Playlists using 16D Cosine Similarity
+    final rankedMatches = appProvider.getPersonalizedPlaylists();
+    List<PlaylistMatch> displayedMatches = rankedMatches;
     if (_searchQuery.isNotEmpty) {
-      displayedPlaylists = allPlaylists.where((p) {
+      displayedMatches = rankedMatches.where((m) {
+        final p = m.playlist;
         final matchesTitle =
             p.title.toLowerCase().contains(_searchQuery.toLowerCase());
         final matchesAffirmation = p.affirmations.any((a) =>
@@ -335,7 +337,158 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                   ),
                 ),
 
-                // 5. Premium CTA Banner
+                // 5. Daily Tailored Session (Dynamic Situational Playlist for Active User)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.only(left: 20, right: 20, top: 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                '🎯 Daily Tailored Session',
+                                style: AppTextStyles.sectionHeader,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: AppColors.goldAccent.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                    color: AppColors.goldAccent.withOpacity(0.3)),
+                              ),
+                              child: Text(
+                                '100% Match',
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.goldAccent,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Builder(
+                          builder: (context) {
+                            final tailoredPlaylist = appProvider.getSituationalPlaylist();
+                            final primaryArchetype = appProvider.userProfileVector.primaryArchetypes.isNotEmpty
+                                ? appProvider.userProfileVector.primaryArchetypes.first
+                                : UserArchetype.careerProfessional;
+                            final primaryMeta = ArchetypeRegistry.getMetadata(primaryArchetype);
+                            final userSubLevel = appProvider.userProfileVector.selectedSubLevels.isNotEmpty
+                                ? appProvider.userProfileVector.selectedSubLevels.first
+                                : primaryMeta.title;
+
+                            return GlassCard(
+                              accentColor: accent,
+                              glowIntensity: 0.35,
+                              onTap: () {
+                                audioProvider.openPlaylist(tailoredPlaylist, context);
+                              },
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 54,
+                                    height: 54,
+                                    decoration: BoxDecoration(
+                                      color: accent.withOpacity(0.14),
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(color: accent.withOpacity(0.28)),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        primaryMeta.icon,
+                                        style: const TextStyle(fontSize: 26),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          tailoredPlaylist.title,
+                                          style: GoogleFonts.inter(
+                                            fontSize: 14.5,
+                                            fontWeight: FontWeight.w700,
+                                            color: AppColors.textPrimary,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(height: 3),
+                                        Text(
+                                          'Focus: $userSubLevel',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w500,
+                                            color: AppColors.goldAccent,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Row(
+                                          children: [
+                                            const Icon(Icons.headphones_rounded,
+                                                size: 12, color: AppColors.textMuted),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              '${tailoredPlaylist.affirmations.length} tracks · ${tailoredPlaylist.duration}',
+                                              style: AppTextStyles.bodySmall,
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 14, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: accent.withOpacity(0.18),
+                                      borderRadius: BorderRadius.circular(18),
+                                      border: Border.all(color: accent.withOpacity(0.4)),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.play_arrow_rounded,
+                                            size: 16, color: accent),
+                                        const SizedBox(width: 2),
+                                        Text(
+                                          'Play',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                            color: accent,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // 6. Premium CTA Banner
                 if (!isPremium)
                   SliverToBoxAdapter(
                     child: Padding(
@@ -347,8 +500,9 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                     ),
                   ),
 
-                // 6. Other Playlist Sections (Each with Playlist Title + Horizontal Affirmation Cards)
-                ...displayedPlaylists.map((playlist) {
+                // 7. Ranked Playlist Sections (Each with Playlist Title + Match Badge + Horizontal Affirmation Cards)
+                ...displayedMatches.map((match) {
+                  final playlist = match.playlist;
                   // If searching, filter affirmations matching the search query within this playlist
                   final affirmations = _searchQuery.isEmpty
                       ? playlist.affirmations
@@ -378,8 +532,29 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
+                              // Match Badge
+                              Container(
+                                margin: const EdgeInsets.only(left: 6),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: accent.withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                      color: accent.withOpacity(0.28)),
+                                ),
+                                child: Text(
+                                  match.matchPercent,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: accent,
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                              ),
                               if (playlist.isPremium) ...[
-                                const SizedBox(width: 8),
+                                const SizedBox(width: 6),
                                 Container(
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 6, vertical: 2),
@@ -412,7 +587,7 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                                   ),
                                 ),
                               ],
-                              const SizedBox(width: 12),
+                              const SizedBox(width: 10),
                               GestureDetector(
                                 onTap: () {
                                   if (playlist.isPremium && !isPremium) {

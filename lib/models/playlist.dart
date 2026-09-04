@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'affirmation.dart';
 import 'user_archetype.dart';
 import '../services/audio_engine_service.dart';
@@ -17,6 +18,53 @@ class Playlist {
   final List<String>? tags;
   final String? archetypeId;
   final String? subtitle;
+
+  List<double>? _cachedCentroid;
+
+  /// Returns the normalized 16-dimensional centroid vector representing the semantic center
+  /// of all affirmations in this playlist.
+  List<double> get centroidVector {
+    if (_cachedCentroid != null) return _cachedCentroid!;
+    if (affirmations.isEmpty) return const [];
+
+    int dim = 0;
+    for (final aff in affirmations) {
+      if (aff.embeddingVector.isNotEmpty) {
+        dim = aff.embeddingVector.length;
+        break;
+      }
+    }
+    if (dim == 0) return const [];
+
+    final sum = List<double>.filled(dim, 0.0);
+    int count = 0;
+    for (final aff in affirmations) {
+      if (aff.embeddingVector.length == dim) {
+        for (int i = 0; i < dim; i++) {
+          sum[i] += aff.embeddingVector[i];
+        }
+        count++;
+      }
+    }
+    if (count == 0) return const [];
+
+    // Average vector
+    final avg = sum.map((v) => v / count).toList();
+
+    // Normalize to unit length for standard cosine similarity
+    double norm = 0.0;
+    for (var val in avg) {
+      norm += val * val;
+    }
+    norm = math.sqrt(norm);
+    if (norm == 0.0) {
+      _cachedCentroid = avg;
+    } else {
+      _cachedCentroid = avg.map((v) => v / norm).toList();
+    }
+
+    return _cachedCentroid!;
+  }
 
   Playlist({
     required this.id,

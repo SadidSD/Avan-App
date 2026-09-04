@@ -204,6 +204,16 @@ class AppProvider with ChangeNotifier {
     );
   }
 
+  /// Returns the ranked list of personalized playlists for the current user vector and mode
+  List<PlaylistMatch> getPersonalizedPlaylists() {
+    return PersonalizationEngine.rankPlaylists(
+      profile: _userProfileVector,
+      playlists: playlists_data.allPlaylists,
+      isGrowthMode: isGrowthMode,
+      mood: _selectedMood,
+    );
+  }
+
   Future<void> setUserArchetypeProfile({
     required List<UserArchetype> primary,
     required List<UserArchetype> secondary,

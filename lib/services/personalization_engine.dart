@@ -4,6 +4,20 @@ import '../models/user_archetype.dart';
 import '../models/user_profile_vector.dart';
 import '../models/playlist.dart';
 
+class PlaylistMatch {
+  final Playlist playlist;
+  final double matchScore; // 0.0 - 1.0
+  final String matchPercent; // e.g. '98%'
+  final String resonanceReason;
+
+  const PlaylistMatch({
+    required this.playlist,
+    required this.matchScore,
+    required this.matchPercent,
+    required this.resonanceReason,
+  });
+}
+
 class PersonalizationEngine {
   static const int vectorDimensions = 16;
 
@@ -111,14 +125,65 @@ class PersonalizationEngine {
       addArchetypeWeight(a, 0.55);
     }
 
-    // 3. Sub-level adjustments
+    // 3. Sub-level adjustments across all 33+ archetype situations
     for (var sub in subLevels) {
-      if (sub.contains('Founder')) vec[6] += 0.3;
-      if (sub.contains('Panic') || sub.contains('Tension')) vec[1] += 0.3;
-      if (sub.contains('Bedtime')) vec[13] += 0.3;
-      if (sub.contains('Exam')) vec[11] += 0.3;
-      if (sub.contains('Running') || sub.contains('Endurance')) vec[9] += 0.3;
-      if (sub.contains('Toddler') || sub.contains('Newborn')) vec[8] += 0.3;
+      // Career
+      if (sub.contains('Founder') || sub.contains('Solopreneur')) { vec[6] += 0.35; vec[14] += 0.30; }
+      if (sub.contains('Corporate') || sub.contains('Leader') || sub.contains('Executive')) { vec[6] += 0.35; vec[0] += 0.25; }
+      if (sub.contains('Contributor') || sub.contains('Climber')) { vec[0] += 0.35; vec[7] += 0.25; }
+      if (sub.contains('Sales') || sub.contains('Client')) { vec[7] += 0.35; vec[14] += 0.30; }
+
+      // Anxiety
+      if (sub.contains('Panic') || sub.contains('Tension')) { vec[1] += 0.40; vec[13] += 0.35; }
+      if (sub.contains('Social') || sub.contains('Performance Anxiety')) { vec[1] += 0.35; vec[7] += 0.30; }
+      if (sub.contains('Bedtime') || sub.contains('Rumination')) { vec[13] += 0.40; vec[15] += 0.35; }
+
+      // Heartbreak
+      if (sub.contains('Shock') || sub.contains('Fresh Breakup')) { vec[2] += 0.40; vec[13] += 0.35; vec[15] += 0.30; }
+      if (sub.contains('Yearning') || sub.contains('No-Contact')) { vec[2] += 0.35; vec[3] += 0.25; vec[13] += 0.30; }
+      if (sub.contains('Rediscovery') || sub.contains('Self-Worth')) { vec[7] += 0.40; vec[14] += 0.30; }
+      if (sub.contains('Divorce') || sub.contains('Separation')) { vec[2] += 0.35; vec[7] += 0.30; }
+
+      // Grief
+      if (sub.contains('Parent') || sub.contains('Sibling')) { vec[3] += 0.40; vec[13] += 0.35; }
+      if (sub.contains('Partner') || sub.contains('Spouse')) { vec[3] += 0.40; vec[2] += 0.25; vec[13] += 0.35; }
+      if (sub.contains('Young Adult')) { vec[3] += 0.35; vec[7] += 0.30; }
+      if (sub.contains('Anticipatory') || sub.contains('Illness')) { vec[3] += 0.35; vec[1] += 0.25; vec[13] += 0.35; }
+
+      // Self-Improvement
+      if (sub.contains('Consistency') || sub.contains('Daily Habit')) { vec[4] += 0.40; vec[14] += 0.35; }
+      if (sub.contains('Deep Work') || sub.contains('Focus Optimizer')) { vec[14] += 0.40; vec[0] += 0.25; }
+      if (sub.contains('Stoic') || sub.contains('Philosophy')) { vec[13] += 0.35; vec[15] += 0.35; }
+
+      // Spiritual
+      if (sub.contains('Attraction') || sub.contains('Abundance')) { vec[5] += 0.40; vec[14] += 0.30; }
+      if (sub.contains('Intuition') || sub.contains('Inner Wisdom')) { vec[5] += 0.40; vec[13] += 0.35; }
+      if (sub.contains('Gratitude') || sub.contains('Alignment')) { vec[5] += 0.35; vec[13] += 0.35; }
+
+      // Parenting
+      if (sub.contains('Newborn') || sub.contains('Toddler')) { vec[8] += 0.40; vec[13] += 0.35; }
+      if (sub.contains('School-Age') || sub.contains('Teen')) { vec[8] += 0.40; vec[1] += 0.25; }
+      if (sub.contains('Caregiver') || sub.contains('Elder')) { vec[8] += 0.40; vec[13] += 0.35; }
+
+      // Athlete
+      if (sub.contains('Endurance') || sub.contains('Running') || sub.contains('Fitness')) { vec[9] += 0.40; vec[4] += 0.30; }
+      if (sub.contains('Prep') || sub.contains('Clutch Mindset')) { vec[9] += 0.40; vec[7] += 0.35; vec[14] += 0.35; }
+      if (sub.contains('Injury') || sub.contains('Mental Reset')) { vec[9] += 0.35; vec[13] += 0.35; vec[15] += 0.30; }
+
+      // Accessible / IDD
+      if (sub.contains('Sensory') || sub.contains('Calming')) { vec[10] += 0.40; vec[13] += 0.35; }
+      if (sub.contains('Pride') || sub.contains('Capability')) { vec[10] += 0.35; vec[7] += 0.40; }
+      if (sub.contains('Belonging') || sub.contains('Friendship')) { vec[10] += 0.35; vec[15] += 0.35; }
+
+      // Student
+      if (sub.contains('Exam')) { vec[11] += 0.40; vec[1] += 0.30; }
+      if (sub.contains('Grad') || sub.contains('Medical') || sub.contains('Professional Exam')) { vec[11] += 0.40; vec[0] += 0.30; }
+      if (sub.contains('Procrastination') || sub.contains('Study Motivation')) { vec[11] += 0.35; vec[14] += 0.35; }
+
+      // LGBTQIA+
+      if (sub.contains('Authenticity') || sub.contains('Coming Out')) { vec[12] += 0.40; vec[7] += 0.35; }
+      if (sub.contains('Challenging Spaces')) { vec[12] += 0.35; vec[13] += 0.35; }
+      if (sub.contains('Trans') || sub.contains('Non-Binary')) { vec[12] += 0.45; vec[7] += 0.35; }
     }
 
     // 4. Tone modifier
@@ -283,6 +348,109 @@ class PersonalizationEngine {
       isPremium: false,
       affirmations: feed,
     );
+  }
+
+  /// Ranks playlists based on 16D cosine similarity between the user's vector
+  /// and each playlist's centroid vector, with contextual mode & archetype affinity.
+  static List<PlaylistMatch> rankPlaylists({
+    required UserProfileVector profile,
+    required List<Playlist> playlists,
+    required bool isGrowthMode,
+    String? mood,
+  }) {
+    final userVec = profile.vector.isNotEmpty
+        ? profile.vector
+        : buildArchetypeBaseVector(
+            primary: profile.primaryArchetypes,
+            secondary: profile.secondaryArchetypes,
+            subLevels: profile.selectedSubLevels,
+            tone: profile.preferredTone,
+          );
+
+    final List<PlaylistMatch> matches = [];
+
+    for (final playlist in playlists) {
+      final centroid = playlist.centroidVector;
+      if (centroid.isEmpty) {
+        matches.add(PlaylistMatch(
+          playlist: playlist,
+          matchScore: 0.50,
+          matchPercent: '75%',
+          resonanceReason: 'Curated for you',
+        ));
+        continue;
+      }
+
+      // 1. Raw cosine similarity between user vector and playlist centroid
+      double sim = cosineSimilarity(userVec, centroid);
+
+      // 2. Target archetype affinity (+0.12 if matches user's primary archetype)
+      bool hasArchetypeAffinity = false;
+      if (playlist.targetArchetypes != null && profile.primaryArchetypes.isNotEmpty) {
+        for (var primary in profile.primaryArchetypes) {
+          if (playlist.targetArchetypes!.contains(primary)) {
+            hasArchetypeAffinity = true;
+            break;
+          }
+        }
+      }
+      if (hasArchetypeAffinity) {
+        sim += 0.12;
+      }
+
+      // 3. Sub-level affinity (+0.08 if matches target sub-level)
+      if (playlist.targetSubLevels != null) {
+        for (var sub in profile.selectedSubLevels) {
+          if (playlist.targetSubLevels!.any((ts) =>
+              ts.toLowerCase().contains(sub.toLowerCase()) ||
+              sub.toLowerCase().contains(ts.toLowerCase()))) {
+            sim += 0.08;
+            break;
+          }
+        }
+      }
+
+      // 4. Mode alignment
+      if (isGrowthMode) {
+        if (centroid.length > 14 && centroid[14] > 0.3) {
+          sim += 0.04;
+        }
+      } else {
+        if (centroid.length > 13 && centroid[13] > 0.3) {
+          sim += 0.04;
+        }
+      }
+
+      // Clamp score
+      final clampedScore = sim.clamp(0.0, 0.99);
+
+      // Match percentage string: map cosine range so that top resonance matches read 92%-99%
+      final percentVal = (clampedScore * 100).round().clamp(60, 99);
+      final percentStr = '$percentVal%';
+
+      // Resonance reason
+      String reason = 'Curated for your profile';
+      if (hasArchetypeAffinity && profile.primaryArchetypes.isNotEmpty) {
+        final meta = ArchetypeRegistry.getMetadata(profile.primaryArchetypes.first);
+        reason = 'Aligned with ${meta.title}';
+      } else if (isGrowthMode) {
+        reason = 'Optimized for high performance';
+      } else {
+        reason = 'Optimized for grounding & calm';
+      }
+
+      matches.add(PlaylistMatch(
+        playlist: playlist,
+        matchScore: clampedScore,
+        matchPercent: percentStr,
+        resonanceReason: reason,
+      ));
+    }
+
+    // Sort descending by matchScore
+    matches.sort((a, b) => b.matchScore.compareTo(a.matchScore));
+
+    return matches;
   }
 
   static List<double> _normalize(List<double> vec) {

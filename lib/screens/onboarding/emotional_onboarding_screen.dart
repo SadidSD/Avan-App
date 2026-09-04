@@ -59,6 +59,10 @@ class _EmotionalOnboardingScreenState extends State<EmotionalOnboardingScreen>
     UserArchetype.careerProfessional,
   };
 
+  // Screen 8 progressive disclosure: 0 = Focus Archetype Selection, 1 = Situational Sub-Levels
+  int _focusStage = 0;
+  final Set<String> _selectedSubLevels = {};
+
   @override
   void initState() {
     super.initState();
@@ -87,6 +91,7 @@ class _EmotionalOnboardingScreenState extends State<EmotionalOnboardingScreen>
       _currentPage = page;
       _typedText = '';
       _isTypingComplete = false;
+      _focusStage = 0;
     });
 
     _pageController.animateToPage(
@@ -150,9 +155,16 @@ class _EmotionalOnboardingScreenState extends State<EmotionalOnboardingScreen>
     final secondary =
         archetypeList.length > 1 ? archetypeList.sublist(1) : <UserArchetype>[];
 
-    // Collect default sub-levels for primary archetype
-    final meta = ArchetypeRegistry.getMetadata(primary);
-    final subLevels = meta.subLevels.isNotEmpty ? [meta.subLevels.first] : <String>[];
+    // Collect chosen sub-levels, or fallback to first sublevel of selected archetypes
+    List<String> subLevels = _selectedSubLevels.toList();
+    if (subLevels.isEmpty) {
+      for (var a in archetypeList) {
+        final meta = ArchetypeRegistry.getMetadata(a);
+        if (meta.subLevels.isNotEmpty) {
+          subLevels.add(meta.subLevels.first);
+        }
+      }
+    }
 
     appProvider.setUserArchetypeProfile(
       primary: [primary],
@@ -221,7 +233,15 @@ class _EmotionalOnboardingScreenState extends State<EmotionalOnboardingScreen>
               size: 18,
               color: AppColors.textSecondary,
             ),
-            onPressed: () => _goToPage(_currentPage - 1),
+            onPressed: () {
+              if (_currentPage == 7 && _focusStage == 1) {
+                setState(() {
+                  _focusStage = 0;
+                });
+              } else {
+                _goToPage(_currentPage - 1);
+              }
+            },
           ),
           // Quiet, elegant brand mark
           Text(
@@ -237,7 +257,9 @@ class _EmotionalOnboardingScreenState extends State<EmotionalOnboardingScreen>
           Padding(
             padding: const EdgeInsets.only(right: 8.0),
             child: Text(
-              '${_currentPage + 1} / 8',
+              _currentPage == 7 && _focusStage == 1
+                  ? '8 / 8 · Context'
+                  : '${_currentPage + 1} / 8',
               style: GoogleFonts.inter(
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
@@ -724,6 +746,13 @@ class _EmotionalOnboardingScreenState extends State<EmotionalOnboardingScreen>
 
   // === SCREEN 08: WHAT SHOULD WE FOCUS ON? (Honesty & Personalization) ===
   Widget _buildScreen08FocusHonesty() {
+    if (_focusStage == 1) {
+      return _buildScreen08SituationalDeepDive();
+    }
+    return _buildScreen08ArchetypeSelection();
+  }
+
+  Widget _buildScreen08ArchetypeSelection() {
     final archetypes = ArchetypeRegistry.allArchetypes;
 
     return Padding(
@@ -851,8 +880,176 @@ class _EmotionalOnboardingScreenState extends State<EmotionalOnboardingScreen>
           ),
           const SizedBox(height: 14),
           CustomButton(
-            text: 'Personalize My Experience ✨',
-            onPressed: _finishOnboarding,
+            text: 'Next: Specify Situation →',
+            onPressed: () {
+              if (_selectedSubLevels.isEmpty) {
+                for (var a in _selectedArchetypes) {
+                  final meta = ArchetypeRegistry.getMetadata(a);
+                  if (meta.subLevels.isNotEmpty) {
+                    _selectedSubLevels.add(meta.subLevels.first);
+                  }
+                }
+              }
+              setState(() {
+                _focusStage = 1;
+              });
+            },
+          ),
+          const SizedBox(height: 12),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildScreen08SituationalDeepDive() {
+    final selectedMetas = _selectedArchetypes.map((a) => ArchetypeRegistry.getMetadata(a)).toList();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'What best describes\nyour current situation?',
+            style: GoogleFonts.cormorantGaramond(
+              fontSize: 28,
+              fontWeight: FontWeight.w600,
+              fontStyle: FontStyle.italic,
+              height: 1.25,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Select your exact life context so AVAN can tailor your playlists.',
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              fontWeight: FontWeight.w400,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 18),
+          Expanded(
+            child: ListView.builder(
+              physics: const BouncingScrollPhysics(),
+              itemCount: selectedMetas.length,
+              itemBuilder: (context, index) {
+                final meta = selectedMetas[index];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(meta.icon, style: const TextStyle(fontSize: 16)),
+                          const SizedBox(width: 8),
+                          Text(
+                            meta.title.toUpperCase(),
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.2,
+                              color: AppColors.goldAccent,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      ...meta.subLevels.map((subLevel) {
+                        final isSubSelected = _selectedSubLevels.contains(subLevel);
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8.0),
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                if (isSubSelected) {
+                                  if (_selectedSubLevels.length > 1) {
+                                    _selectedSubLevels.remove(subLevel);
+                                  }
+                                } else {
+                                  _selectedSubLevels.add(subLevel);
+                                }
+                              });
+                            },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 180),
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: isSubSelected
+                                    ? AppColors.goldAccent.withOpacity(0.12)
+                                    : AppColors.surfaceElevated,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: isSubSelected
+                                      ? AppColors.goldAccent
+                                      : AppColors.border,
+                                  width: isSubSelected ? 1.5 : 1.0,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    isSubSelected
+                                        ? Icons.check_circle_rounded
+                                        : Icons.radio_button_unchecked_rounded,
+                                    size: 18,
+                                    color: isSubSelected
+                                        ? AppColors.goldAccent
+                                        : AppColors.textMuted,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      subLevel,
+                                      style: GoogleFonts.inter(
+                                        fontSize: 13.5,
+                                        fontWeight: isSubSelected
+                                            ? FontWeight.w600
+                                            : FontWeight.w400,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              OutlinedButton(
+                onPressed: () {
+                  setState(() {
+                    _focusStage = 0;
+                  });
+                },
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.textSecondary,
+                  side: const BorderSide(color: AppColors.border),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                ),
+                child: const Icon(Icons.arrow_back_rounded, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: CustomButton(
+                  text: 'Personalize My Experience ✨',
+                  onPressed: _finishOnboarding,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
         ],
