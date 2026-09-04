@@ -5,16 +5,16 @@ import 'package:avan_app/models/user_profile_vector.dart';
 import 'package:avan_app/services/personalization_engine.dart';
 
 void main() {
-  group('Scientific Playlists Suite Tests', () {
-    test('All 30 playlists are registered and valid', () {
-      expect(allPlaylists.length, equals(30));
+  group('Scientific Playlists Suite Tests (60 Playlists / 600+ Affirmations)', () {
+    test('All 60 playlists are registered and valid', () {
+      expect(allPlaylists.length, equals(60));
       expect(freePlaylists.length, equals(6));
-      expect(premiumPlaylists.length, equals(24));
+      expect(premiumPlaylists.length, equals(54));
     });
 
     test('Every affirmation has a 16-dimensional embedding vector', () {
       final allAffs = getAllGlobalAffirmations();
-      expect(allAffs.length, greaterThanOrEqualTo(300));
+      expect(allAffs.length, greaterThanOrEqualTo(600));
 
       for (var aff in allAffs) {
         expect(
@@ -71,6 +71,29 @@ void main() {
       final sim = PersonalizationEngine.cosineSimilarity(
         founderProfile.vector,
         firstFounderAff.embeddingVector,
+      );
+
+      expect(sim, greaterThan(0.70));
+    });
+
+    test('ADHD Reset affirmations align with Focus & Habits archetypes', () {
+      final habitProfile = UserProfileVector(
+        primaryArchetypes: [UserArchetype.selfImprovement],
+        selectedSubLevels: ['Daily Habit & Consistency Builder', 'Deep Work & Focus Optimizer'],
+        vector: PersonalizationEngine.buildArchetypeBaseVector(
+          primary: [UserArchetype.selfImprovement],
+          secondary: [],
+          subLevels: ['Daily Habit & Consistency Builder', 'Deep Work & Focus Optimizer'],
+          tone: AffirmationTone.directAndActionable,
+        ),
+      );
+
+      final adhdPlaylist = allPlaylists.firstWhere((p) => p.id == 'pl_adhd_reset');
+      final firstAdhdAff = adhdPlaylist.affirmations.first;
+
+      final sim = PersonalizationEngine.cosineSimilarity(
+        habitProfile.vector,
+        firstAdhdAff.embeddingVector,
       );
 
       expect(sim, greaterThan(0.70));

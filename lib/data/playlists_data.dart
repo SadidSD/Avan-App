@@ -8,17 +8,26 @@ import 'playlists/heartbreak_grief_playlists.dart' as heartbreak;
 import 'playlists/career_identity_playlists.dart' as career;
 import 'playlists/performance_student_playlists.dart' as performance;
 import 'playlists/parenting_spiritual_accessible_playlists.dart' as parenting;
+import 'playlists/neurodiversity_focus_playlists.dart' as neurodiversity;
+import 'playlists/trauma_somatic_playlists.dart' as trauma;
+import 'playlists/wealth_career_pivot_playlists.dart' as wealth;
+import 'playlists/relationships_loneliness_playlists.dart' as relationships;
+import 'playlists/body_mind_sleep_playlists.dart' as body_mind;
+import 'playlists/advanced_habits_flow_playlists.dart' as advanced_habits;
 
-/// Master playlist registry — aggregates all 30 scientifically-grounded playlists
-/// from 6 category modules into a single ordered list.
+/// Master playlist registry — aggregates all 60 scientifically-grounded playlists
+/// from 12 category modules into a single ordered list.
 ///
 /// Structure:
-///   6 FREE  playlists (Morning Neural, Deep Flow, Sleep Onset, Stress SOS, Gratitude, Self-Worth)
-///  24 PREMIUM playlists across Anxiety, Heartbreak/Grief, Career/Identity,
-///                       Performance/Student, Parenting/Spiritual/Accessible
+///    6 FREE  playlists (Morning Neural, Deep Flow, Sleep Onset, Stress SOS, Gratitude, Self-Worth)
+///   54 PREMIUM playlists across Anxiety, Heartbreak/Grief, Career/Identity,
+///                        Performance/Student, Parenting/Spiritual/Accessible,
+///                        Neurodiversity/ADHD, Trauma/Somatics, Wealth/Career Pivot,
+///                        Relationships/Loneliness, Body/Mind/Transitions, Advanced Habits/Flow
 ///
-/// Total: 300 affirmations, each with full 16D embedding vectors,
-/// therapeutic modalities, archetype targeting, and believability scores.
+/// Total: 600 affirmations across 60 playlists + 57 scientific library affirmations = 657 affirmations.
+/// Every single affirmation includes a full 16D embedding vector, therapeutic modalities,
+/// archetype targeting, and believability scores.
 
 final List<Playlist> allPlaylists = [
   ...free.freePlaylists,
@@ -27,6 +36,12 @@ final List<Playlist> allPlaylists = [
   ...career.careerIdentityPlaylists,
   ...performance.performanceStudentPlaylists,
   ...parenting.parentingSpiritualAccessiblePlaylists,
+  ...neurodiversity.neurodiversityFocusPlaylists,
+  ...trauma.traumaSomaticPlaylists,
+  ...wealth.wealthCareerPivotPlaylists,
+  ...relationships.relationshipsLonelinessPlaylists,
+  ...body_mind.bodyMindSleepPlaylists,
+  ...advanced_habits.advancedHabitsFlowPlaylists,
 ];
 
 List<Playlist> get freePlaylists =>

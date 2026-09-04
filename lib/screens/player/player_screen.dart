@@ -70,27 +70,36 @@ class _PlayerScreenState extends State<PlayerScreen> with SingleTickerProviderSt
                           size: 32, color: AppColors.textPrimary),
                       onPressed: () => Navigator.pop(context),
                     ),
-                    Column(
-                      children: [
-                        Text(
-                          playlist?.title.toUpperCase() ?? 'AVAN AFFIRMATIONS',
-                          style: GoogleFonts.inter(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.2,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        if (playlist?.category != null)
+                    Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
                           Text(
-                            playlist!.category,
+                            playlist?.title.toUpperCase() ?? 'AVAN AFFIRMATIONS',
                             style: GoogleFonts.inter(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: accent,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.2,
+                              color: AppColors.textSecondary,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
                           ),
-                      ],
+                          if (playlist?.category != null)
+                            Text(
+                              playlist!.category,
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: accent,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                            ),
+                        ],
+                      ),
                     ),
                     Row(
                       children: [

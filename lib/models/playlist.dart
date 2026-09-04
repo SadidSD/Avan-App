@@ -16,6 +16,7 @@ class Playlist {
   final List<String>? targetSubLevels;
   final List<String>? tags;
   final String? archetypeId;
+  final String? subtitle;
 
   Playlist({
     required this.id,
@@ -34,14 +35,18 @@ class Playlist {
     AmbientSound? defaultAmbientSound,
     AmbientSound? ambientSound,
     this.description,
+    String? subtitle,
     List<UserArchetype>? targetArchetypes,
     List<UserArchetype>? primaryArchetypes,
-    this.targetSubLevels,
+    List<String>? targetSubLevels,
+    List<String>? subLevels,
     this.tags,
     this.archetypeId,
   })  : duration = duration ?? estimatedDuration ?? totalDuration ?? durationText ?? durationString ?? '10 min',
         category = category ?? (tags != null && tags.isNotEmpty ? tags.first : 'Personal Growth'),
         imagePath = imagePath ?? coverImageUrl ?? thumbnailUrl ?? 'assets/images/featured_meditation.jpg',
         defaultAmbientSound = defaultAmbientSound ?? ambientSound ?? AmbientSound.solfeggio528,
-        targetArchetypes = targetArchetypes ?? primaryArchetypes;
+        targetArchetypes = targetArchetypes ?? primaryArchetypes,
+        targetSubLevels = targetSubLevels ?? subLevels,
+        subtitle = subtitle ?? description;
 }
