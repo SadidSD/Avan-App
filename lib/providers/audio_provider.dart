@@ -30,6 +30,11 @@ class AudioProvider with ChangeNotifier {
   Timer? _sleepTimer;
   int _sleepTimerRemaining = 0; // seconds
 
+  // Feedback Callbacks for Vector Personalization & Streaks (Fix for Gap 3 & 8)
+  void Function(Affirmation affirmation)? onAffirmationCompleted;
+  void Function(Playlist playlist)? onSessionCompleted;
+  void Function(Affirmation affirmation)? onAffirmationSkipped;
+
   AudioProvider() {
     _audioService.setAffirmationCompletionHandler(_onSpeechCompleted);
   }
@@ -186,6 +191,12 @@ class AudioProvider with ChangeNotifier {
     _watchdogTimer?.cancel();
     _gapTimer?.cancel();
 
+    // Trigger implicit completion feedback (Fix for Gap 3)
+    final completedAff = currentAffirmation;
+    if (completedAff != null) {
+      onAffirmationCompleted?.call(completedAff);
+    }
+
     // Natural 3.5s reflection gap with ambient background music
     _gapTimer = Timer(Duration(milliseconds: (_gapBetweenAffirmations * 1000 + 500)), () {
       if (!_audioService.isPlaying) return;
@@ -230,6 +241,11 @@ class AudioProvider with ChangeNotifier {
       _sessionPositionSeconds = _sessionDurationSeconds;
       _gapTimer?.cancel();
       _watchdogTimer?.cancel();
+
+      // Trigger session completion (Fix for Gap 8 - Streak & Listening Days)
+      if (_currentPlaylist != null) {
+        onSessionCompleted?.call(_currentPlaylist!);
+      }
     }
     notifyListeners();
   }
@@ -282,6 +298,13 @@ class AudioProvider with ChangeNotifier {
     if (_currentPlaylist == null) return;
     _gapTimer?.cancel();
     _watchdogTimer?.cancel();
+
+    // Trigger negative skip signal if skipped manually (Fix for Gap 3)
+    final skippedAff = currentAffirmation;
+    if (skippedAff != null) {
+      onAffirmationSkipped?.call(skippedAff);
+    }
+
     final totalAffs = _currentPlaylist!.affirmations.length;
 
     if (_currentAffirmationIndex < totalAffs - 1) {

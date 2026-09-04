@@ -208,7 +208,7 @@ class _PlayerScreenState extends State<PlayerScreen> with SingleTickerProviderSt
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.85),
+                            color: AppColors.surfaceElevated,
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(color: AppColors.border),
                             boxShadow: const [
@@ -331,8 +331,9 @@ class _PlayerScreenState extends State<PlayerScreen> with SingleTickerProviderSt
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.04),
+                                color: AppColors.surfaceElevated,
                                 borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: AppColors.border),
                               ),
                               child: Text(
                                 '${audioProvider.voiceSpeed.toStringAsFixed(1)}x',
@@ -458,12 +459,13 @@ class _PlayerScreenState extends State<PlayerScreen> with SingleTickerProviderSt
 
             return Container(
               padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-                boxShadow: [
+              decoration: BoxDecoration(
+                color: AppColors.surfaceElevated,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                border: Border.all(color: AppColors.border),
+                boxShadow: const [
                   BoxShadow(
-                    color: Color(0x203D2C1E),
+                    color: Color(0x20000000),
                     blurRadius: 28,
                     offset: Offset(0, -6),
                   ),

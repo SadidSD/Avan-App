@@ -20,7 +20,22 @@ class AvanApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AppProvider()),
-        ChangeNotifierProvider(create: (_) => AudioProvider()),
+        ChangeNotifierProxyProvider<AppProvider, AudioProvider>(
+          create: (_) => AudioProvider(),
+          update: (_, appProvider, audioProvider) {
+            final provider = audioProvider ?? AudioProvider();
+            provider.onAffirmationCompleted = (aff) {
+              appProvider.recordAudioAffirmationCompleted(aff);
+            };
+            provider.onAffirmationSkipped = (aff) {
+              appProvider.recordAudioAffirmationSkipped(aff);
+            };
+            provider.onSessionCompleted = (pl) {
+              appProvider.recordAudioSessionCompleted(pl);
+            };
+            return provider;
+          },
+        ),
       ],
       child: Consumer<AppProvider>(
         builder: (context, appProvider, child) {

@@ -147,21 +147,72 @@ class AppProvider with ChangeNotifier {
 
   void _initializeVectorFromSurvey() {
     List<UserArchetype> primary = [UserArchetype.careerProfessional];
-    if (_selectedGoal.contains('Confidence')) primary = [UserArchetype.careerProfessional];
-    if (_selectedGoal.contains('Stress') || _selectedGoal.contains('Anxiety')) primary = [UserArchetype.anxiousOverthinker];
-    if (_selectedGoal.contains('Focus') || _selectedGoal.contains('Productivity')) primary = [UserArchetype.selfImprovement];
-    if (_selectedGoal.contains('Relationships')) primary = [UserArchetype.heartbreakSurvivor];
-    if (_selectedGoal.contains('Wealth')) primary = [UserArchetype.spiritualSeeker];
+    List<UserArchetype> secondary = [];
+    List<String> subLevels = [];
+    AffirmationTone tone = AffirmationTone.empowering;
+
+    // 1. Goal -> Primary Archetype
+    if (_selectedGoal.contains('Confidence')) {
+      primary = [UserArchetype.careerProfessional];
+      subLevels.add('Founder / Solopreneur');
+    } else if (_selectedGoal.contains('Stress') || _selectedGoal.contains('Anxiety')) {
+      primary = [UserArchetype.anxiousOverthinker];
+      subLevels.add('Panic Attacks & Acute Physical Tension');
+    } else if (_selectedGoal.contains('Focus') || _selectedGoal.contains('Productivity')) {
+      primary = [UserArchetype.selfImprovement];
+      subLevels.add('Daily Habit & Consistency Builder');
+    } else if (_selectedGoal.contains('Relationships') || _selectedGoal.contains('Love')) {
+      primary = [UserArchetype.heartbreakSurvivor];
+      subLevels.add('Fresh Breakup / Shock Phase (Day 0-30)');
+    } else if (_selectedGoal.contains('Wealth') || _selectedGoal.contains('Abundance')) {
+      primary = [UserArchetype.spiritualSeeker];
+      subLevels.add('Law of Attraction & Manifestation Alignment');
+    }
+
+    // 2. Challenge -> Secondary Archetype (Fix for Gap 5 - Multi-Field Survey Synthesis)
+    if (_selectedChallenge.contains('Overthinking') || _selectedChallenge.contains('Self-Doubt') || _selectedChallenge.contains('Anxiety')) {
+      if (!primary.contains(UserArchetype.anxiousOverthinker)) {
+        secondary.add(UserArchetype.anxiousOverthinker);
+        subLevels.add('Bedtime & Late-Night Rumination');
+      }
+    } else if (_selectedChallenge.contains('Burnout') || _selectedChallenge.contains('Exhaustion')) {
+      if (!primary.contains(UserArchetype.selfImprovement)) {
+        secondary.add(UserArchetype.selfImprovement);
+        subLevels.add('Deep Work & Focus Optimizer');
+      }
+    } else if (_selectedChallenge.contains('Heartbreak') || _selectedChallenge.contains('Grief')) {
+      if (!primary.contains(UserArchetype.heartbreakSurvivor)) {
+        secondary.add(UserArchetype.heartbreakSurvivor);
+      }
+    }
+
+    // 3. Vision -> Tone (Fix for Gap 5)
+    if (_selectedVision.contains('Calm') || _selectedVision.contains('Peace')) {
+      tone = AffirmationTone.gentleAndGrounding;
+    } else if (_selectedVision.contains('Wisdom') || _selectedVision.contains('Discipline')) {
+      tone = AffirmationTone.philosophical;
+    }
+
+    // 4. Clinical Modalities from Archetypes (Fix for Gap 1)
+    final Set<TherapeuticModality> modalities = {};
+    for (var a in [...primary, ...secondary]) {
+      final meta = ArchetypeRegistry.getMetadata(a);
+      modalities.addAll(meta.primaryModalities);
+    }
 
     final initialVec = PersonalizationEngine.buildArchetypeBaseVector(
       primary: primary,
-      secondary: [],
-      subLevels: [],
-      tone: AffirmationTone.empowering,
+      secondary: secondary,
+      subLevels: subLevels,
+      tone: tone,
     );
 
     _userProfileVector = UserProfileVector(
       primaryArchetypes: primary,
+      secondaryArchetypes: secondary,
+      selectedSubLevels: subLevels,
+      preferredTone: tone,
+      preferredModalities: modalities.toList(),
       vector: initialVec,
       baselineVector: initialVec,
       stateVector: initialVec,
@@ -228,11 +279,19 @@ class AppProvider with ChangeNotifier {
       subLevels: subLevels,
       tone: tone,
     );
+    // Derive clinical modalities from selected archetypes (Fix for Gap 1)
+    final Set<TherapeuticModality> modalities = {};
+    for (var a in [...primary, ...secondary]) {
+      final meta = ArchetypeRegistry.getMetadata(a);
+      modalities.addAll(meta.primaryModalities);
+    }
+
     _userProfileVector = UserProfileVector(
       primaryArchetypes: primary,
       secondaryArchetypes: secondary,
       selectedSubLevels: subLevels,
       preferredTone: tone,
+      preferredModalities: modalities.toList(),
       vector: baseVector,
       baselineVector: baseVector,
       stateVector: baseVector,
@@ -322,6 +381,47 @@ class AppProvider with ChangeNotifier {
   Future<void> incrementStreak() async {
     _streakData.incrementStreak(DateTime.now());
     await _storageService.saveStreakData(_streakData);
+    notifyListeners();
+  }
+
+  /// Records that an affirmation was listened to $>80% (implicit positive feedback, Fix for Gap 3)
+  Future<void> recordAudioAffirmationCompleted(Affirmation affirmation) async {
+    if (affirmation.embeddingVector.isNotEmpty) {
+      _userProfileVector = PersonalizationEngine.updateProfileWithInteraction(
+        profile: _userProfileVector,
+        affirmationVector: affirmation.embeddingVector,
+        learningRate: 0.04, // Gentle passive feedback nudge
+      );
+      await _storageService.saveUserProfileVector(_userProfileVector);
+    }
+  }
+
+  /// Records that an affirmation was skipped early in <3s (implicit negative feedback, Fix for Gap 3)
+  Future<void> recordAudioAffirmationSkipped(Affirmation affirmation) async {
+    if (affirmation.embeddingVector.isNotEmpty) {
+      _userProfileVector = PersonalizationEngine.penalizeSkippedAffirmation(
+        profile: _userProfileVector,
+        affirmationVector: affirmation.embeddingVector,
+        penaltyRate: 0.02, // Gentle negative nudge away from skipped theme
+      );
+      await _storageService.saveUserProfileVector(_userProfileVector);
+    }
+  }
+
+  /// Records audio playlist completion: increments listening streak, total listening days, and updates vector (Fix for Gap 8)
+  Future<void> recordAudioSessionCompleted(Playlist playlist) async {
+    _streakData.incrementStreak(DateTime.now());
+    await _storageService.saveStreakData(_streakData);
+
+    // Reward user vector with session completion centroid alignment
+    if (playlist.centroidVector.isNotEmpty) {
+      _userProfileVector = PersonalizationEngine.updateProfileWithInteraction(
+        profile: _userProfileVector,
+        affirmationVector: playlist.centroidVector,
+        learningRate: 0.06,
+      );
+      await _storageService.saveUserProfileVector(_userProfileVector);
+    }
     notifyListeners();
   }
 

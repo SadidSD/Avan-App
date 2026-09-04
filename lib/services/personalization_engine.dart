@@ -147,6 +147,10 @@ class PersonalizationEngine {
       vec[15] += 0.2; // Boost believability
     } else if (tone == AffirmationTone.directAndActionable || tone == AffirmationTone.empowering) {
       vec[14] += 0.3; // Boost action/fire
+    } else if (tone == AffirmationTone.philosophical) {
+      vec[4] += 0.35; // Boost stoic self-mastery & discipline
+      vec[5] += 0.30; // Boost spiritual & philosophical wisdom
+      vec[13] += 0.25; // Boost inner calm & equanimity
     } else if (tone == AffirmationTone.simpleAndClear) {
       vec[10] += 0.4; // Boost simplicity
       vec[15] += 0.3;
@@ -273,6 +277,36 @@ class PersonalizationEngine {
     );
   }
 
+  /// Negative gradient step when a user rapidly skips an affirmation (Fix for Gap 3).
+  /// Gently nudges the dynamic state vector away from the skipped affirmation without destabilizing the anchor.
+  static UserProfileVector penalizeSkippedAffirmation({
+    required UserProfileVector profile,
+    required List<double> affirmationVector,
+    double penaltyRate = 0.03,
+  }) {
+    if (affirmationVector.length != vectorDimensions) return profile;
+
+    final currentState = profile.stateVector.isNotEmpty
+        ? profile.stateVector
+        : (profile.vector.isNotEmpty ? profile.vector : List.filled(vectorDimensions, 0.0));
+
+    final List<double> updated = List.filled(vectorDimensions, 0.0);
+    for (int i = 0; i < vectorDimensions; i++) {
+      updated[i] = currentState[i] - penaltyRate * affirmationVector[i];
+      if (updated[i] < 0.0) updated[i] = 0.0;
+    }
+
+    final normalizedState = _normalize(updated);
+    final updatedProfile = profile.copyWith(
+      stateVector: normalizedState,
+      lastUpdated: DateTime.now(),
+    );
+
+    return updatedProfile.copyWith(
+      vector: updatedProfile.effectiveVector,
+    );
+  }
+
   /// Generates a personalized ranked queue of affirmations using multi-vector similarity,
   /// mode biasing, mood modulation, and exponential believability gating.
   static List<Affirmation> getPersonalizedFeed({
@@ -352,17 +386,89 @@ class PersonalizationEngine {
         }
       }
 
-      final finalScore = sim * modeBoost * moodBoost * subLevelBoost * believabilityGate;
+      // Clinical Therapeutic Modality Boost (Fix for Gap 1)
+      double modalityBoost = 1.0;
+      if (profile.preferredModalities.contains(aff.modality)) {
+        modalityBoost = 1.20;
+      }
+
+      // Circadian Time-of-Day Dynamics (Fix for Gap 7)
+      final hour = DateTime.now().hour;
+      double circadianBoost = 1.0;
+      if (hour >= 22 || hour < 5) {
+        // Late night soothing smoothing
+        if (aff.embeddingVector.length > 13 && aff.embeddingVector[13] > 0.5) {
+          circadianBoost *= 1.25;
+        }
+        if (aff.embeddingVector.length > 14 && aff.embeddingVector[14] > 0.6) {
+          circadianBoost *= 0.80; // Soften high-arousal action
+        }
+      } else if (hour >= 6 && hour < 11) {
+        // Morning activation
+        if (aff.embeddingVector.length > 14 && aff.embeddingVector[14] > 0.5) {
+          circadianBoost *= 1.15;
+        }
+      }
+
+      final finalScore = sim * modeBoost * moodBoost * subLevelBoost * modalityBoost * circadianBoost * believabilityGate;
       scored.add({
         'affirmation': aff,
         'score': finalScore,
       });
     }
 
-    // Sort by descending score
+    // Sort descending by initial relevance score
     scored.sort((a, b) => (b['score'] as double).compareTo(a['score'] as double));
 
-    return scored.take(limit).map((e) => e['affirmation'] as Affirmation).toList();
+    if (scored.length <= limit) {
+      return scored.map((e) => e['affirmation'] as Affirmation).toList();
+    }
+
+    // Maximal Marginal Relevance (MMR) Selection with lambda = 0.75 (Fix for Gap 4 - Greedy Top-K Redundancy)
+    // Balances high relevance against semantic overlap to guarantee diverse, multi-faceted recommendations
+    final List<Affirmation> selected = [];
+    final List<Map<String, dynamic>> remaining = List.from(scored);
+
+    // Pick top-scoring candidate first
+    final first = remaining.removeAt(0);
+    selected.add(first['affirmation'] as Affirmation);
+
+    const double lambda = 0.70;
+    final double maxScore = scored.isNotEmpty ? (scored.first['score'] as double) : 1.0;
+
+    while (selected.length < limit && remaining.isNotEmpty) {
+      double bestMmrScore = -double.infinity;
+      int bestIdx = 0;
+
+      for (int i = 0; i < remaining.length; i++) {
+        final candidateAff = remaining[i]['affirmation'] as Affirmation;
+        final candidateScore = remaining[i]['score'] as double;
+        final normScore = maxScore > 0 ? (candidateScore / maxScore) : candidateScore;
+
+        // Calculate max similarity with already selected affirmations
+        double maxSimilarityToSelected = 0.0;
+        for (var sel in selected) {
+          final sim = cosineSimilarity(candidateAff.embeddingVector, sel.embeddingVector);
+          if (sim > maxSimilarityToSelected) {
+            maxSimilarityToSelected = sim;
+          }
+        }
+
+        // Steep penalty for near-duplicate affirmations (cosine similarity > 0.85)
+        final redundancyPenalty = maxSimilarityToSelected > 0.85 ? 0.35 : 0.0;
+        final mmrScore = lambda * normScore - (1.0 - lambda) * maxSimilarityToSelected - redundancyPenalty;
+
+        if (mmrScore > bestMmrScore) {
+          bestMmrScore = mmrScore;
+          bestIdx = i;
+        }
+      }
+
+      final chosen = remaining.removeAt(bestIdx);
+      selected.add(chosen['affirmation'] as Affirmation);
+    }
+
+    return selected;
   }
 
   /// Returns the single most relevant affirmation for the Hero card of the day.

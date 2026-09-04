@@ -250,5 +250,116 @@ void main() {
       expect(ranked.first.matchScore, greaterThan(0.75));
       expect(ranked.first.matchScore, lessThanOrEqualTo(0.99));
     });
+
+    test('AffirmationTone.philosophical synthesizes Stoic, Wisdom, and Calm dimensions', () {
+      final vec = PersonalizationEngine.buildArchetypeBaseVector(
+        primary: [UserArchetype.careerProfessional],
+        secondary: [],
+        subLevels: [],
+        tone: AffirmationTone.philosophical,
+      );
+
+      // Stoic/Acceptance [4] and Wisdom/Perspective [5] must be elevated
+      expect(vec[4], greaterThan(0.20));
+      expect(vec[5], greaterThan(0.20));
+      expect(vec[13], greaterThan(0.15));
+    });
+
+    test('preferredModalities boosts matching affirmation score in feed', () {
+      final actAff = Affirmation(
+        id: 'aff_act',
+        text: 'I acknowledge this feeling without judgment and take a step forward.',
+        category: 'Mindfulness',
+        modality: TherapeuticModality.actValues,
+        tone: AffirmationTone.philosophical,
+        embeddingVector: [0.1, 0.5, 0.1, 0.1, 0.5, 0.5, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.5, 0.1, 0.5],
+      );
+
+      final cbtAff = Affirmation(
+        id: 'aff_cbt',
+        text: 'I replace this negative thought with a realistic observation.',
+        category: 'Cognitive',
+        modality: TherapeuticModality.cbtReframe,
+        tone: AffirmationTone.philosophical,
+        embeddingVector: [0.1, 0.5, 0.1, 0.1, 0.5, 0.5, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.5, 0.1, 0.5],
+      );
+
+      final profileWithAct = UserProfileVector(
+        primaryArchetypes: [UserArchetype.anxiousOverthinker],
+        preferredModalities: [TherapeuticModality.actValues],
+        vector: [0.1, 0.5, 0.1, 0.1, 0.5, 0.5, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.5, 0.1, 0.5],
+      );
+
+      final feed = PersonalizationEngine.getPersonalizedFeed(
+        profile: profileWithAct,
+        pool: [cbtAff, actAff],
+        isGrowthMode: false,
+        limit: 2,
+      );
+
+      // ACT affirmation must rank #1 due to the 1.20x modality boost
+      expect(feed.first.id, equals('aff_act'));
+    });
+
+    test('MMR diversity selection suppresses redundant near-duplicate affirmations', () {
+      final baseVec = [0.8, 0.2, 0.0, 0.0, 0.1, 0.1, 0.5, 0.7, 0.0, 0.0, 0.0, 0.1, 0.0, 0.1, 0.8, 0.5];
+
+      final duplicate1 = Affirmation(
+        id: 'aff_dup_1',
+        text: 'I am executing my work today with discipline and power.',
+        category: 'Career',
+        embeddingVector: List<double>.from(baseVec),
+      );
+      final duplicate2 = Affirmation(
+        id: 'aff_dup_2',
+        text: 'I execute my daily work with power and discipline.',
+        category: 'Career',
+        embeddingVector: baseVec.map((x) => x * 0.98).toList(),
+      );
+      final diverse = Affirmation(
+        id: 'aff_diverse',
+        text: 'I maintain calm equilibrium and restore my nervous system.',
+        category: 'Rest',
+        embeddingVector: [0.1, 0.2, 0.0, 0.0, 0.6, 0.6, 0.1, 0.1, 0.0, 0.0, 0.0, 0.1, 0.0, 0.9, 0.1, 0.8],
+      );
+
+      final profile = UserProfileVector(
+        primaryArchetypes: [UserArchetype.careerProfessional],
+        vector: List<double>.from(baseVec),
+      );
+
+      final feed = PersonalizationEngine.getPersonalizedFeed(
+        profile: profile,
+        pool: [duplicate1, duplicate2, diverse],
+        isGrowthMode: true,
+        limit: 2,
+      );
+
+      expect(feed.length, equals(2));
+      expect(feed[0].id, equals('aff_dup_1'));
+      expect(feed[1].id, equals('aff_diverse'));
+    });
+
+    test('penalizeSkippedAffirmation dampens state vector weight along skipped dimension', () {
+      final initialVec = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5];
+      final profile = UserProfileVector(
+        primaryArchetypes: [UserArchetype.careerProfessional],
+        vector: initialVec,
+        baselineVector: initialVec,
+        stateVector: initialVec,
+      );
+
+      final skippedVec = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+
+      final penalizedProfile = PersonalizationEngine.penalizeSkippedAffirmation(
+        profile: profile,
+        affirmationVector: skippedVec,
+        penaltyRate: 0.15,
+      );
+
+      // Dimension [9] in stateVector should be reduced compared to baseline
+      expect(penalizedProfile.stateVector[9], lessThan(profile.stateVector[9]));
+      expect(penalizedProfile.effectiveVector[9], lessThan(profile.effectiveVector[9]));
+    });
   });
 }
