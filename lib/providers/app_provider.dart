@@ -33,6 +33,9 @@ class AppProvider with ChangeNotifier {
   String _selectedCommitment = '10 Min/Day';
 
   UserProfileVector _userProfileVector = UserProfileVector();
+  Map<String, int> _lastListenedTimestamps = {};
+  int _completedSessionsCount = 0;
+  int _recentSkipCount = 0;
 
   StreakData _streakData = StreakData();
   List<JournalEntry> _journalEntries = [];
@@ -61,6 +64,9 @@ class AppProvider with ChangeNotifier {
   VisionBoard get activeVisionBoard => _activeVisionBoard;
   List<VisionBoard> get savedVisionBoards => _savedBoards;
   UserProfileVector get userProfileVector => _userProfileVector;
+  Map<String, int> get lastListenedTimestamps => _lastListenedTimestamps;
+  int get completedSessionsCount => _completedSessionsCount;
+  int get recentSkipCount => _recentSkipCount;
 
   /// Resolves active mode (handles 'auto' mode based on current time of day)
   AppMode get activeAppMode {
@@ -115,6 +121,19 @@ class AppProvider with ChangeNotifier {
     _selectedCommitment = survey['commitment']!;
 
     _userProfileVector = _storageService.getUserProfileVector();
+
+    // Load Ebbinghaus habituation timestamps and prune entries older than 14 days
+    _lastListenedTimestamps = _storageService.getListeningTimestamps();
+    final cutoffEpoch = DateTime.now().subtract(const Duration(days: 14)).millisecondsSinceEpoch;
+    _lastListenedTimestamps.removeWhere((_, ts) => ts < cutoffEpoch);
+
+    // Load ZPD session counts and skips
+    _completedSessionsCount = _storageService.getCompletedSessionsCount();
+    _recentSkipCount = _storageService.getRecentSkipCount();
+    _userProfileVector = _userProfileVector.copyWith(
+      completedSessionsCount: _completedSessionsCount,
+      recentSkipCount: _recentSkipCount,
+    );
 
     // If profile vector is empty (first launch / upgrade), initialize it
     if (_userProfileVector.vector.every((v) => v == 0.0)) {
@@ -233,6 +252,7 @@ class AppProvider with ChangeNotifier {
       isGrowthMode: isGrowthMode,
       mood: _selectedMood,
       limit: limit,
+      lastListenedTimestamps: _lastListenedTimestamps,
     );
   }
 
@@ -384,11 +404,23 @@ class AppProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  /// Records that an affirmation was listened to $>80% (implicit positive feedback, Fix for Gap 3)
+  /// Records that an affirmation was listened to $>80% (implicit positive feedback, Fix for Gap 3 & Phase 1 Habituation)
   Future<void> recordAudioAffirmationCompleted(Affirmation affirmation) async {
+    // 1. Record listening timestamp for Ebbinghaus habituation decay
+    _lastListenedTimestamps[affirmation.id] = DateTime.now().millisecondsSinceEpoch;
+    await _storageService.saveListeningTimestamps(_lastListenedTimestamps);
+
+    // 2. Completed listen alleviates recent skip resistance
+    if (_recentSkipCount > 0) {
+      _recentSkipCount--;
+      await _storageService.saveRecentSkipCount(_recentSkipCount);
+    }
+
     if (affirmation.embeddingVector.isNotEmpty) {
       _userProfileVector = PersonalizationEngine.updateProfileWithInteraction(
-        profile: _userProfileVector,
+        profile: _userProfileVector.copyWith(
+          recentSkipCount: _recentSkipCount,
+        ),
         affirmationVector: affirmation.embeddingVector,
         learningRate: 0.04, // Gentle passive feedback nudge
       );
@@ -396,11 +428,17 @@ class AppProvider with ChangeNotifier {
     }
   }
 
-  /// Records that an affirmation was skipped early in <3s (implicit negative feedback, Fix for Gap 3)
+  /// Records that an affirmation was skipped early in <3s (implicit negative feedback, Fix for Gap 3 & ZPD safety retreat)
   Future<void> recordAudioAffirmationSkipped(Affirmation affirmation) async {
+    // Increase recent skip count (capped at 5) to trigger ZPD safety retreat toward gentle grounding
+    _recentSkipCount = (_recentSkipCount + 1).clamp(0, 5);
+    await _storageService.saveRecentSkipCount(_recentSkipCount);
+
     if (affirmation.embeddingVector.isNotEmpty) {
       _userProfileVector = PersonalizationEngine.penalizeSkippedAffirmation(
-        profile: _userProfileVector,
+        profile: _userProfileVector.copyWith(
+          recentSkipCount: _recentSkipCount,
+        ),
         affirmationVector: affirmation.embeddingVector,
         penaltyRate: 0.02, // Gentle negative nudge away from skipped theme
       );
@@ -408,10 +446,21 @@ class AppProvider with ChangeNotifier {
     }
   }
 
-  /// Records audio playlist completion: increments listening streak, total listening days, and updates vector (Fix for Gap 8)
+  /// Records audio playlist completion: increments listening streak, total listening days, and advances ZPD ladder (Phase 1)
   Future<void> recordAudioSessionCompleted(Playlist playlist) async {
     _streakData.incrementStreak(DateTime.now());
     await _storageService.saveStreakData(_streakData);
+
+    // Advance ZPD Believability Ladder through completed session mastery
+    _completedSessionsCount++;
+    await _storageService.saveCompletedSessionsCount(_completedSessionsCount);
+    _recentSkipCount = 0;
+    await _storageService.saveRecentSkipCount(_recentSkipCount);
+
+    _userProfileVector = _userProfileVector.copyWith(
+      completedSessionsCount: _completedSessionsCount,
+      recentSkipCount: _recentSkipCount,
+    );
 
     // Reward user vector with session completion centroid alignment
     if (playlist.centroidVector.isNotEmpty) {
@@ -420,8 +469,8 @@ class AppProvider with ChangeNotifier {
         affirmationVector: playlist.centroidVector,
         learningRate: 0.06,
       );
-      await _storageService.saveUserProfileVector(_userProfileVector);
     }
+    await _storageService.saveUserProfileVector(_userProfileVector);
     notifyListeners();
   }
 
@@ -606,6 +655,9 @@ class AppProvider with ChangeNotifier {
     _userRecordings = [];
     _streakData = StreakData();
     _userProfileVector = UserProfileVector();
+    _lastListenedTimestamps = {};
+    _completedSessionsCount = 0;
+    _recentSkipCount = 0;
     _currentNavIndex = 0;
     notifyListeners();
   }

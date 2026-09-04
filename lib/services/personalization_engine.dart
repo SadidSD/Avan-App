@@ -307,8 +307,29 @@ class PersonalizationEngine {
     );
   }
 
+  /// Computes the Ebbinghaus spaced habituation multiplier H(a, delta_t) in [0.20, 1.0].
+  /// Prevents semantic fatigue / desensitization by penalizing recently heard affirmations
+  /// and recovering full neural potency over a characteristic half-life tau = 40 hours.
+  static double computeHabituationMultiplier({
+    required int? lastListenedEpochMs,
+    required DateTime now,
+    double minMultiplier = 0.20,
+    double recoveryHours = 40.0,
+  }) {
+    if (lastListenedEpochMs == null || lastListenedEpochMs <= 0) return 1.0;
+
+    final elapsedMs = now.millisecondsSinceEpoch - lastListenedEpochMs;
+    if (elapsedMs <= 0) return minMultiplier;
+
+    final elapsedHours = elapsedMs / (3600.0 * 1000.0);
+    // H(t) = 1.0 - (1.0 - minMultiplier) * exp(-elapsedHours / recoveryHours)
+    final decay = math.exp(-elapsedHours / recoveryHours);
+    final multiplier = 1.0 - (1.0 - minMultiplier) * decay;
+    return multiplier.clamp(minMultiplier, 1.0);
+  }
+
   /// Generates a personalized ranked queue of affirmations using multi-vector similarity,
-  /// mode biasing, mood modulation, and exponential believability gating.
+  /// mode biasing, mood modulation, dynamic ZPD believability gating, and Ebbinghaus habituation decay.
   static List<Affirmation> getPersonalizedFeed({
     required UserProfileVector profile,
     required List<Affirmation> pool,
@@ -316,6 +337,7 @@ class PersonalizationEngine {
     String? mood,
     int limit = 10,
     List<String> excludeIds = const [],
+    Map<String, int>? lastListenedTimestamps,
   }) {
     final userVec = (profile.effectiveVector.isNotEmpty && profile.effectiveVector.any((v) => v != 0.0))
         ? profile.effectiveVector
@@ -332,6 +354,7 @@ class PersonalizationEngine {
 
     // Score each candidate affirmation
     List<Map<String, dynamic>> scored = [];
+    final now = DateTime.now();
 
     for (var aff in pool) {
       if (excludeIds.contains(aff.id)) continue;
@@ -345,10 +368,9 @@ class PersonalizationEngine {
       // Base Cosine Similarity
       double sim = cosineSimilarity(userVec, aff.embeddingVector);
 
-      // Believability Penalty Gating (Fix for Flaw 3 - Disconnected believabilityScore)
-      // When user's believability need exceeds affirmation's believability score,
-      // apply smooth Gaussian penalty: exp(-3.0 * delta^2)
-      final double userBelievabilityNeed = profile.believabilityPreference;
+      // Dynamic ZPD Believability Penalty Gating (Zone of Proximal Development)
+      // Uses effectiveBelievabilityPreference which scales as the user builds listening mastery
+      final double userBelievabilityNeed = profile.effectiveBelievabilityPreference;
       final double deltaBelievability = math.max(0.0, userBelievabilityNeed - aff.believabilityScore);
       final double believabilityGate = math.exp(-3.0 * deltaBelievability * deltaBelievability);
 
@@ -393,7 +415,7 @@ class PersonalizationEngine {
       }
 
       // Circadian Time-of-Day Dynamics (Fix for Gap 7)
-      final hour = DateTime.now().hour;
+      final hour = now.hour;
       double circadianBoost = 1.0;
       if (hour >= 22 || hour < 5) {
         // Late night soothing smoothing
@@ -410,7 +432,16 @@ class PersonalizationEngine {
         }
       }
 
-      final finalScore = sim * modeBoost * moodBoost * subLevelBoost * modalityBoost * circadianBoost * believabilityGate;
+      // Ebbinghaus Spaced Habituation Decay
+      double habituationMultiplier = 1.0;
+      if (lastListenedTimestamps != null && lastListenedTimestamps.containsKey(aff.id)) {
+        habituationMultiplier = computeHabituationMultiplier(
+          lastListenedEpochMs: lastListenedTimestamps[aff.id],
+          now: now,
+        );
+      }
+
+      final finalScore = sim * modeBoost * moodBoost * subLevelBoost * modalityBoost * circadianBoost * believabilityGate * habituationMultiplier;
       scored.add({
         'affirmation': aff,
         'score': finalScore,

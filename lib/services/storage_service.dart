@@ -201,6 +201,36 @@ class StorageService {
     await _prefs?.setString('userProfileVector', jsonEncode(profile.toJson()));
   }
 
+  // Ebbinghaus Spaced Habituation Timestamps
+  Map<String, int> getListeningTimestamps() {
+    final String? str = _prefs?.getString('listeningTimestamps');
+    if (str == null) return {};
+    try {
+      final decoded = jsonDecode(str) as Map<String, dynamic>;
+      return decoded.map((k, v) => MapEntry(k, (v as num).toInt()));
+    } catch (_) {
+      return {};
+    }
+  }
+
+  Future<void> saveListeningTimestamps(Map<String, int> timestamps) async {
+    await init();
+    await _prefs?.setString('listeningTimestamps', jsonEncode(timestamps));
+  }
+
+  // ZPD Believability Metrics
+  int getCompletedSessionsCount() => _prefs?.getInt('completedSessionsCount') ?? 0;
+  Future<void> saveCompletedSessionsCount(int count) async {
+    await init();
+    await _prefs?.setInt('completedSessionsCount', count);
+  }
+
+  int getRecentSkipCount() => _prefs?.getInt('recentSkipCount') ?? 0;
+  Future<void> saveRecentSkipCount(int count) async {
+    await init();
+    await _prefs?.setInt('recentSkipCount', count);
+  }
+
   // Primitive Helpers
   bool getBool(String key, {bool defaultValue = false}) => _prefs?.getBool(key) ?? defaultValue;
   Future<void> setBool(String key, bool value) async {

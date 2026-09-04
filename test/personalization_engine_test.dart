@@ -361,5 +361,131 @@ void main() {
       expect(penalizedProfile.stateVector[9], lessThan(profile.stateVector[9]));
       expect(penalizedProfile.effectiveVector[9], lessThan(profile.effectiveVector[9]));
     });
+
+    test('Ebbinghaus spaced habituation curve mathematically suppresses recent listens and recovers', () {
+      final now = DateTime.now();
+
+      // Fresh affirmation (never listened)
+      final freshMultiplier = PersonalizationEngine.computeHabituationMultiplier(
+        lastListenedEpochMs: null,
+        now: now,
+      );
+      expect(freshMultiplier, equals(1.0));
+
+      // Just listened (0 hours ago)
+      final immediateMultiplier = PersonalizationEngine.computeHabituationMultiplier(
+        lastListenedEpochMs: now.millisecondsSinceEpoch,
+        now: now,
+      );
+      expect(immediateMultiplier, closeTo(0.20, 0.01));
+
+      // Listened 12 hours ago
+      final t12h = now.subtract(const Duration(hours: 12)).millisecondsSinceEpoch;
+      final mult12h = PersonalizationEngine.computeHabituationMultiplier(
+        lastListenedEpochMs: t12h,
+        now: now,
+      );
+      expect(mult12h, greaterThan(0.35));
+      expect(mult12h, lessThan(0.45));
+
+      // Listened 40 hours ago (half-life)
+      final t40h = now.subtract(const Duration(hours: 40)).millisecondsSinceEpoch;
+      final mult40h = PersonalizationEngine.computeHabituationMultiplier(
+        lastListenedEpochMs: t40h,
+        now: now,
+      );
+      expect(mult40h, closeTo(0.705, 0.02));
+
+      // Listened 96 hours ago (4 days)
+      final t96h = now.subtract(const Duration(hours: 96)).millisecondsSinceEpoch;
+      final mult96h = PersonalizationEngine.computeHabituationMultiplier(
+        lastListenedEpochMs: t96h,
+        now: now,
+      );
+      expect(mult96h, greaterThan(0.90));
+
+      // Listened 7 days ago
+      final t7d = now.subtract(const Duration(days: 7)).millisecondsSinceEpoch;
+      final mult7d = PersonalizationEngine.computeHabituationMultiplier(
+        lastListenedEpochMs: t7d,
+        now: now,
+      );
+      expect(mult7d, greaterThan(0.98));
+    });
+
+    test('Ebbinghaus habituation in getPersonalizedFeed demotes recently heard quote', () {
+      final now = DateTime.now();
+      final baseVec = [0.8, 0.2, 0.0, 0.0, 0.1, 0.1, 0.5, 0.7, 0.0, 0.0, 0.0, 0.1, 0.0, 0.1, 0.8, 0.5];
+
+      // Highly relevant affirmation A (cosine similarity 1.0 to userVec)
+      final affA = Affirmation(
+        id: 'aff_habit_A',
+        text: 'Top relevant quote',
+        category: 'Career',
+        embeddingVector: List<double>.from(baseVec),
+      );
+
+      // Slightly lower relevant affirmation B (distinct direction, cosine similarity ~0.85)
+      final affB = Affirmation(
+        id: 'aff_habit_B',
+        text: 'Alternative relevant quote',
+        category: 'Career',
+        embeddingVector: [0.5, 0.5, 0.0, 0.0, 0.1, 0.1, 0.3, 0.4, 0.0, 0.0, 0.0, 0.1, 0.0, 0.1, 0.5, 0.4],
+      );
+
+      final profile = UserProfileVector(
+        primaryArchetypes: [UserArchetype.careerProfessional],
+        vector: List<double>.from(baseVec),
+      );
+
+      // Without listening history: affA is ranked #1
+      final feedWithoutHistory = PersonalizationEngine.getPersonalizedFeed(
+        profile: profile,
+        pool: [affB, affA],
+        isGrowthMode: true,
+        limit: 2,
+      );
+      expect(feedWithoutHistory.first.id, equals('aff_habit_A'));
+
+      // With listening history: affA was just listened to 1 hour ago
+      final feedWithHistory = PersonalizationEngine.getPersonalizedFeed(
+        profile: profile,
+        pool: [affB, affA],
+        isGrowthMode: true,
+        limit: 2,
+        lastListenedTimestamps: {
+          'aff_habit_A': now.subtract(const Duration(hours: 1)).millisecondsSinceEpoch,
+        },
+      );
+
+      // affA should be demoted due to habituation penalty, so affB ranks #1!
+      expect(feedWithHistory.first.id, equals('aff_habit_B'));
+    });
+
+    test('ZPD Dynamic Believability Ladder expands agency window with consistency and retreats upon skips', () {
+      final baseline = UserProfileVector(
+        primaryArchetypes: [UserArchetype.careerProfessional],
+        believabilityPreference: 0.85,
+        completedSessionsCount: 0,
+        recentSkipCount: 0,
+      );
+
+      // Initial day 1: effective believability is exactly baseline
+      expect(baseline.effectiveBelievabilityPreference, closeTo(0.85, 0.001));
+
+      // After 10 completed sessions: growth shifts ladder toward higher agency (lower believability score need)
+      final advancedProfile = baseline.copyWith(completedSessionsCount: 10);
+      expect(advancedProfile.effectiveBelievabilityPreference, lessThan(0.85));
+      expect(advancedProfile.effectiveBelievabilityPreference, closeTo(0.795, 0.02));
+
+      // After 30 completed sessions: agency expands further
+      final masterProfile = baseline.copyWith(completedSessionsCount: 30);
+      expect(masterProfile.effectiveBelievabilityPreference, lessThan(0.75));
+      expect(masterProfile.effectiveBelievabilityPreference, greaterThan(0.45));
+
+      // If user starts rapidly skipping (e.g. 3 skips), safety retreat brings ladder back up
+      final retreatProfile = masterProfile.copyWith(recentSkipCount: 3);
+      expect(retreatProfile.effectiveBelievabilityPreference, greaterThan(masterProfile.effectiveBelievabilityPreference));
+    });
   });
 }

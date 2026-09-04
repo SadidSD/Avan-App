@@ -11,6 +11,8 @@ class UserProfileVector {
   List<double> baselineVector; // Permanent trait anchor vector from onboarding
   List<double> stateVector; // Dynamic session/interaction state vector
   final double believabilityPreference; // 0.0 - 1.0 (default 0.8)
+  final int completedSessionsCount; // Total full sessions completed
+  final int recentSkipCount; // Consecutive or recent rapid skips
   DateTime lastUpdated;
   int interactionCount;
 
@@ -34,6 +36,18 @@ class UserProfileVector {
     return blended.map((v) => v / mag).toList();
   }
 
+  /// Dynamic Zone of Proximal Development (ZPD) Believability Preference:
+  /// Scales the user's believability window over time based on completed listening sessions,
+  /// while safely retreating toward gentle grounding if recent skips occur.
+  double get effectiveBelievabilityPreference {
+    // Growth step: -0.08 * ln(1 + 0.10 * completedSessions)
+    final double growth = 0.08 * math.log(1.0 + 0.10 * completedSessionsCount);
+    // Retreat step: +0.04 * skips (clamped <= 5)
+    final double retreat = 0.04 * math.min(5, recentSkipCount);
+    final double target = believabilityPreference - growth + retreat;
+    return target.clamp(0.45, 0.95);
+  }
+
   UserProfileVector({
     this.primaryArchetypes = const [UserArchetype.careerProfessional],
     this.secondaryArchetypes = const [],
@@ -44,6 +58,8 @@ class UserProfileVector {
     List<double>? baselineVector,
     List<double>? stateVector,
     this.believabilityPreference = 0.8,
+    this.completedSessionsCount = 0,
+    this.recentSkipCount = 0,
     DateTime? lastUpdated,
     this.interactionCount = 0,
   })  : vector = vector ?? baselineVector ?? List.filled(16, 0.0),
@@ -62,6 +78,8 @@ class UserProfileVector {
       'baselineVector': baselineVector,
       'stateVector': stateVector,
       'believabilityPreference': believabilityPreference,
+      'completedSessionsCount': completedSessionsCount,
+      'recentSkipCount': recentSkipCount,
       'lastUpdated': lastUpdated.toIso8601String(),
       'interactionCount': interactionCount,
     };
@@ -106,6 +124,8 @@ class UserProfileVector {
               .toList(),
       believabilityPreference:
           (json['believabilityPreference'] as num?)?.toDouble() ?? 0.8,
+      completedSessionsCount: json['completedSessionsCount'] as int? ?? 0,
+      recentSkipCount: json['recentSkipCount'] as int? ?? 0,
       lastUpdated: json['lastUpdated'] != null
           ? DateTime.parse(json['lastUpdated'] as String)
           : DateTime.now(),
@@ -123,6 +143,8 @@ class UserProfileVector {
     List<double>? baselineVector,
     List<double>? stateVector,
     double? believabilityPreference,
+    int? completedSessionsCount,
+    int? recentSkipCount,
     DateTime? lastUpdated,
     int? interactionCount,
   }) {
@@ -137,6 +159,9 @@ class UserProfileVector {
       stateVector: stateVector ?? List.from(this.stateVector),
       believabilityPreference:
           believabilityPreference ?? this.believabilityPreference,
+      completedSessionsCount:
+          completedSessionsCount ?? this.completedSessionsCount,
+      recentSkipCount: recentSkipCount ?? this.recentSkipCount,
       lastUpdated: lastUpdated ?? this.lastUpdated,
       interactionCount: interactionCount ?? this.interactionCount,
     );
