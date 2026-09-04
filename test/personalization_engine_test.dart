@@ -487,5 +487,97 @@ void main() {
       final retreatProfile = masterProfile.copyWith(recentSkipCount: 3);
       expect(retreatProfile.effectiveBelievabilityPreference, greaterThan(masterProfile.effectiveBelievabilityPreference));
     });
+
+    test('Playlist ranking enforces dynamic ZPD believability gating', () {
+      final userVec = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5, 0.5];
+
+      // Vulnerable user needing gentle grounding (believability = 0.90)
+      final profile = UserProfileVector(
+        primaryArchetypes: [UserArchetype.careerProfessional],
+        believabilityPreference: 0.90,
+        completedSessionsCount: 0,
+        recentSkipCount: 0,
+        vector: userVec,
+      );
+
+      // Aggressive aspirational playlist with low believability (0.35)
+      final aggressivePlaylist = Playlist(
+        id: 'p_aggressive',
+        title: 'Executive Dominance',
+        affirmations: [
+          Affirmation(
+            id: 'a_agg_1',
+            text: 'I dominate every room.',
+            believabilityScore: 0.35,
+            embeddingVector: userVec,
+          ),
+        ],
+      );
+
+      // Gentle grounding playlist with high believability (0.88)
+      final gentlePlaylist = Playlist(
+        id: 'p_gentle',
+        title: 'Grounded Confidence',
+        affirmations: [
+          Affirmation(
+            id: 'a_gentle_1',
+            text: 'I am taking it one steady step at a time.',
+            believabilityScore: 0.88,
+            embeddingVector: userVec,
+          ),
+        ],
+      );
+
+      expect(aggressivePlaylist.averageBelievabilityScore, closeTo(0.35, 0.01));
+      expect(gentlePlaylist.averageBelievabilityScore, closeTo(0.88, 0.01));
+
+      final ranked = PersonalizationEngine.rankPlaylists(
+        profile: profile,
+        playlists: [aggressivePlaylist, gentlePlaylist],
+        isGrowthMode: true,
+      );
+
+      // Gentle playlist should rank #1 due to ZPD believability gating protecting the user from cognitive rejection
+      expect(ranked.first.playlist.id, equals('p_gentle'));
+    });
+
+    test('computeHabituationMultiplier handles clock skew, negative elapsed time, and zero recovery gracefully', () {
+      final now = DateTime.now();
+
+      // Normal recent listen: should be penalized (0.20)
+      final fresh = PersonalizationEngine.computeHabituationMultiplier(
+        lastListenedEpochMs: now.millisecondsSinceEpoch,
+        now: now,
+      );
+      expect(fresh, closeTo(0.20, 0.01));
+
+      // Clock skew: timestamp 1 hour in the future (>10m) should return unpenalized 1.0
+      final futureTime = now.add(const Duration(hours: 1)).millisecondsSinceEpoch;
+      final futureSkew = PersonalizationEngine.computeHabituationMultiplier(
+        lastListenedEpochMs: futureTime,
+        now: now,
+      );
+      expect(futureSkew, equals(1.0));
+
+      // Zero or negative recovery hours returns unpenalized 1.0
+      final zeroRecovery = PersonalizationEngine.computeHabituationMultiplier(
+        lastListenedEpochMs: now.millisecondsSinceEpoch,
+        now: now,
+        recoveryHours: 0,
+      );
+      expect(zeroRecovery, equals(1.0));
+    });
+
+    test('UserProfileVector defensively handles negative session/skip counts and NaN values', () {
+      final profile = UserProfileVector(
+        completedSessionsCount: -5,
+        recentSkipCount: -2,
+        believabilityPreference: 0.8,
+      );
+
+      // Defensive clamping should keep it within valid range without NaN
+      expect(profile.effectiveBelievabilityPreference, closeTo(0.8, 0.01));
+      expect(profile.effectiveBelievabilityPreference.isNaN, isFalse);
+    });
   });
 }

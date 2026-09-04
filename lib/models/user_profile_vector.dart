@@ -40,11 +40,16 @@ class UserProfileVector {
   /// Scales the user's believability window over time based on completed listening sessions,
   /// while safely retreating toward gentle grounding if recent skips occur.
   double get effectiveBelievabilityPreference {
+    final int safeSessions = math.max(0, completedSessionsCount);
+    final int safeSkips = math.max(0, recentSkipCount);
     // Growth step: -0.08 * ln(1 + 0.10 * completedSessions)
-    final double growth = 0.08 * math.log(1.0 + 0.10 * completedSessionsCount);
+    final double growth = 0.08 * math.log(1.0 + 0.10 * safeSessions);
     // Retreat step: +0.04 * skips (clamped <= 5)
-    final double retreat = 0.04 * math.min(5, recentSkipCount);
+    final double retreat = 0.04 * math.min(5, safeSkips);
     final double target = believabilityPreference - growth + retreat;
+    if (target.isNaN || target.isInfinite) {
+      return 0.8;
+    }
     return target.clamp(0.45, 0.95);
   }
 

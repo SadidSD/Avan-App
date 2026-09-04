@@ -9,7 +9,6 @@ import '../../services/notification_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/custom_card.dart';
-import '../../widgets/paywall_modal.dart';
 import '../my_voice/my_voice_tab.dart';
 import '../onboarding/survey_screen.dart';
 import '../widgets_preview/widgets_tab.dart';

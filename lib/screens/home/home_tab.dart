@@ -587,58 +587,66 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                         query: query,
                       )),
                 ] else ...[
-                  // 7a. Top 8 Personalized Playlists
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 20, right: 20, top: 28),
-                      child: Row(
-                        children: [
-                          Text(
-                            '🔥 Top Recommendations',
-                            style: AppTextStyles.sectionHeader,
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: accent.withOpacity(0.12),
-                              borderRadius: BorderRadius.circular(10),
+                  // 7a. Top 8 Personalized Playlists (shown only when category is 'All')
+                  if (_selectedCategory == 'All') ...[
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 20, right: 20, top: 28),
+                        child: Row(
+                          children: [
+                            Text(
+                              '🔥 Top Recommendations',
+                              style: AppTextStyles.sectionHeader,
                             ),
-                            child: Text(
-                              'Top 8',
-                              style: GoogleFonts.inter(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                color: accent,
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: accent.withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                'Top 8',
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: accent,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                  ...displayedMatches.take(8).map((match) => _buildPlaylistSliver(
-                        match: match,
-                        accent: accent,
-                        isPremium: isPremium,
-                        audioProvider: audioProvider,
-                        appProvider: appProvider,
-                        screenWidth: screenWidth,
-                        query: '',
-                      )),
+                    ...displayedMatches.take(8).map((match) => _buildPlaylistSliver(
+                          match: match,
+                          accent: accent,
+                          isPremium: isPremium,
+                          audioProvider: audioProvider,
+                          appProvider: appProvider,
+                          screenWidth: screenWidth,
+                          query: '',
+                        )),
+                  ],
 
                   // 7b. Explore Library Header + Category Selector Pills
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.only(left: 20, right: 20, top: 36),
+                      padding: EdgeInsets.only(
+                        left: 20,
+                        right: 20,
+                        top: _selectedCategory == 'All' ? 36 : 28,
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
                             children: [
                               Text(
-                                '📚 Explore Library',
+                                _selectedCategory == 'All'
+                                    ? '📚 Explore Library'
+                                    : '📁 $_selectedCategory',
                                 style: AppTextStyles.sectionHeader,
                               ),
                               const SizedBox(width: 8),
@@ -650,7 +658,9 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Text(
-                                  '${allPlaylists.length} Playlists',
+                                  _selectedCategory == 'All'
+                                      ? '${allPlaylists.length} Playlists'
+                                      : '${displayedMatches.where((m) => _matchesCategory(m.playlist, _selectedCategory)).length} Playlists',
                                   style: GoogleFonts.inter(
                                     fontSize: 10,
                                     fontWeight: FontWeight.w600,

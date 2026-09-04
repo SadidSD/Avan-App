@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 
 class PlatformTts {
   html.SpeechSynthesisUtterance? _currentUtterance;
+  html.SpeechSynthesisUtterance? get currentUtterance => _currentUtterance;
   Timer? _resumeKeepAliveTimer;
   List<html.SpeechSynthesisVoice>? _voices;
   VoidCallback? onComplete;

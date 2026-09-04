@@ -29,6 +29,7 @@ class AudioProvider with ChangeNotifier {
   Timer? _watchdogTimer;
   Timer? _sleepTimer;
   int _sleepTimerRemaining = 0; // seconds
+  bool _isCurrentSpeechFinished = false;
 
   // Feedback Callbacks for Vector Personalization & Streaks (Fix for Gap 3 & 8)
   void Function(Affirmation affirmation)? onAffirmationCompleted;
@@ -65,8 +66,6 @@ class AudioProvider with ChangeNotifier {
 
   int get currentAffirmationIndex => _currentAffirmationIndex;
   bool get isPlayerOpen => _isPlayerOpen;
-
-  double get _slotDurationSeconds => _intervalPerAffirmation.toDouble();
 
   void setIntervalPerAffirmation(int gapSeconds) {
     _gapBetweenAffirmations = gapSeconds.clamp(2, 8);
@@ -190,6 +189,7 @@ class AudioProvider with ChangeNotifier {
     if (!_audioService.isPlaying) return;
     _watchdogTimer?.cancel();
     _gapTimer?.cancel();
+    _isCurrentSpeechFinished = true;
 
     // Trigger implicit completion feedback (Fix for Gap 3)
     final completedAff = currentAffirmation;
@@ -207,6 +207,7 @@ class AudioProvider with ChangeNotifier {
   void _playCurrentAffirmation() {
     _gapTimer?.cancel();
     _watchdogTimer?.cancel();
+    _isCurrentSpeechFinished = false;
 
     final aff = currentAffirmation;
     if (aff != null) {
@@ -299,10 +300,13 @@ class AudioProvider with ChangeNotifier {
     _gapTimer?.cancel();
     _watchdogTimer?.cancel();
 
-    // Trigger negative skip signal if skipped manually (Fix for Gap 3)
-    final skippedAff = currentAffirmation;
-    if (skippedAff != null) {
-      onAffirmationSkipped?.call(skippedAff);
+    // Trigger negative skip signal ONLY if speech was still ongoing (early skip).
+    // If speech already finished and we are just in the reflection gap, do NOT penalize!
+    if (!_isCurrentSpeechFinished) {
+      final skippedAff = currentAffirmation;
+      if (skippedAff != null) {
+        onAffirmationSkipped?.call(skippedAff);
+      }
     }
 
     final totalAffs = _currentPlaylist!.affirmations.length;

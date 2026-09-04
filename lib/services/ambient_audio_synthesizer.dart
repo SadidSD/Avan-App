@@ -189,7 +189,6 @@ class AmbientAudioSynthesizer {
 
       case AmbientSound.whiteNoise:
       case AmbientSound.none:
-      default:
         double b0 = 0, b1 = 0;
         for (int i = 0; i < totalSamples; i++) {
           final white = random.nextDouble() * 2.0 - 1.0;

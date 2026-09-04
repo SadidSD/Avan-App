@@ -21,6 +21,7 @@ class Playlist {
 
   List<double>? _cachedCentroid;
   double? _cachedCohesion;
+  double? _cachedAverageBelievability;
 
   /// Returns the normalized 16-dimensional centroid vector representing the semantic center
   /// of all affirmations in this playlist.
@@ -75,6 +76,19 @@ class Playlist {
     if (_cachedCohesion != null) return _cachedCohesion!;
     final _ = centroidVector;
     return _cachedCohesion ?? 1.0;
+  }
+
+  /// Returns the mean believability score of all affirmations in this playlist.
+  /// (Higher = gentle/grounding, lower = bold/aspirational).
+  double get averageBelievabilityScore {
+    if (_cachedAverageBelievability != null) return _cachedAverageBelievability!;
+    if (affirmations.isEmpty) return 0.8;
+    double sum = 0.0;
+    for (final aff in affirmations) {
+      sum += aff.believabilityScore;
+    }
+    _cachedAverageBelievability = sum / affirmations.length;
+    return _cachedAverageBelievability!;
   }
 
   Playlist({

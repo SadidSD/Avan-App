@@ -235,6 +235,8 @@ class AppProvider with ChangeNotifier {
       vector: initialVec,
       baselineVector: initialVec,
       stateVector: initialVec,
+      completedSessionsCount: _completedSessionsCount,
+      recentSkipCount: _recentSkipCount,
     );
     _storageService.saveUserProfileVector(_userProfileVector);
   }
@@ -316,6 +318,8 @@ class AppProvider with ChangeNotifier {
       baselineVector: baseVector,
       stateVector: baseVector,
       lastUpdated: DateTime.now(),
+      completedSessionsCount: _completedSessionsCount,
+      recentSkipCount: _recentSkipCount,
     );
     await _storageService.saveUserProfileVector(_userProfileVector);
     notifyListeners();
@@ -426,6 +430,7 @@ class AppProvider with ChangeNotifier {
       );
       await _storageService.saveUserProfileVector(_userProfileVector);
     }
+    notifyListeners();
   }
 
   /// Records that an affirmation was skipped early in <3s (implicit negative feedback, Fix for Gap 3 & ZPD safety retreat)
@@ -444,6 +449,7 @@ class AppProvider with ChangeNotifier {
       );
       await _storageService.saveUserProfileVector(_userProfileVector);
     }
+    notifyListeners();
   }
 
   /// Records audio playlist completion: increments listening streak, total listening days, and advances ZPD ladder (Phase 1)

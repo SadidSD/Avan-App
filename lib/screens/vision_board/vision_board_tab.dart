@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -9,7 +8,6 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/affirmation_library.dart';
-import '../../models/affirmation.dart';
 import '../../models/vision_board.dart';
 import '../../providers/app_provider.dart';
 import '../../theme/app_colors.dart';
@@ -40,7 +38,6 @@ class _VisionBoardTabState extends State<VisionBoardTab> {
     final appProvider = context.watch<AppProvider>();
     final isGrowth = appProvider.isGrowthMode;
     final accent = AppColors.accentForMode(isGrowth);
-    final activeBoard = appProvider.activeVisionBoard;
 
     return Scaffold(
       backgroundColor: AppColors.background,

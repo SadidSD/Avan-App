@@ -317,14 +317,19 @@ class PersonalizationEngine {
     double recoveryHours = 40.0,
   }) {
     if (lastListenedEpochMs == null || lastListenedEpochMs <= 0) return 1.0;
+    if (recoveryHours <= 0) return 1.0;
 
     final elapsedMs = now.millisecondsSinceEpoch - lastListenedEpochMs;
+    // Guard against future clock skew (time jump / corrupted timestamp):
+    // If timestamp is more than 10 minutes in the future, return unpenalized 1.0
+    if (elapsedMs < -600000) return 1.0;
     if (elapsedMs <= 0) return minMultiplier;
 
     final elapsedHours = elapsedMs / (3600.0 * 1000.0);
     // H(t) = 1.0 - (1.0 - minMultiplier) * exp(-elapsedHours / recoveryHours)
     final decay = math.exp(-elapsedHours / recoveryHours);
     final multiplier = 1.0 - (1.0 - minMultiplier) * decay;
+    if (multiplier.isNaN || multiplier.isInfinite) return 1.0;
     return multiplier.clamp(minMultiplier, 1.0);
   }
 
@@ -635,8 +640,13 @@ class PersonalizationEngine {
         }
       }
 
+      // 4. Dynamic ZPD Believability Gating for Playlists (Fix for Flaw 4)
+      final double userBelievabilityNeed = profile.effectiveBelievabilityPreference;
+      final double deltaBelievability = math.max(0.0, userBelievabilityNeed - playlist.averageBelievabilityScore);
+      final double believabilityGate = math.exp(-3.0 * deltaBelievability * deltaBelievability);
+
       // Multiplicative base score
-      final double baseScore = sim * cohesionFactor * archetypeFactor * subLevelFactor * modeFactor;
+      final double baseScore = sim * cohesionFactor * archetypeFactor * subLevelFactor * modeFactor * believabilityGate;
 
       // 4. Circadian Day-Seeded Exploration Jitter (+/- 2%) (Fix for Flaw 6 - Deterministic Feed Stagnation)
       final double jitter = 0.02 * math.sin(playlist.id.hashCode.toDouble() + dayOfYear.toDouble());
