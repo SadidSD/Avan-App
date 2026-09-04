@@ -20,6 +20,7 @@ class Playlist {
   final String? subtitle;
 
   List<double>? _cachedCentroid;
+  double? _cachedCohesion;
 
   /// Returns the normalized 16-dimensional centroid vector representing the semantic center
   /// of all affirmations in this playlist.
@@ -51,12 +52,15 @@ class Playlist {
     // Average vector
     final avg = sum.map((v) => v / count).toList();
 
-    // Normalize to unit length for standard cosine similarity
+    // Directional mean resultant length R in [0, 1] (spherical dispersion measure)
     double norm = 0.0;
     for (var val in avg) {
       norm += val * val;
     }
     norm = math.sqrt(norm);
+    _cachedCohesion = norm.clamp(0.0, 1.0);
+
+    // Normalize to unit length for standard cosine similarity
     if (norm == 0.0) {
       _cachedCentroid = avg;
     } else {
@@ -64,6 +68,13 @@ class Playlist {
     }
 
     return _cachedCentroid!;
+  }
+
+  /// Directional mean resultant length R in [0, 1] measuring internal thematic cohesion of affirmations.
+  double get cohesionScore {
+    if (_cachedCohesion != null) return _cachedCohesion!;
+    final _ = centroidVector;
+    return _cachedCohesion ?? 1.0;
   }
 
   Playlist({

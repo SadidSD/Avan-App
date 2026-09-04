@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:avan_app/models/user_archetype.dart';
 import 'package:avan_app/models/user_profile_vector.dart';
+import 'package:avan_app/models/affirmation.dart';
+import 'package:avan_app/models/playlist.dart';
 import 'package:avan_app/services/personalization_engine.dart';
 import 'package:avan_app/data/affirmation_library.dart';
 
@@ -105,6 +107,148 @@ void main() {
 
       // Grief dimension [3] should increase after interaction
       expect(updatedVec[3], greaterThan(initialVec[3]));
+    });
+
+    test('Multi-Archetype convex combination preserves primary Career dominance (Flaw 1 & 7)', () {
+      final vec = PersonalizationEngine.buildArchetypeBaseVector(
+        primary: [UserArchetype.careerProfessional],
+        secondary: [UserArchetype.anxiousOverthinker, UserArchetype.heartbreakSurvivor],
+        subLevels: ['Founder / Solopreneur'],
+        tone: AffirmationTone.empowering,
+      );
+
+      // Career dimension [0] must stay dominant despite secondary archetypes
+      expect(vec[0], greaterThan(0.35));
+      // Action dimension [14] should also be high
+      expect(vec[14], greaterThan(0.30));
+    });
+
+    test('Anchored dual-vector EMA update resists catastrophic profile drift (Flaw 2)', () {
+      final initialBase = PersonalizationEngine.buildArchetypeBaseVector(
+        primary: [UserArchetype.careerProfessional],
+        secondary: [],
+        subLevels: ['Founder / Solopreneur'],
+        tone: AffirmationTone.empowering,
+      );
+
+      var profile = UserProfileVector(
+        primaryArchetypes: [UserArchetype.careerProfessional],
+        selectedSubLevels: ['Founder / Solopreneur'],
+        vector: initialBase,
+        baselineVector: initialBase,
+        stateVector: initialBase,
+      );
+
+      // Pure sleep/calm affirmation vector (high somatic calm [13], zero career [0])
+      final sleepAffVec = [
+        0.0, 0.2, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.95, 0.0, 0.8
+      ];
+
+      // Simulate 30 consecutive nighttime interactions
+      for (int i = 0; i < 30; i++) {
+        profile = PersonalizationEngine.updateProfileWithInteraction(
+          profile: profile,
+          affirmationVector: sleepAffVec,
+          learningRate: 0.15,
+        );
+      }
+
+      // Baseline vector should remain 100% immutable
+      expect(profile.baselineVector[0], equals(initialBase[0]));
+
+      // Dynamic state vector adapted to sleep/calm
+      expect(profile.stateVector[13], greaterThan(0.70));
+
+      // Effective blended vector PRESERVES Career dominance (cannot drop below 0.25)
+      expect(profile.effectiveVector[0], greaterThan(0.25));
+      expect(profile.interactionCount, equals(30));
+    });
+
+    test('Exponential believability penalty gates toxic positivity for vulnerable users (Flaw 3)', () {
+      final anxiousProfile = UserProfileVector(
+        primaryArchetypes: [UserArchetype.anxiousOverthinker],
+        selectedSubLevels: ['Panic Attacks & Acute Physical Tension'],
+        preferredTone: AffirmationTone.gentleAndGrounding,
+        believabilityPreference: 0.90, // High need for gentle believable reframing
+        vector: PersonalizationEngine.buildArchetypeBaseVector(
+          primary: [UserArchetype.anxiousOverthinker],
+          secondary: [],
+          subLevels: ['Panic Attacks & Acute Physical Tension'],
+          tone: AffirmationTone.gentleAndGrounding,
+        ),
+      );
+
+      final calmAff = Affirmation(
+        id: 'aff_gentle_calm',
+        text: 'I can breathe through this sensation; my body knows how to regulate itself.',
+        category: 'Calm Mind',
+        primaryArchetypes: [UserArchetype.anxiousOverthinker],
+        tone: AffirmationTone.gentleAndGrounding,
+        embeddingVector: [0.05, 0.85, 0.10, 0.05, 0.10, 0.05, 0.05, 0.20, 0.05, 0.05, 0.10, 0.05, 0.05, 0.90, 0.10, 0.90],
+        believabilityScore: 0.95, // High believability
+      );
+
+      final radicalAff = Affirmation(
+        id: 'aff_radical_toxic',
+        text: 'I am invincible and nothing in the universe can ever touch or worry me.',
+        category: 'Calm Mind',
+        primaryArchetypes: [UserArchetype.anxiousOverthinker],
+        tone: AffirmationTone.empowering,
+        embeddingVector: [0.05, 0.85, 0.10, 0.05, 0.10, 0.05, 0.05, 0.20, 0.05, 0.05, 0.10, 0.05, 0.05, 0.90, 0.10, 0.90],
+        believabilityScore: 0.20, // Radically unbelievable for panic sufferers
+      );
+
+      final feed = PersonalizationEngine.getPersonalizedFeed(
+        profile: anxiousProfile,
+        pool: [radicalAff, calmAff],
+        isGrowthMode: false,
+        limit: 2,
+      );
+
+      // Gentle believable affirmation must be ranked #1
+      expect(feed.first.id, equals('aff_gentle_calm'));
+    });
+
+    test('Multiplicative ranking and cohesion prevent metric distortion and phantom centroids (Flaw 4 & 5)', () {
+      final profile = UserProfileVector(
+        primaryArchetypes: [UserArchetype.careerProfessional],
+        selectedSubLevels: ['Founder / Solopreneur'],
+        preferredTone: AffirmationTone.empowering,
+      );
+
+      // Cohesive playlist
+      final cohesiveAffs = [
+        Affirmation(
+          id: 'aff_c1',
+          text: 'Focused execution',
+          category: 'Career',
+          embeddingVector: [0.8, 0.1, 0.0, 0.0, 0.2, 0.0, 0.7, 0.7, 0.0, 0.0, 0.0, 0.2, 0.0, 0.1, 0.8, 0.5],
+        ),
+        Affirmation(
+          id: 'aff_c2',
+          text: 'Building momentum',
+          category: 'Career',
+          embeddingVector: [0.85, 0.1, 0.0, 0.0, 0.2, 0.0, 0.65, 0.7, 0.0, 0.0, 0.0, 0.2, 0.0, 0.1, 0.75, 0.5],
+        ),
+      ];
+      final cohesivePlaylist = Playlist(
+        id: 'pl_cohesive',
+        title: 'Executive Focus',
+        affirmations: cohesiveAffs,
+        targetArchetypes: [UserArchetype.careerProfessional],
+        targetSubLevels: ['Founder / Solopreneur'],
+      );
+
+      expect(cohesivePlaylist.cohesionScore, greaterThan(0.95));
+
+      final ranked = PersonalizationEngine.rankPlaylists(
+        profile: profile,
+        playlists: [cohesivePlaylist],
+        isGrowthMode: true,
+      );
+
+      expect(ranked.first.matchScore, greaterThan(0.75));
+      expect(ranked.first.matchScore, lessThanOrEqualTo(0.99));
     });
   });
 }

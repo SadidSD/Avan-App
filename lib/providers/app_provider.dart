@@ -163,6 +163,8 @@ class AppProvider with ChangeNotifier {
     _userProfileVector = UserProfileVector(
       primaryArchetypes: primary,
       vector: initialVec,
+      baselineVector: initialVec,
+      stateVector: initialVec,
     );
     _storageService.saveUserProfileVector(_userProfileVector);
   }
@@ -232,6 +234,8 @@ class AppProvider with ChangeNotifier {
       selectedSubLevels: subLevels,
       preferredTone: tone,
       vector: baseVector,
+      baselineVector: baseVector,
+      stateVector: baseVector,
       lastUpdated: DateTime.now(),
     );
     await _storageService.saveUserProfileVector(_userProfileVector);
@@ -334,17 +338,12 @@ class AppProvider with ChangeNotifier {
     } else {
       _favoriteAffirmations.add(affirmationId);
 
-      // Online Learning: shift user profile vector slightly toward favorited affirmation
+      // Online Learning: shift user profile vector slightly toward favorited affirmation using anchored dual-vector update
       if (matchingAff.embeddingVector.isNotEmpty) {
-        final updatedVec = PersonalizationEngine.updateVectorWithInteraction(
-          currentVector: _userProfileVector.vector,
+        _userProfileVector = PersonalizationEngine.updateProfileWithInteraction(
+          profile: _userProfileVector,
           affirmationVector: matchingAff.embeddingVector,
           learningRate: 0.12,
-        );
-        _userProfileVector = _userProfileVector.copyWith(
-          vector: updatedVec,
-          interactionCount: _userProfileVector.interactionCount + 1,
-          lastUpdated: DateTime.now(),
         );
         await _storageService.saveUserProfileVector(_userProfileVector);
       }

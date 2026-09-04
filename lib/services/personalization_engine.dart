@@ -42,148 +42,103 @@ class PersonalizationEngine {
   }
 
   /// Synthesizes a 16-dimensional user vector from primary & secondary archetypes + sub-levels.
+  /// Uses independent archetype normalization and 75/25 convex combination to prevent
+  /// cross-archetype constructive interference / dilution.
   static List<double> buildArchetypeBaseVector({
     required List<UserArchetype> primary,
     required List<UserArchetype> secondary,
     required List<String> subLevels,
     required AffirmationTone tone,
   }) {
-    List<double> vec = List.filled(vectorDimensions, 0.05); // Base ambient noise
+    List<double> vec = List.filled(vectorDimensions, 0.005); // Minimal ambient noise (eliminates orthogonal drag)
 
-    // Helper to add weight to archetype index
-    void addArchetypeWeight(UserArchetype type, double weight) {
-      switch (type) {
-        case UserArchetype.careerProfessional:
-          vec[0] += 0.90 * weight; // Career
-          vec[6] += 0.70 * weight; // Leadership
-          vec[7] += 0.80 * weight; // Confidence
-          vec[14] += 0.75 * weight; // Action
-          break;
-        case UserArchetype.anxiousOverthinker:
-          vec[1] += 0.95 * weight; // Anxiety
-          vec[13] += 0.90 * weight; // Somatic calm
-          vec[15] += 0.90 * weight; // High believability
-          break;
-        case UserArchetype.heartbreakSurvivor:
-          vec[2] += 0.95 * weight; // Heartbreak
-          vec[7] += 0.75 * weight; // Self-esteem
-          vec[13] += 0.80 * weight; // Healing
-          vec[15] += 0.85 * weight;
-          break;
-        case UserArchetype.grievingIndividual:
-          vec[3] += 0.98 * weight; // Grief
-          vec[13] += 0.95 * weight; // Somatic calm
-          vec[15] += 0.95 * weight; // Believability
-          break;
-        case UserArchetype.selfImprovement:
-          vec[4] += 0.95 * weight; // Self-mastery
-          vec[7] += 0.80 * weight; // Confidence
-          vec[14] += 0.85 * weight; // Action
-          break;
-        case UserArchetype.spiritualSeeker:
-          vec[5] += 0.98 * weight; // Spiritual
-          vec[13] += 0.70 * weight;
-          vec[14] += 0.60 * weight;
-          break;
-        case UserArchetype.parentCaregiver:
-          vec[8] += 0.95 * weight; // Caregiving
-          vec[1] += 0.50 * weight; // Stress
-          vec[13] += 0.85 * weight; // Calm
-          break;
-        case UserArchetype.athlete:
-          vec[9] += 0.95 * weight; // Athletic
-          vec[4] += 0.70 * weight; // Habits
-          vec[14] += 0.95 * weight; // Action
-          break;
-        case UserArchetype.personWithIDD:
-          vec[10] += 0.99 * weight; // IDD simplicity
-          vec[7] += 0.85 * weight; // Pride
-          vec[13] += 0.90 * weight; // Sensory calm
-          vec[15] += 1.00 * weight; // 100% concrete believability
-          break;
-        case UserArchetype.student:
-          vec[11] += 0.95 * weight; // Academic
-          vec[0] += 0.40 * weight; // Career
-          vec[1] += 0.50 * weight; // Exam anxiety
-          vec[14] += 0.70 * weight;
-          break;
-        case UserArchetype.lgbtqia:
-          vec[12] += 0.98 * weight; // LGBTQIA+
-          vec[7] += 0.90 * weight; // Pride & self-worth
-          vec[13] += 0.70 * weight;
-          break;
+    // 1. Primary archetypes (normalized independently to guarantee primary dominance)
+    List<double> primaryVec = List.filled(vectorDimensions, 0.0);
+    for (var a in primary) {
+      _addArchetypeWeightTo(primaryVec, a, 1.0);
+    }
+    if (primary.isNotEmpty) {
+      primaryVec = _normalize(primaryVec);
+    }
+
+    // 2. Secondary archetypes (normalized independently)
+    List<double> secondaryVec = List.filled(vectorDimensions, 0.0);
+    for (var a in secondary) {
+      _addArchetypeWeightTo(secondaryVec, a, 1.0);
+    }
+    if (secondary.isNotEmpty) {
+      secondaryVec = _normalize(secondaryVec);
+    }
+
+    // Convex combination: 75% primary dominance, 25% secondary (or 100% primary if no secondary)
+    for (int i = 0; i < vectorDimensions; i++) {
+      if (secondary.isNotEmpty) {
+        vec[i] += 0.75 * primaryVec[i] + 0.25 * secondaryVec[i];
+      } else {
+        vec[i] += primaryVec[i];
       }
     }
 
-    // 1. Primary archetypes (Weight = 1.0)
-    for (var a in primary) {
-      addArchetypeWeight(a, 1.0);
-    }
-
-    // 2. Secondary archetypes (Weight = 0.55)
-    for (var a in secondary) {
-      addArchetypeWeight(a, 0.55);
-    }
-
-    // 3. Sub-level adjustments across all 33+ archetype situations
-    for (var sub in subLevels) {
+    // 3. Sub-level adjustments across all 33+ archetype situations (case-insensitive & robust)
+    for (var rawSub in subLevels) {
+      final sub = rawSub.toLowerCase();
       // Career
-      if (sub.contains('Founder') || sub.contains('Solopreneur')) { vec[6] += 0.35; vec[14] += 0.30; }
-      if (sub.contains('Corporate') || sub.contains('Leader') || sub.contains('Executive')) { vec[6] += 0.35; vec[0] += 0.25; }
-      if (sub.contains('Contributor') || sub.contains('Climber')) { vec[0] += 0.35; vec[7] += 0.25; }
-      if (sub.contains('Sales') || sub.contains('Client')) { vec[7] += 0.35; vec[14] += 0.30; }
+      if (sub.contains('founder') || sub.contains('solopreneur')) { vec[0] += 0.40; vec[6] += 0.35; vec[14] += 0.30; }
+      if (sub.contains('corporate') || sub.contains('leader') || sub.contains('executive')) { vec[6] += 0.35; vec[0] += 0.25; }
+      if (sub.contains('contributor') || sub.contains('climber')) { vec[0] += 0.35; vec[7] += 0.25; }
+      if (sub.contains('sales') || sub.contains('client')) { vec[7] += 0.35; vec[14] += 0.30; vec[0] += 0.20; }
 
       // Anxiety
-      if (sub.contains('Panic') || sub.contains('Tension')) { vec[1] += 0.40; vec[13] += 0.35; }
-      if (sub.contains('Social') || sub.contains('Performance Anxiety')) { vec[1] += 0.35; vec[7] += 0.30; }
-      if (sub.contains('Bedtime') || sub.contains('Rumination')) { vec[13] += 0.40; vec[15] += 0.35; }
+      if (sub.contains('panic') || sub.contains('tension')) { vec[1] += 0.40; vec[13] += 0.35; }
+      if (sub.contains('social') || sub.contains('performance anxiety')) { vec[1] += 0.35; vec[7] += 0.30; }
+      if (sub.contains('bedtime') || sub.contains('rumination')) { vec[13] += 0.40; vec[15] += 0.35; }
 
       // Heartbreak
-      if (sub.contains('Shock') || sub.contains('Fresh Breakup')) { vec[2] += 0.40; vec[13] += 0.35; vec[15] += 0.30; }
-      if (sub.contains('Yearning') || sub.contains('No-Contact')) { vec[2] += 0.35; vec[3] += 0.25; vec[13] += 0.30; }
-      if (sub.contains('Rediscovery') || sub.contains('Self-Worth')) { vec[7] += 0.40; vec[14] += 0.30; }
-      if (sub.contains('Divorce') || sub.contains('Separation')) { vec[2] += 0.35; vec[7] += 0.30; }
+      if (sub.contains('shock') || sub.contains('fresh breakup')) { vec[2] += 0.40; vec[13] += 0.35; vec[15] += 0.30; }
+      if (sub.contains('yearning') || sub.contains('no-contact')) { vec[2] += 0.35; vec[3] += 0.25; vec[13] += 0.30; }
+      if (sub.contains('rediscovery') || sub.contains('self-worth')) { vec[7] += 0.40; vec[14] += 0.30; }
+      if (sub.contains('divorce') || sub.contains('separation')) { vec[2] += 0.35; vec[7] += 0.30; }
 
       // Grief
-      if (sub.contains('Parent') || sub.contains('Sibling')) { vec[3] += 0.40; vec[13] += 0.35; }
-      if (sub.contains('Partner') || sub.contains('Spouse')) { vec[3] += 0.40; vec[2] += 0.25; vec[13] += 0.35; }
-      if (sub.contains('Young Adult')) { vec[3] += 0.35; vec[7] += 0.30; }
-      if (sub.contains('Anticipatory') || sub.contains('Illness')) { vec[3] += 0.35; vec[1] += 0.25; vec[13] += 0.35; }
+      if (sub.contains('parent') || sub.contains('sibling')) { vec[3] += 0.40; vec[13] += 0.35; }
+      if (sub.contains('partner') || sub.contains('spouse')) { vec[3] += 0.40; vec[2] += 0.25; vec[13] += 0.35; }
+      if (sub.contains('young adult')) { vec[3] += 0.35; vec[7] += 0.30; }
+      if (sub.contains('anticipatory') || sub.contains('illness')) { vec[3] += 0.35; vec[1] += 0.25; vec[13] += 0.35; }
 
       // Self-Improvement
-      if (sub.contains('Consistency') || sub.contains('Daily Habit')) { vec[4] += 0.40; vec[14] += 0.35; }
-      if (sub.contains('Deep Work') || sub.contains('Focus Optimizer')) { vec[14] += 0.40; vec[0] += 0.25; }
-      if (sub.contains('Stoic') || sub.contains('Philosophy')) { vec[13] += 0.35; vec[15] += 0.35; }
+      if (sub.contains('consistency') || sub.contains('daily habit')) { vec[4] += 0.45; vec[14] += 0.35; }
+      if (sub.contains('deep work') || sub.contains('focus optimizer')) { vec[4] += 0.35; vec[14] += 0.40; vec[0] += 0.20; }
+      if (sub.contains('stoic') || sub.contains('philosophy')) { vec[13] += 0.35; vec[15] += 0.35; }
 
       // Spiritual
-      if (sub.contains('Attraction') || sub.contains('Abundance')) { vec[5] += 0.40; vec[14] += 0.30; }
-      if (sub.contains('Intuition') || sub.contains('Inner Wisdom')) { vec[5] += 0.40; vec[13] += 0.35; }
-      if (sub.contains('Gratitude') || sub.contains('Alignment')) { vec[5] += 0.35; vec[13] += 0.35; }
+      if (sub.contains('attraction') || sub.contains('abundance')) { vec[5] += 0.40; vec[14] += 0.30; }
+      if (sub.contains('intuition') || sub.contains('inner wisdom')) { vec[5] += 0.40; vec[13] += 0.35; }
+      if (sub.contains('gratitude') || sub.contains('alignment')) { vec[5] += 0.35; vec[13] += 0.35; }
 
       // Parenting
-      if (sub.contains('Newborn') || sub.contains('Toddler')) { vec[8] += 0.40; vec[13] += 0.35; }
-      if (sub.contains('School-Age') || sub.contains('Teen')) { vec[8] += 0.40; vec[1] += 0.25; }
-      if (sub.contains('Caregiver') || sub.contains('Elder')) { vec[8] += 0.40; vec[13] += 0.35; }
+      if (sub.contains('newborn') || sub.contains('toddler')) { vec[8] += 0.40; vec[13] += 0.35; }
+      if (sub.contains('school-age') || sub.contains('teen')) { vec[8] += 0.40; vec[1] += 0.25; }
+      if (sub.contains('caregiver') || sub.contains('elder')) { vec[8] += 0.40; vec[13] += 0.35; }
 
       // Athlete
-      if (sub.contains('Endurance') || sub.contains('Running') || sub.contains('Fitness')) { vec[9] += 0.40; vec[4] += 0.30; }
-      if (sub.contains('Prep') || sub.contains('Clutch Mindset')) { vec[9] += 0.40; vec[7] += 0.35; vec[14] += 0.35; }
-      if (sub.contains('Injury') || sub.contains('Mental Reset')) { vec[9] += 0.35; vec[13] += 0.35; vec[15] += 0.30; }
+      if (sub.contains('endurance') || sub.contains('running') || sub.contains('fitness')) { vec[9] += 0.40; vec[4] += 0.30; }
+      if (sub.contains('prep') || sub.contains('clutch mindset')) { vec[9] += 0.40; vec[7] += 0.35; vec[14] += 0.35; }
+      if (sub.contains('injury') || sub.contains('mental reset')) { vec[9] += 0.35; vec[13] += 0.35; vec[15] += 0.30; }
 
       // Accessible / IDD
-      if (sub.contains('Sensory') || sub.contains('Calming')) { vec[10] += 0.40; vec[13] += 0.35; }
-      if (sub.contains('Pride') || sub.contains('Capability')) { vec[10] += 0.35; vec[7] += 0.40; }
-      if (sub.contains('Belonging') || sub.contains('Friendship')) { vec[10] += 0.35; vec[15] += 0.35; }
+      if (sub.contains('sensory') || sub.contains('calming')) { vec[10] += 0.40; vec[13] += 0.35; }
+      if (sub.contains('pride') || sub.contains('capability')) { vec[10] += 0.35; vec[7] += 0.40; }
+      if (sub.contains('belonging') || sub.contains('friendship')) { vec[10] += 0.35; vec[15] += 0.35; }
 
       // Student
-      if (sub.contains('Exam')) { vec[11] += 0.40; vec[1] += 0.30; }
-      if (sub.contains('Grad') || sub.contains('Medical') || sub.contains('Professional Exam')) { vec[11] += 0.40; vec[0] += 0.30; }
-      if (sub.contains('Procrastination') || sub.contains('Study Motivation')) { vec[11] += 0.35; vec[14] += 0.35; }
+      if (sub.contains('exam')) { vec[11] += 0.40; vec[1] += 0.30; }
+      if (sub.contains('grad') || sub.contains('medical') || sub.contains('professional exam')) { vec[11] += 0.40; vec[0] += 0.30; }
+      if (sub.contains('procrastination') || sub.contains('study motivation')) { vec[11] += 0.35; vec[14] += 0.35; }
 
       // LGBTQIA+
-      if (sub.contains('Authenticity') || sub.contains('Coming Out')) { vec[12] += 0.40; vec[7] += 0.35; }
-      if (sub.contains('Challenging Spaces')) { vec[12] += 0.35; vec[13] += 0.35; }
-      if (sub.contains('Trans') || sub.contains('Non-Binary')) { vec[12] += 0.45; vec[7] += 0.35; }
+      if (sub.contains('authenticity') || sub.contains('coming out')) { vec[12] += 0.40; vec[7] += 0.35; }
+      if (sub.contains('challenging spaces')) { vec[12] += 0.35; vec[13] += 0.35; }
+      if (sub.contains('trans') || sub.contains('non-binary')) { vec[12] += 0.45; vec[7] += 0.35; }
     }
 
     // 4. Tone modifier
@@ -201,7 +156,71 @@ class PersonalizationEngine {
     return _normalize(vec);
   }
 
-  /// Online dynamic EMA update when user interacts (favorites, completes audio, journals).
+  static void _addArchetypeWeightTo(List<double> vec, UserArchetype type, double weight) {
+    switch (type) {
+      case UserArchetype.careerProfessional:
+        vec[0] += 1.15 * weight; // Career
+        vec[6] += 0.65 * weight; // Leadership
+        vec[7] += 0.70 * weight; // Confidence
+        vec[14] += 0.70 * weight; // Action
+        break;
+      case UserArchetype.anxiousOverthinker:
+        vec[1] += 0.95 * weight; // Anxiety
+        vec[13] += 0.90 * weight; // Somatic calm
+        vec[15] += 0.90 * weight; // High believability
+        break;
+      case UserArchetype.heartbreakSurvivor:
+        vec[2] += 0.95 * weight; // Heartbreak
+        vec[7] += 0.75 * weight; // Self-esteem
+        vec[13] += 0.80 * weight; // Healing
+        vec[15] += 0.85 * weight;
+        break;
+      case UserArchetype.grievingIndividual:
+        vec[3] += 0.98 * weight; // Grief
+        vec[13] += 0.95 * weight; // Somatic calm
+        vec[15] += 0.95 * weight; // Believability
+        break;
+      case UserArchetype.selfImprovement:
+        vec[4] += 1.05 * weight; // Self-mastery
+        vec[7] += 0.70 * weight; // Confidence
+        vec[14] += 0.80 * weight; // Action
+        break;
+      case UserArchetype.spiritualSeeker:
+        vec[5] += 0.98 * weight; // Spiritual
+        vec[13] += 0.70 * weight;
+        vec[14] += 0.60 * weight;
+        break;
+      case UserArchetype.parentCaregiver:
+        vec[8] += 0.95 * weight; // Caregiving
+        vec[1] += 0.50 * weight; // Stress
+        vec[13] += 0.85 * weight; // Calm
+        break;
+      case UserArchetype.athlete:
+        vec[9] += 0.95 * weight; // Athletic
+        vec[4] += 0.70 * weight; // Habits
+        vec[14] += 0.95 * weight; // Action
+        break;
+      case UserArchetype.personWithIDD:
+        vec[10] += 0.99 * weight; // IDD simplicity
+        vec[7] += 0.85 * weight; // Pride
+        vec[13] += 0.90 * weight; // Sensory calm
+        vec[15] += 1.00 * weight; // 100% concrete believability
+        break;
+      case UserArchetype.student:
+        vec[11] += 0.95 * weight; // Academic
+        vec[0] += 0.40 * weight; // Career
+        vec[1] += 0.50 * weight; // Exam anxiety
+        vec[14] += 0.70 * weight;
+        break;
+      case UserArchetype.lgbtqia:
+        vec[12] += 0.98 * weight; // LGBTQIA+
+        vec[7] += 0.90 * weight; // Pride & self-worth
+        vec[13] += 0.70 * weight;
+        break;
+    }
+  }
+
+  /// Online dynamic EMA update for a raw continuous vector.
   static List<double> updateVectorWithInteraction({
     required List<double> currentVector,
     required List<double> affirmationVector,
@@ -220,8 +239,42 @@ class PersonalizationEngine {
     return _normalize(updated);
   }
 
+  /// Anchored dual-vector online interaction update (Fix for Flaw 2 - Catastrophic Profile Drift).
+  /// Updates dynamic [stateVector] via EMA while preserving immutable [baselineVector].
+  /// Blends 70% permanent trait anchor with 30% dynamic state to prevent catastrophic forgetting.
+  static UserProfileVector updateProfileWithInteraction({
+    required UserProfileVector profile,
+    required List<double> affirmationVector,
+    double learningRate = 0.15,
+  }) {
+    if (affirmationVector.length != vectorDimensions) {
+      return profile;
+    }
+
+    final currentState = profile.stateVector.isNotEmpty
+        ? profile.stateVector
+        : (profile.vector.isNotEmpty ? profile.vector : List.filled(vectorDimensions, 0.0));
+
+    final updatedState = updateVectorWithInteraction(
+      currentVector: currentState,
+      affirmationVector: affirmationVector,
+      learningRate: learningRate,
+    );
+
+    final updatedProfile = profile.copyWith(
+      stateVector: updatedState,
+      interactionCount: profile.interactionCount + 1,
+      lastUpdated: DateTime.now(),
+    );
+
+    // Keep active vector in sync with effectiveVector (70/30 trait-state blend)
+    return updatedProfile.copyWith(
+      vector: updatedProfile.effectiveVector,
+    );
+  }
+
   /// Generates a personalized ranked queue of affirmations using multi-vector similarity,
-  /// mode biasing, mood modulation, and believability gating.
+  /// mode biasing, mood modulation, and exponential believability gating.
   static List<Affirmation> getPersonalizedFeed({
     required UserProfileVector profile,
     required List<Affirmation> pool,
@@ -230,14 +283,16 @@ class PersonalizationEngine {
     int limit = 10,
     List<String> excludeIds = const [],
   }) {
-    final userVec = profile.vector.isNotEmpty
-        ? profile.vector
-        : buildArchetypeBaseVector(
-            primary: profile.primaryArchetypes,
-            secondary: profile.secondaryArchetypes,
-            subLevels: profile.selectedSubLevels,
-            tone: profile.preferredTone,
-          );
+    final userVec = (profile.effectiveVector.isNotEmpty && profile.effectiveVector.any((v) => v != 0.0))
+        ? profile.effectiveVector
+        : ((profile.vector.isNotEmpty && profile.vector.any((v) => v != 0.0))
+            ? profile.vector
+            : buildArchetypeBaseVector(
+                primary: profile.primaryArchetypes,
+                secondary: profile.secondaryArchetypes,
+                subLevels: profile.selectedSubLevels,
+                tone: profile.preferredTone,
+              ));
 
     final bool isIDDUser = profile.primaryArchetypes.contains(UserArchetype.personWithIDD);
 
@@ -255,6 +310,13 @@ class PersonalizationEngine {
 
       // Base Cosine Similarity
       double sim = cosineSimilarity(userVec, aff.embeddingVector);
+
+      // Believability Penalty Gating (Fix for Flaw 3 - Disconnected believabilityScore)
+      // When user's believability need exceeds affirmation's believability score,
+      // apply smooth Gaussian penalty: exp(-3.0 * delta^2)
+      final double userBelievabilityNeed = profile.believabilityPreference;
+      final double deltaBelievability = math.max(0.0, userBelievabilityNeed - aff.believabilityScore);
+      final double believabilityGate = math.exp(-3.0 * deltaBelievability * deltaBelievability);
 
       // Contextual Boost: App Mode (Growth vs. Healing)
       double modeBoost = 1.0;
@@ -280,16 +342,17 @@ class PersonalizationEngine {
         if (lowerMood.contains('tired') && aff.category == 'Better Sleep') moodBoost = 1.30;
       }
 
-      // Sub-level direct match boost
+      // Sub-level direct match boost (robust case-insensitive check)
       double subLevelBoost = 1.0;
       for (var sub in profile.selectedSubLevels) {
-        if (aff.subLevels.contains(sub)) {
+        final lowerSub = sub.toLowerCase();
+        if (aff.subLevels.any((s) => s.toLowerCase().contains(lowerSub) || lowerSub.contains(s.toLowerCase()))) {
           subLevelBoost = 1.35;
           break;
         }
       }
 
-      final finalScore = sim * modeBoost * moodBoost * subLevelBoost;
+      final finalScore = sim * modeBoost * moodBoost * subLevelBoost * believabilityGate;
       scored.add({
         'affirmation': aff,
         'score': finalScore,
@@ -350,22 +413,28 @@ class PersonalizationEngine {
     );
   }
 
-  /// Ranks playlists based on 16D cosine similarity between the user's vector
-  /// and each playlist's centroid vector, with contextual mode & archetype affinity.
+  /// Ranks playlists based on 16D cosine similarity between the user's effective vector
+  /// and each playlist's centroid vector, with multiplicative confidence modulation,
+  /// cohesion scaling, and circadian day-seeded organic exploration.
   static List<PlaylistMatch> rankPlaylists({
     required UserProfileVector profile,
     required List<Playlist> playlists,
     required bool isGrowthMode,
     String? mood,
   }) {
-    final userVec = profile.vector.isNotEmpty
-        ? profile.vector
-        : buildArchetypeBaseVector(
-            primary: profile.primaryArchetypes,
-            secondary: profile.secondaryArchetypes,
-            subLevels: profile.selectedSubLevels,
-            tone: profile.preferredTone,
-          );
+    final userVec = (profile.effectiveVector.isNotEmpty && profile.effectiveVector.any((v) => v != 0.0))
+        ? profile.effectiveVector
+        : ((profile.vector.isNotEmpty && profile.vector.any((v) => v != 0.0))
+            ? profile.vector
+            : buildArchetypeBaseVector(
+                primary: profile.primaryArchetypes,
+                secondary: profile.secondaryArchetypes,
+                subLevels: profile.selectedSubLevels,
+                tone: profile.preferredTone,
+              ));
+
+    final now = DateTime.now();
+    final dayOfYear = now.difference(DateTime(now.year, 1, 1)).inDays;
 
     final List<PlaylistMatch> matches = [];
 
@@ -382,49 +451,62 @@ class PersonalizationEngine {
       }
 
       // 1. Raw cosine similarity between user vector and playlist centroid
-      double sim = cosineSimilarity(userVec, centroid);
+      final double sim = cosineSimilarity(userVec, centroid);
 
-      // 2. Target archetype affinity (+0.12 if matches user's primary archetype)
+      // 2. Cohesion factor (Fix for Flaw 5 - Centroid Dispersion Paradox)
+      // Scale by directional mean resultant length R: cohesion in [0.90, 1.0]
+      final double cohesionFactor = 0.90 + 0.10 * playlist.cohesionScore;
+
+      // 3. Multiplicative Confidence Modulators (Fix for Flaw 4 - Hybrid Metric Distortion)
+      // Archetype affinity: x1.15 multiplier instead of additive scalar
+      double archetypeFactor = 1.0;
       bool hasArchetypeAffinity = false;
       if (playlist.targetArchetypes != null && profile.primaryArchetypes.isNotEmpty) {
         for (var primary in profile.primaryArchetypes) {
           if (playlist.targetArchetypes!.contains(primary)) {
             hasArchetypeAffinity = true;
+            archetypeFactor = 1.15;
             break;
           }
         }
       }
-      if (hasArchetypeAffinity) {
-        sim += 0.12;
-      }
 
-      // 3. Sub-level affinity (+0.08 if matches target sub-level)
+      // Sub-level affinity: x1.10 multiplier instead of additive scalar (with robust string match)
+      double subLevelFactor = 1.0;
       if (playlist.targetSubLevels != null) {
         for (var sub in profile.selectedSubLevels) {
-          if (playlist.targetSubLevels!.any((ts) =>
-              ts.toLowerCase().contains(sub.toLowerCase()) ||
-              sub.toLowerCase().contains(ts.toLowerCase()))) {
-            sim += 0.08;
+          final lowerSub = sub.toLowerCase();
+          if (playlist.targetSubLevels!.any((ts) {
+            final lowerTs = ts.toLowerCase();
+            return lowerTs.contains(lowerSub) || lowerSub.contains(lowerTs);
+          })) {
+            subLevelFactor = 1.10;
             break;
           }
         }
       }
 
-      // 4. Mode alignment
+      // Mode alignment: x1.06 multiplier instead of additive scalar
+      double modeFactor = 1.0;
       if (isGrowthMode) {
         if (centroid.length > 14 && centroid[14] > 0.3) {
-          sim += 0.04;
+          modeFactor = 1.06;
         }
       } else {
         if (centroid.length > 13 && centroid[13] > 0.3) {
-          sim += 0.04;
+          modeFactor = 1.06;
         }
       }
 
-      // Clamp score
-      final clampedScore = sim.clamp(0.0, 0.99);
+      // Multiplicative base score
+      final double baseScore = sim * cohesionFactor * archetypeFactor * subLevelFactor * modeFactor;
 
-      // Match percentage string: map cosine range so that top resonance matches read 92%-99%
+      // 4. Circadian Day-Seeded Exploration Jitter (+/- 2%) (Fix for Flaw 6 - Deterministic Feed Stagnation)
+      final double jitter = 0.02 * math.sin(playlist.id.hashCode.toDouble() + dayOfYear.toDouble());
+
+      final double clampedScore = (baseScore + jitter).clamp(0.0, 0.99);
+
+      // Match percentage string: map to realistic user-facing resonance (e.g. 60%-99%)
       final percentVal = (clampedScore * 100).round().clamp(60, 99);
       final percentStr = '$percentVal%';
 
