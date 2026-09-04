@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/app_provider.dart';
 import 'providers/audio_provider.dart';
-import 'screens/onboarding/onboarding_carousel.dart';
+import 'screens/onboarding/emotional_onboarding_screen.dart';
 import 'screens/main_navigation_screen.dart';
 import 'theme/app_theme.dart';
 import 'theme/app_colors.dart';
@@ -30,7 +30,7 @@ class AvanApp extends StatelessWidget {
             theme: AppTheme.lightTheme,
             home: appProvider.isOnboardingCompleted
                 ? MainNavigationScreen()
-                : const OnboardingCarousel(),
+                : const EmotionalOnboardingScreen(),
           );
 
           return MobileFrameWrapper(child: appContent);
