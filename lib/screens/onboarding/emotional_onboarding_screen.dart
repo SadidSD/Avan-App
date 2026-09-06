@@ -7,6 +7,7 @@ import '../../providers/app_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/glass_card.dart';
+import '../../widgets/onboarding_animations.dart';
 import 'loading_screen.dart';
 
 /// 6-Screen High-Efficacy Emotional Onboarding Experience
@@ -311,39 +312,50 @@ class _EmotionalOnboardingScreenState extends State<EmotionalOnboardingScreen>
             ),
           ),
           const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: AppColors.surfaceElevated,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('🌬️', style: TextStyle(fontSize: 14)),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    'Take a gentle breath in... and exhale.',
-                    style: GoogleFonts.inter(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.textPrimary,
+          BottomPopItem(
+            key: const ValueKey('s1_breath_card'),
+            index: 0,
+            baseDelay: const Duration(milliseconds: 250),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceElevated,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('🌬️', style: TextStyle(fontSize: 14)),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: TypewriterText(
+                      key: const ValueKey('s1_breath_text'),
+                      text: 'Take a gentle breath in... and exhale.',
+                      durationPerChar: const Duration(milliseconds: 26),
+                      initialDelay: const Duration(milliseconds: 350),
+                      style: GoogleFonts.inter(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textPrimary,
+                      ),
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           const Spacer(),
-          CustomButton(
-            text: 'Begin Your Journey',
-            backgroundColor: AppColors.buttonDark,
-            textColor: Colors.white,
-            onPressed: () => _goToPage(1),
+          BottomPopItem(
+            key: const ValueKey('s1_begin_btn'),
+            index: 1,
+            baseDelay: const Duration(milliseconds: 450),
+            child: CustomButton(
+              text: 'Begin Your Journey',
+              backgroundColor: AppColors.buttonDark,
+              textColor: Colors.white,
+              onPressed: () => _goToPage(1),
+            ),
           ),
           const SizedBox(height: 16),
         ],
@@ -359,8 +371,11 @@ class _EmotionalOnboardingScreenState extends State<EmotionalOnboardingScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Spacer(),
-          Text(
-            'Step into the reality\nyou choose.',
+          TypewriterText(
+            key: const ValueKey('s2_title'),
+            text: 'Step into the reality\nyou choose.',
+            durationPerChar: const Duration(milliseconds: 22),
+            initialDelay: const Duration(milliseconds: 100),
             style: GoogleFonts.cormorantGaramond(
               fontSize: 34,
               fontWeight: FontWeight.w700,
@@ -379,20 +394,44 @@ class _EmotionalOnboardingScreenState extends State<EmotionalOnboardingScreen>
             ),
           ),
           const SizedBox(height: 28),
-          _buildFeatureRow('🧠', '16D Neuro-Adaptive Vector',
-              'Personalized to your unique psychological profile.'),
+          BottomPopItem(
+            key: const ValueKey('s2_f0'),
+            index: 0,
+            baseDelay: const Duration(milliseconds: 260),
+            staggerDelay: const Duration(milliseconds: 70),
+            child: _buildFeatureRow('🧠', '16D Neuro-Adaptive Vector',
+                'Personalized to your unique psychological profile.'),
+          ),
           const SizedBox(height: 16),
-          _buildFeatureRow('🛡️', 'Zero Toxic Positivity',
-              'Grounded in clinical CBT, ACT, and self-compassion.'),
+          BottomPopItem(
+            key: const ValueKey('s2_f1'),
+            index: 1,
+            baseDelay: const Duration(milliseconds: 260),
+            staggerDelay: const Duration(milliseconds: 70),
+            child: _buildFeatureRow('🛡️', 'Zero Toxic Positivity',
+                'Grounded in clinical CBT, ACT, and self-compassion.'),
+          ),
           const SizedBox(height: 16),
-          _buildFeatureRow('🎙️', 'Spoken Neural Resonance',
-              'Interactive voice repetition designed to bypass self-doubt.'),
+          BottomPopItem(
+            key: const ValueKey('s2_f2'),
+            index: 2,
+            baseDelay: const Duration(milliseconds: 260),
+            staggerDelay: const Duration(milliseconds: 70),
+            child: _buildFeatureRow('🎙️', 'Spoken Neural Resonance',
+                'Interactive voice repetition designed to bypass self-doubt.'),
+          ),
           const Spacer(),
-          CustomButton(
-            text: 'Continue',
-            backgroundColor: AppColors.buttonDark,
-            textColor: Colors.white,
-            onPressed: () => _goToPage(2),
+          BottomPopItem(
+            key: const ValueKey('s2_btn'),
+            index: 3,
+            baseDelay: const Duration(milliseconds: 320),
+            staggerDelay: const Duration(milliseconds: 70),
+            child: CustomButton(
+              text: 'Continue',
+              backgroundColor: AppColors.buttonDark,
+              textColor: Colors.white,
+              onPressed: () => _goToPage(2),
+            ),
           ),
           const SizedBox(height: 16),
         ],
@@ -450,8 +489,11 @@ class _EmotionalOnboardingScreenState extends State<EmotionalOnboardingScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "CREATOR'S NOTE",
+          TypewriterText(
+            key: const ValueKey('s3_title'),
+            text: "CREATOR'S NOTE",
+            durationPerChar: const Duration(milliseconds: 24),
+            initialDelay: const Duration(milliseconds: 100),
             style: GoogleFonts.inter(
               fontSize: 11,
               fontWeight: FontWeight.w700,
@@ -462,60 +504,70 @@ class _EmotionalOnboardingScreenState extends State<EmotionalOnboardingScreen>
           const SizedBox(height: 14),
           Expanded(
             child: Center(
-              child: GlassCard(
-                accentColor: AppColors.goldAccent,
-                glowIntensity: 0.3,
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '“',
-                      style: GoogleFonts.cormorantGaramond(
-                        fontSize: 48,
-                        height: 0.7,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.goldAccent.withOpacity(0.6),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'I built AVAN from a season of intense uncertainty.\n\n'
-                      'I learned firsthand that when life feels overwhelming, high-flown positive slogans don’t work. What works is intentional, believable language that calms your nervous system and reminds you of your inner agency.\n\n'
-                      'AVAN is your private space to rebuild trust in yourself—step by step, one thought at a time.',
-                      style: GoogleFonts.cormorantGaramond(
-                        fontSize: 18.5,
-                        fontWeight: FontWeight.w500,
-                        fontStyle: FontStyle.italic,
-                        height: 1.55,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: Text(
-                        '— Alex, Founder of AVAN',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.5,
-                          color: AppColors.goldAccent,
+              child: BottomPopItem(
+                key: const ValueKey('s3_card'),
+                index: 0,
+                baseDelay: const Duration(milliseconds: 200),
+                child: GlassCard(
+                  accentColor: AppColors.goldAccent,
+                  glowIntensity: 0.3,
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '“',
+                        style: GoogleFonts.cormorantGaramond(
+                          fontSize: 48,
+                          height: 0.7,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.goldAccent.withOpacity(0.6),
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 12),
+                      Text(
+                        'I built AVAN from a season of intense uncertainty.\n\n'
+                        'I learned firsthand that when life feels overwhelming, high-flown positive slogans don’t work. What works is intentional, believable language that calms your nervous system and reminds you of your inner agency.\n\n'
+                        'AVAN is your private space to rebuild trust in yourself—step by step, one thought at a time.',
+                        style: GoogleFonts.cormorantGaramond(
+                          fontSize: 18.5,
+                          fontWeight: FontWeight.w500,
+                          fontStyle: FontStyle.italic,
+                          height: 1.55,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          '— Alex, Founder of AVAN',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
+                            color: AppColors.goldAccent,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
           const SizedBox(height: 16),
-          CustomButton(
-            text: "I'm Ready",
-            backgroundColor: AppColors.buttonDark,
-            textColor: Colors.white,
-            onPressed: () => _goToPage(3),
+          BottomPopItem(
+            key: const ValueKey('s3_btn'),
+            index: 1,
+            baseDelay: const Duration(milliseconds: 350),
+            child: CustomButton(
+              text: "I'm Ready",
+              backgroundColor: AppColors.buttonDark,
+              textColor: Colors.white,
+              onPressed: () => _goToPage(3),
+            ),
           ),
           const SizedBox(height: 12),
         ],
@@ -530,8 +582,11 @@ class _EmotionalOnboardingScreenState extends State<EmotionalOnboardingScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'How would you like\nAVAN to speak to you?',
+          TypewriterText(
+            key: const ValueKey('s4_tone_title'),
+            text: 'How would you like\nAVAN to speak to you?',
+            durationPerChar: const Duration(milliseconds: 20),
+            initialDelay: const Duration(milliseconds: 100),
             style: GoogleFonts.cormorantGaramond(
               fontSize: 28,
               fontWeight: FontWeight.w700,
@@ -557,74 +612,80 @@ class _EmotionalOnboardingScreenState extends State<EmotionalOnboardingScreen>
               itemBuilder: (context, index) {
                 final item = _toneOptions[index];
                 final isSelected = _selectedToneIndex == index;
-                return GestureDetector(
-                  onTap: () => setState(() => _selectedToneIndex = index),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                    decoration: BoxDecoration(
-                      color: isSelected ? AppColors.surfaceElevated : AppColors.surface,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: isSelected ? AppColors.goldAccent : AppColors.border,
-                        width: isSelected ? 1.5 : 1.0,
+                return BottomPopItem(
+                  key: ValueKey('s4_tone_item_$index'),
+                  index: index,
+                  baseDelay: const Duration(milliseconds: 220),
+                  staggerDelay: const Duration(milliseconds: 60),
+                  child: GestureDetector(
+                    onTap: () => setState(() => _selectedToneIndex = index),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: isSelected ? AppColors.surfaceElevated : AppColors.surface,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isSelected ? AppColors.goldAccent : AppColors.border,
+                          width: isSelected ? 1.5 : 1.0,
+                        ),
+                        boxShadow: isSelected
+                            ? [
+                                BoxShadow(
+                                  color: AppColors.goldAccent.withOpacity(0.12),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 3),
+                                )
+                              ]
+                            : [],
                       ),
-                      boxShadow: isSelected
-                          ? [
-                              BoxShadow(
-                                color: AppColors.goldAccent.withOpacity(0.12),
-                                blurRadius: 12,
-                                offset: const Offset(0, 3),
-                              )
-                            ]
-                          : [],
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(item['icon'] as String, style: const TextStyle(fontSize: 22)),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                item['title'] as String,
-                                style: GoogleFonts.inter(
-                                  fontSize: 14.5,
-                                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                                  color: AppColors.textPrimary,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(item['icon'] as String, style: const TextStyle(fontSize: 22)),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  item['title'] as String,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 14.5,
+                                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                                    color: AppColors.textPrimary,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                item['subtitle'] as String,
-                                style: GoogleFonts.inter(
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.w500,
-                                  color: AppColors.goldAccent,
+                                const SizedBox(height: 2),
+                                Text(
+                                  item['subtitle'] as String,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w500,
+                                    color: AppColors.goldAccent,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                item['desc'] as String,
-                                style: GoogleFonts.inter(
-                                  fontSize: 12,
-                                  color: AppColors.textSecondary,
-                                  height: 1.35,
+                                const SizedBox(height: 4),
+                                Text(
+                                  item['desc'] as String,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 12,
+                                    color: AppColors.textSecondary,
+                                    height: 1.35,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                        Icon(
-                          isSelected
-                              ? Icons.radio_button_checked_rounded
-                              : Icons.radio_button_unchecked_rounded,
-                          color: isSelected ? AppColors.goldAccent : AppColors.textMuted,
-                          size: 20,
-                        ),
-                      ],
+                          Icon(
+                            isSelected
+                                ? Icons.radio_button_checked_rounded
+                                : Icons.radio_button_unchecked_rounded,
+                            color: isSelected ? AppColors.goldAccent : AppColors.textMuted,
+                            size: 20,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 );
@@ -632,11 +693,17 @@ class _EmotionalOnboardingScreenState extends State<EmotionalOnboardingScreen>
             ),
           ),
           const SizedBox(height: 12),
-          CustomButton(
-            text: 'Continue',
-            backgroundColor: AppColors.buttonDark,
-            textColor: Colors.white,
-            onPressed: () => _goToPage(4),
+          BottomPopItem(
+            key: const ValueKey('s4_btn'),
+            index: _toneOptions.length,
+            baseDelay: const Duration(milliseconds: 280),
+            staggerDelay: const Duration(milliseconds: 50),
+            child: CustomButton(
+              text: 'Continue',
+              backgroundColor: AppColors.buttonDark,
+              textColor: Colors.white,
+              onPressed: () => _goToPage(4),
+            ),
           ),
           const SizedBox(height: 8),
         ],
@@ -651,8 +718,11 @@ class _EmotionalOnboardingScreenState extends State<EmotionalOnboardingScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'How does your mind react\nto positive affirmations?',
+          TypewriterText(
+            key: const ValueKey('s5_believability_title'),
+            text: 'How does your mind react\nto positive affirmations?',
+            durationPerChar: const Duration(milliseconds: 20),
+            initialDelay: const Duration(milliseconds: 100),
             style: GoogleFonts.cormorantGaramond(
               fontSize: 28,
               fontWeight: FontWeight.w700,
@@ -679,90 +749,96 @@ class _EmotionalOnboardingScreenState extends State<EmotionalOnboardingScreen>
                 final opt = _believabilityOptions[index];
                 final isSelected = _selectedBelievabilityIndex == index;
 
-                return GestureDetector(
-                  onTap: () => setState(() => _selectedBelievabilityIndex = index),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: isSelected ? AppColors.surfaceElevated : AppColors.surface,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: isSelected ? AppColors.goldAccent : AppColors.border,
-                        width: isSelected ? 1.6 : 1.0,
-                      ),
-                      boxShadow: isSelected
-                          ? [
-                              BoxShadow(
-                                color: AppColors.goldAccent.withOpacity(0.12),
-                                blurRadius: 14,
-                                offset: const Offset(0, 4),
-                              ),
-                            ]
-                          : [],
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(opt['icon'] as String, style: const TextStyle(fontSize: 24)),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                opt['title'] as String,
-                                style: GoogleFonts.inter(
-                                  fontSize: 15,
-                                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                opt['subtitle'] as String,
-                                style: GoogleFonts.inter(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                  color: AppColors.goldAccent,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                opt['desc'] as String,
-                                style: GoogleFonts.inter(
-                                  fontSize: 12.5,
-                                  color: AppColors.textSecondary,
-                                  height: 1.35,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
+                return BottomPopItem(
+                  key: ValueKey('s5_believability_item_$index'),
+                  index: index,
+                  baseDelay: const Duration(milliseconds: 220),
+                  staggerDelay: const Duration(milliseconds: 70),
+                  child: GestureDetector(
+                    onTap: () => setState(() => _selectedBelievabilityIndex = index),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: isSelected ? AppColors.surfaceElevated : AppColors.surface,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isSelected ? AppColors.goldAccent : AppColors.border,
+                          width: isSelected ? 1.6 : 1.0,
+                        ),
+                        boxShadow: isSelected
+                            ? [
+                                BoxShadow(
                                   color: AppColors.goldAccent.withOpacity(0.12),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  opt['badge'] as String,
+                                  blurRadius: 14,
+                                  offset: const Offset(0, 4),
+                                )
+                              ]
+                            : [],
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(opt['icon'] as String, style: const TextStyle(fontSize: 24)),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  opt['title'] as String,
                                   style: GoogleFonts.inter(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w600,
+                                    fontSize: 15,
+                                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  opt['subtitle'] as String,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
                                     color: AppColors.goldAccent,
                                   ),
                                 ),
-                              ),
-                            ],
+                                const SizedBox(height: 6),
+                                Text(
+                                  opt['desc'] as String,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 12.5,
+                                    color: AppColors.textSecondary,
+                                    height: 1.35,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.goldAccent.withOpacity(0.12),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    opt['badge'] as String,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.goldAccent,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                        Icon(
-                          isSelected
-                              ? Icons.radio_button_checked_rounded
-                              : Icons.radio_button_unchecked_rounded,
-                          color: isSelected ? AppColors.goldAccent : AppColors.textMuted,
-                          size: 20,
-                        ),
-                      ],
+                          Icon(
+                            isSelected
+                                ? Icons.radio_button_checked_rounded
+                                : Icons.radio_button_unchecked_rounded,
+                            color: isSelected ? AppColors.goldAccent : AppColors.textMuted,
+                            size: 20,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 );
@@ -770,11 +846,17 @@ class _EmotionalOnboardingScreenState extends State<EmotionalOnboardingScreen>
             ),
           ),
           const SizedBox(height: 12),
-          CustomButton(
-            text: 'Continue to Focus Area →',
-            backgroundColor: AppColors.buttonDark,
-            textColor: Colors.white,
-            onPressed: () => _goToPage(5),
+          BottomPopItem(
+            key: const ValueKey('s5_btn'),
+            index: _believabilityOptions.length,
+            baseDelay: const Duration(milliseconds: 280),
+            staggerDelay: const Duration(milliseconds: 60),
+            child: CustomButton(
+              text: 'Continue to Focus Area →',
+              backgroundColor: AppColors.buttonDark,
+              textColor: Colors.white,
+              onPressed: () => _goToPage(5),
+            ),
           ),
           const SizedBox(height: 8),
         ],
@@ -798,8 +880,11 @@ class _EmotionalOnboardingScreenState extends State<EmotionalOnboardingScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'What should we focus\non together?',
+          TypewriterText(
+            key: const ValueKey('s6_archetype_title'),
+            text: 'What should we focus\non together?',
+            durationPerChar: const Duration(milliseconds: 20),
+            initialDelay: const Duration(milliseconds: 100),
             style: GoogleFonts.cormorantGaramond(
               fontSize: 28,
               fontWeight: FontWeight.w700,
@@ -826,78 +911,84 @@ class _EmotionalOnboardingScreenState extends State<EmotionalOnboardingScreen>
                 final meta = archetypes[index];
                 final isSelected = _selectedArchetypes.contains(meta.archetype);
 
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      if (isSelected) {
-                        if (_selectedArchetypes.length > 1) {
-                          _selectedArchetypes.remove(meta.archetype);
+                return BottomPopItem(
+                  key: ValueKey('s6_arch_item_$index'),
+                  index: index,
+                  baseDelay: const Duration(milliseconds: 200),
+                  staggerDelay: const Duration(milliseconds: 45),
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        if (isSelected) {
+                          if (_selectedArchetypes.length > 1) {
+                            _selectedArchetypes.remove(meta.archetype);
+                          }
+                        } else {
+                          if (_selectedArchetypes.length < 3) {
+                            _selectedArchetypes.add(meta.archetype);
+                          }
                         }
-                      } else {
-                        if (_selectedArchetypes.length < 3) {
-                          _selectedArchetypes.add(meta.archetype);
-                        }
-                      }
-                    });
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: isSelected ? AppColors.surfaceElevated : AppColors.surface,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: isSelected ? AppColors.goldAccent : AppColors.border,
-                        width: isSelected ? 1.5 : 1.0,
+                      });
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: isSelected ? AppColors.surfaceElevated : AppColors.surface,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isSelected ? AppColors.goldAccent : AppColors.border,
+                          width: isSelected ? 1.5 : 1.0,
+                        ),
+                        boxShadow: isSelected
+                            ? [
+                                BoxShadow(
+                                  color: AppColors.goldAccent.withOpacity(0.1),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 3),
+                                )
+                              ]
+                            : [],
                       ),
-                      boxShadow: isSelected
-                          ? [
-                              BoxShadow(
-                                color: AppColors.goldAccent.withOpacity(0.1),
-                                blurRadius: 10,
-                                offset: const Offset(0, 3),
-                              )
-                            ]
-                          : [],
-                    ),
-                    child: Row(
-                      children: [
-                        Text(meta.icon, style: const TextStyle(fontSize: 22)),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                meta.title,
-                                style: GoogleFonts.inter(
-                                  fontSize: 14.5,
-                                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                                  color: AppColors.textPrimary,
+                      child: Row(
+                        children: [
+                          Text(meta.icon, style: const TextStyle(fontSize: 22)),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  meta.title,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 14.5,
+                                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                                    color: AppColors.textPrimary,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                meta.shortDescription,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.inter(
-                                  fontSize: 11.5,
-                                  color: AppColors.textSecondary,
+                                const SizedBox(height: 2),
+                                Text(
+                                  meta.shortDescription,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 11.5,
+                                    color: AppColors.textSecondary,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 10),
-                        Icon(
-                          isSelected
-                              ? Icons.check_circle_rounded
-                              : Icons.radio_button_unchecked_rounded,
-                          color: isSelected ? AppColors.goldAccent : AppColors.textMuted,
-                          size: 20,
-                        ),
-                      ],
+                          const SizedBox(width: 10),
+                          Icon(
+                            isSelected
+                                ? Icons.check_circle_rounded
+                                : Icons.radio_button_unchecked_rounded,
+                            color: isSelected ? AppColors.goldAccent : AppColors.textMuted,
+                            size: 20,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 );
@@ -905,23 +996,29 @@ class _EmotionalOnboardingScreenState extends State<EmotionalOnboardingScreen>
             ),
           ),
           const SizedBox(height: 12),
-          CustomButton(
-            text: 'Next: Specify Situation →',
-            backgroundColor: AppColors.buttonDark,
-            textColor: Colors.white,
-            onPressed: () {
-              if (_selectedSubLevels.isEmpty) {
-                for (var a in _selectedArchetypes) {
-                  final meta = ArchetypeRegistry.getMetadata(a);
-                  if (meta.subLevels.isNotEmpty) {
-                    _selectedSubLevels.add(meta.subLevels.first);
+          BottomPopItem(
+            key: const ValueKey('s6_arch_btn'),
+            index: 4,
+            baseDelay: const Duration(milliseconds: 300),
+            staggerDelay: const Duration(milliseconds: 50),
+            child: CustomButton(
+              text: 'Next: Specify Situation →',
+              backgroundColor: AppColors.buttonDark,
+              textColor: Colors.white,
+              onPressed: () {
+                if (_selectedSubLevels.isEmpty) {
+                  for (var a in _selectedArchetypes) {
+                    final meta = ArchetypeRegistry.getMetadata(a);
+                    if (meta.subLevels.isNotEmpty) {
+                      _selectedSubLevels.add(meta.subLevels.first);
+                    }
                   }
                 }
-              }
-              setState(() {
-                _focusStage = 1;
-              });
-            },
+                setState(() {
+                  _focusStage = 1;
+                });
+              },
+            ),
           ),
           const SizedBox(height: 8),
         ],
@@ -938,8 +1035,11 @@ class _EmotionalOnboardingScreenState extends State<EmotionalOnboardingScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'What best describes\nyour current situation?',
+          TypewriterText(
+            key: const ValueKey('s6_sublevel_title'),
+            text: 'What best describes\nyour current situation?',
+            durationPerChar: const Duration(milliseconds: 20),
+            initialDelay: const Duration(milliseconds: 100),
             style: GoogleFonts.cormorantGaramond(
               fontSize: 28,
               fontWeight: FontWeight.w700,
@@ -963,124 +1063,144 @@ class _EmotionalOnboardingScreenState extends State<EmotionalOnboardingScreen>
               itemCount: selectedMetas.length,
               itemBuilder: (context, index) {
                 final meta = selectedMetas[index];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 18.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Text(meta.icon, style: const TextStyle(fontSize: 16)),
-                          const SizedBox(width: 8),
-                          Text(
-                            meta.title.toUpperCase(),
-                            style: GoogleFonts.inter(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 1.2,
-                              color: AppColors.goldAccent,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      ...meta.subLevels.map((subLevel) {
-                        final isSubSelected = _selectedSubLevels.contains(subLevel);
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 8.0),
-                          child: GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                if (isSubSelected) {
-                                  if (_selectedSubLevels.length > 1) {
-                                    _selectedSubLevels.remove(subLevel);
-                                  }
-                                } else {
-                                  _selectedSubLevels.add(subLevel);
-                                }
-                              });
-                            },
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 180),
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 12),
-                              decoration: BoxDecoration(
-                                color: isSubSelected
-                                    ? AppColors.goldAccent.withOpacity(0.12)
-                                    : AppColors.surfaceElevated,
-                                borderRadius: BorderRadius.circular(14),
-                                border: Border.all(
-                                  color: isSubSelected
-                                      ? AppColors.goldAccent
-                                      : AppColors.border,
-                                  width: isSubSelected ? 1.5 : 1.0,
-                                ),
+                return BottomPopItem(
+                  key: ValueKey('s6_sub_group_$index'),
+                  index: index,
+                  baseDelay: const Duration(milliseconds: 200),
+                  staggerDelay: const Duration(milliseconds: 80),
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 18.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(meta.icon, style: const TextStyle(fontSize: 16)),
+                            const SizedBox(width: 8),
+                            Text(
+                              meta.title.toUpperCase(),
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 1.2,
+                                color: AppColors.goldAccent,
                               ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    isSubSelected
-                                        ? Icons.check_circle_rounded
-                                        : Icons.radio_button_unchecked_rounded,
-                                    size: 18,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        ...meta.subLevels.asMap().entries.map((entry) {
+                          final subIndex = entry.key;
+                          final subLevel = entry.value;
+                          final isSubSelected = _selectedSubLevels.contains(subLevel);
+                          return BottomPopItem(
+                            key: ValueKey('s6_sub_${meta.title}_$subIndex'),
+                            index: subIndex,
+                            baseDelay: const Duration(milliseconds: 250),
+                            staggerDelay: const Duration(milliseconds: 40),
+                            child: Padding(
+                              padding: const EdgeInsets.only(bottom: 8.0),
+                              child: GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    if (isSubSelected) {
+                                      if (_selectedSubLevels.length > 1) {
+                                        _selectedSubLevels.remove(subLevel);
+                                      }
+                                    } else {
+                                      _selectedSubLevels.add(subLevel);
+                                    }
+                                  });
+                                },
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 180),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 12),
+                                  decoration: BoxDecoration(
                                     color: isSubSelected
-                                        ? AppColors.goldAccent
-                                        : AppColors.textMuted,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      subLevel,
-                                      style: GoogleFonts.inter(
-                                        fontSize: 13.5,
-                                        fontWeight: isSubSelected
-                                            ? FontWeight.w600
-                                            : FontWeight.w400,
-                                        color: AppColors.textPrimary,
-                                      ),
+                                        ? AppColors.goldAccent.withOpacity(0.12)
+                                        : AppColors.surfaceElevated,
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(
+                                      color: isSubSelected
+                                          ? AppColors.goldAccent
+                                          : AppColors.border,
+                                      width: isSubSelected ? 1.5 : 1.0,
                                     ),
                                   ),
-                                ],
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        isSubSelected
+                                            ? Icons.check_circle_rounded
+                                            : Icons.radio_button_unchecked_rounded,
+                                        size: 18,
+                                        color: isSubSelected
+                                            ? AppColors.goldAccent
+                                            : AppColors.textMuted,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          subLevel,
+                                          style: GoogleFonts.inter(
+                                            fontSize: 13.5,
+                                            fontWeight: isSubSelected
+                                                ? FontWeight.w600
+                                                : FontWeight.w400,
+                                            color: AppColors.textPrimary,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                        );
-                      }).toList(),
-                    ],
+                          );
+                        }).toList(),
+                      ],
+                    ),
                   ),
                 );
               },
             ),
           ),
           const SizedBox(height: 10),
-          Row(
-            children: [
-              OutlinedButton(
-                onPressed: () {
-                  setState(() {
-                    _focusStage = 0;
-                  });
-                },
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.textSecondary,
-                  side: const BorderSide(color: AppColors.border),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+          BottomPopItem(
+            key: const ValueKey('s6_sub_action_buttons'),
+            index: 2,
+            baseDelay: const Duration(milliseconds: 300),
+            staggerDelay: const Duration(milliseconds: 60),
+            child: Row(
+              children: [
+                OutlinedButton(
+                  onPressed: () {
+                    setState(() {
+                      _focusStage = 0;
+                    });
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.textSecondary,
+                    side: const BorderSide(color: AppColors.border),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  child: const Icon(Icons.arrow_back_rounded, size: 20),
                 ),
-                child: const Icon(Icons.arrow_back_rounded, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: CustomButton(
-                  text: 'Synthesize My Matrix ✨',
-                  backgroundColor: AppColors.buttonDark,
-                  textColor: Colors.white,
-                  onPressed: _finishOnboarding,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: CustomButton(
+                    text: 'Synthesize My Matrix ✨',
+                    backgroundColor: AppColors.buttonDark,
+                    textColor: Colors.white,
+                    onPressed: _finishOnboarding,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           const SizedBox(height: 8),
         ],

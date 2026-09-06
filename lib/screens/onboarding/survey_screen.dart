@@ -6,6 +6,7 @@ import '../../providers/app_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_card.dart';
+import '../../widgets/onboarding_animations.dart';
 import 'loading_screen.dart';
 
 class SurveyScreen extends StatefulWidget {
@@ -134,8 +135,11 @@ class _SurveyScreenState extends State<SurveyScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
+        TypewriterText(
+          key: ValueKey('survey_title_$_step'),
+          text: title,
+          durationPerChar: const Duration(milliseconds: 20),
+          initialDelay: const Duration(milliseconds: 100),
           style: GoogleFonts.cormorantGaramond(
             fontSize: 26,
             fontWeight: FontWeight.w700,
@@ -183,71 +187,77 @@ class _SurveyScreenState extends State<SurveyScreen> {
         final meta = ArchetypeRegistry.allArchetypes[index];
         final isSelected = _primaryArchetype == meta.archetype;
 
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 10.0),
-          child: CustomCard(
-            backgroundColor: isSelected ? Colors.white : AppColors.surfaceSolid,
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
-            onTap: () {
-              setState(() {
-                _primaryArchetype = meta.archetype;
-                _selectedSubLevels.clear();
-              });
-            },
-            child: Row(
-              children: [
-                Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? AppColors.goldAccent.withOpacity(0.15)
-                        : Colors.black.withOpacity(0.04),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Text(
-                      meta.icon,
-                      style: const TextStyle(fontSize: 20),
+        return BottomPopItem(
+          key: ValueKey('survey_p_arch_$index'),
+          index: index,
+          baseDelay: const Duration(milliseconds: 180),
+          staggerDelay: const Duration(milliseconds: 40),
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 10.0),
+            child: CustomCard(
+              backgroundColor: isSelected ? Colors.white : AppColors.surfaceSolid,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
+              onTap: () {
+                setState(() {
+                  _primaryArchetype = meta.archetype;
+                  _selectedSubLevels.clear();
+                });
+              },
+              child: Row(
+                children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? AppColors.goldAccent.withOpacity(0.15)
+                          : Colors.black.withOpacity(0.04),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        meta.icon,
+                        style: const TextStyle(fontSize: 20),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        meta.title,
-                        style: GoogleFonts.inter(
-                          fontSize: 15,
-                          fontWeight:
-                              isSelected ? FontWeight.w700 : FontWeight.w600,
-                          color: AppColors.textPrimary,
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          meta.title,
+                          style: GoogleFonts.inter(
+                            fontSize: 15,
+                            fontWeight:
+                                isSelected ? FontWeight.w700 : FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        meta.shortDescription,
-                        style: GoogleFonts.inter(
-                          fontSize: 11.5,
-                          color: AppColors.textSecondary,
+                        const SizedBox(height: 2),
+                        Text(
+                          meta.shortDescription,
+                          style: GoogleFonts.inter(
+                            fontSize: 11.5,
+                            color: AppColors.textSecondary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                Icon(
-                  isSelected
-                      ? Icons.check_circle_rounded
-                      : Icons.radio_button_unchecked_rounded,
-                  color: isSelected ? AppColors.goldAccent : AppColors.textMuted,
-                  size: 22,
-                ),
-              ],
+                  Icon(
+                    isSelected
+                        ? Icons.check_circle_rounded
+                        : Icons.radio_button_unchecked_rounded,
+                    color: isSelected ? AppColors.goldAccent : AppColors.textMuted,
+                    size: 22,
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -266,43 +276,49 @@ class _SurveyScreenState extends State<SurveyScreen> {
         final sub = meta.subLevels[index];
         final isSelected = _selectedSubLevels.contains(sub);
 
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 10.0),
-          child: CustomCard(
-            backgroundColor: isSelected ? Colors.white : AppColors.surfaceSolid,
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
-            onTap: () {
-              setState(() {
-                if (isSelected) {
-                  _selectedSubLevels.remove(sub);
-                } else {
-                  _selectedSubLevels.add(sub);
-                }
-              });
-            },
-            child: Row(
-              children: [
-                Icon(
-                  isSelected
-                      ? Icons.check_box_rounded
-                      : Icons.check_box_outline_blank_rounded,
-                  color: isSelected ? AppColors.goldAccent : AppColors.textMuted,
-                  size: 22,
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Text(
-                    sub,
-                    style: GoogleFonts.inter(
-                      fontSize: 14.5,
-                      fontWeight:
-                          isSelected ? FontWeight.w600 : FontWeight.w500,
-                      color: AppColors.textPrimary,
+        return BottomPopItem(
+          key: ValueKey('survey_sublevel_$index'),
+          index: index,
+          baseDelay: const Duration(milliseconds: 180),
+          staggerDelay: const Duration(milliseconds: 40),
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 10.0),
+            child: CustomCard(
+              backgroundColor: isSelected ? Colors.white : AppColors.surfaceSolid,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
+              onTap: () {
+                setState(() {
+                  if (isSelected) {
+                    _selectedSubLevels.remove(sub);
+                  } else {
+                    _selectedSubLevels.add(sub);
+                  }
+                });
+              },
+              child: Row(
+                children: [
+                  Icon(
+                    isSelected
+                        ? Icons.check_box_rounded
+                        : Icons.check_box_outline_blank_rounded,
+                    color: isSelected ? AppColors.goldAccent : AppColors.textMuted,
+                    size: 22,
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Text(
+                      sub,
+                      style: GoogleFonts.inter(
+                        fontSize: 14.5,
+                        fontWeight:
+                            isSelected ? FontWeight.w600 : FontWeight.w500,
+                        color: AppColors.textPrimary,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         );
@@ -323,44 +339,50 @@ class _SurveyScreenState extends State<SurveyScreen> {
         final meta = candidates[index];
         final isSelected = _secondaryArchetypes.contains(meta.archetype);
 
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 10.0),
-          child: CustomCard(
-            backgroundColor: isSelected ? Colors.white : AppColors.surfaceSolid,
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-            onTap: () {
-              setState(() {
-                if (isSelected) {
-                  _secondaryArchetypes.remove(meta.archetype);
-                } else {
-                  _secondaryArchetypes.add(meta.archetype);
-                }
-              });
-            },
-            child: Row(
-              children: [
-                Text(meta.icon, style: const TextStyle(fontSize: 18)),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    meta.title,
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      fontWeight:
-                          isSelected ? FontWeight.w600 : FontWeight.w500,
-                      color: AppColors.textPrimary,
+        return BottomPopItem(
+          key: ValueKey('survey_sec_arch_$index'),
+          index: index,
+          baseDelay: const Duration(milliseconds: 180),
+          staggerDelay: const Duration(milliseconds: 35),
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 10.0),
+            child: CustomCard(
+              backgroundColor: isSelected ? Colors.white : AppColors.surfaceSolid,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+              onTap: () {
+                setState(() {
+                  if (isSelected) {
+                    _secondaryArchetypes.remove(meta.archetype);
+                  } else {
+                    _secondaryArchetypes.add(meta.archetype);
+                  }
+                });
+              },
+              child: Row(
+                children: [
+                  Text(meta.icon, style: const TextStyle(fontSize: 18)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      meta.title,
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight:
+                            isSelected ? FontWeight.w600 : FontWeight.w500,
+                        color: AppColors.textPrimary,
+                      ),
                     ),
                   ),
-                ),
-                Icon(
-                  isSelected
-                      ? Icons.check_box_rounded
-                      : Icons.check_box_outline_blank_rounded,
-                  color: isSelected ? AppColors.goldAccent : AppColors.textMuted,
-                  size: 20,
-                ),
-              ],
+                  Icon(
+                    isSelected
+                        ? Icons.check_box_rounded
+                        : Icons.check_box_outline_blank_rounded,
+                    color: isSelected ? AppColors.goldAccent : AppColors.textMuted,
+                    size: 20,
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -411,53 +433,59 @@ class _SurveyScreenState extends State<SurveyScreen> {
         final tone = item['tone'] as AffirmationTone;
         final isSelected = _preferredTone == tone;
 
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 10.0),
-          child: CustomCard(
-            backgroundColor: isSelected ? Colors.white : AppColors.surfaceSolid,
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
-            onTap: () {
-              setState(() {
-                _preferredTone = tone;
-              });
-            },
-            child: Row(
-              children: [
-                Text(item['icon'] as String, style: const TextStyle(fontSize: 22)),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item['title'] as String,
-                        style: GoogleFonts.inter(
-                          fontSize: 14.5,
-                          fontWeight:
-                              isSelected ? FontWeight.w700 : FontWeight.w600,
-                          color: AppColors.textPrimary,
+        return BottomPopItem(
+          key: ValueKey('survey_tone_$index'),
+          index: index,
+          baseDelay: const Duration(milliseconds: 180),
+          staggerDelay: const Duration(milliseconds: 45),
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 10.0),
+            child: CustomCard(
+              backgroundColor: isSelected ? Colors.white : AppColors.surfaceSolid,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
+              onTap: () {
+                setState(() {
+                  _preferredTone = tone;
+                });
+              },
+              child: Row(
+                children: [
+                  Text(item['icon'] as String, style: const TextStyle(fontSize: 22)),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item['title'] as String,
+                          style: GoogleFonts.inter(
+                            fontSize: 14.5,
+                            fontWeight:
+                                isSelected ? FontWeight.w700 : FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        item['desc'] as String,
-                        style: GoogleFonts.inter(
-                          fontSize: 11.5,
-                          color: AppColors.textSecondary,
+                        const SizedBox(height: 2),
+                        Text(
+                          item['desc'] as String,
+                          style: GoogleFonts.inter(
+                            fontSize: 11.5,
+                            color: AppColors.textSecondary,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                Icon(
-                  isSelected
-                      ? Icons.radio_button_checked_rounded
-                      : Icons.radio_button_unchecked_rounded,
-                  color: isSelected ? AppColors.goldAccent : AppColors.textMuted,
-                  size: 22,
-                ),
-              ],
+                  Icon(
+                    isSelected
+                        ? Icons.radio_button_checked_rounded
+                        : Icons.radio_button_unchecked_rounded,
+                    color: isSelected ? AppColors.goldAccent : AppColors.textMuted,
+                    size: 22,
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -496,54 +524,60 @@ class _SurveyScreenState extends State<SurveyScreen> {
         final val = opt['val'] as double;
         final isSelected = (_believabilityPreference - val).abs() < 0.05;
 
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12.0),
-          child: CustomCard(
-            backgroundColor: isSelected ? Colors.white : AppColors.surfaceSolid,
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-            onTap: () {
-              setState(() {
-                _believabilityPreference = val;
-              });
-            },
-            child: Row(
-              children: [
-                Text(opt['icon'] as String, style: const TextStyle(fontSize: 24)),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        opt['title'] as String,
-                        style: GoogleFonts.inter(
-                          fontSize: 15,
-                          fontWeight:
-                              isSelected ? FontWeight.w700 : FontWeight.w600,
-                          color: AppColors.textPrimary,
+        return BottomPopItem(
+          key: ValueKey('survey_believability_$index'),
+          index: index,
+          baseDelay: const Duration(milliseconds: 180),
+          staggerDelay: const Duration(milliseconds: 55),
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 12.0),
+            child: CustomCard(
+              backgroundColor: isSelected ? Colors.white : AppColors.surfaceSolid,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+              onTap: () {
+                setState(() {
+                  _believabilityPreference = val;
+                });
+              },
+              child: Row(
+                children: [
+                  Text(opt['icon'] as String, style: const TextStyle(fontSize: 24)),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          opt['title'] as String,
+                          style: GoogleFonts.inter(
+                            fontSize: 15,
+                            fontWeight:
+                                isSelected ? FontWeight.w700 : FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        opt['subtitle'] as String,
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                          height: 1.35,
+                        const SizedBox(height: 3),
+                        Text(
+                          opt['subtitle'] as String,
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                            height: 1.35,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                Icon(
-                  isSelected
-                      ? Icons.radio_button_checked_rounded
-                      : Icons.radio_button_unchecked_rounded,
-                  color: isSelected ? AppColors.goldAccent : AppColors.textMuted,
-                  size: 22,
-                ),
-              ],
+                  Icon(
+                    isSelected
+                        ? Icons.radio_button_checked_rounded
+                        : Icons.radio_button_unchecked_rounded,
+                    color: isSelected ? AppColors.goldAccent : AppColors.textMuted,
+                    size: 22,
+                  ),
+                ],
+              ),
             ),
           ),
         );
