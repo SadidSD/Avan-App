@@ -47,4 +47,5 @@ app.*.map.json
 # Node modules & web dist
 node_modules/
 dist/
+playstore_build/
 
