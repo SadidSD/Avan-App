@@ -24,6 +24,9 @@ class AppProvider with ChangeNotifier {
   String _userEmail = 'alex@email.com';
   bool _isCloudSyncEnabled = false;
 
+  String _userTypedChallenge = '';
+  String _userTypedAspiration = '';
+
   AppMode _appModeSetting = AppMode.growth;
   String _selectedMood = '';
 
@@ -57,6 +60,9 @@ class AppProvider with ChangeNotifier {
   String get userName => _userName;
   String get userEmail => _userEmail;
   bool get isCloudSyncEnabled => _isCloudSyncEnabled;
+
+  String get userTypedChallenge => _userTypedChallenge;
+  String get userTypedAspiration => _userTypedAspiration;
 
   AppMode get appModeSetting => _appModeSetting;
   String get selectedMood => _selectedMood;
@@ -126,6 +132,9 @@ class AppProvider with ChangeNotifier {
     _selectedChallenge = survey['challenge']!;
     _selectedVision = survey['vision']!;
     _selectedCommitment = survey['commitment']!;
+
+    _userTypedChallenge = _storageService.getUserTypedChallenge();
+    _userTypedAspiration = _storageService.getUserTypedAspiration();
 
     _userProfileVector = _storageService.getUserProfileVector();
 
@@ -312,13 +321,32 @@ class AppProvider with ChangeNotifier {
     required List<String> subLevels,
     required AffirmationTone tone,
     double believabilityPreference = 0.8,
+    String? userName,
+    String typedChallenge = '',
+    String typedAspiration = '',
   }) async {
     await loadState();
+
+    if (userName != null && userName.trim().isNotEmpty) {
+      _userName = userName.trim();
+      await _storageService.setString('user_name', _userName);
+    }
+    if (typedChallenge.trim().isNotEmpty) {
+      _userTypedChallenge = typedChallenge.trim();
+      await _storageService.setUserTypedChallenge(_userTypedChallenge);
+    }
+    if (typedAspiration.trim().isNotEmpty) {
+      _userTypedAspiration = typedAspiration.trim();
+      await _storageService.setUserTypedAspiration(_userTypedAspiration);
+    }
+
     final baseVector = PersonalizationEngine.buildArchetypeBaseVector(
       primary: primary,
       secondary: secondary,
       subLevels: subLevels,
       tone: tone,
+      typedChallenge: _userTypedChallenge,
+      typedAspiration: _userTypedAspiration,
     );
     // Derive clinical modalities from selected archetypes (Fix for Gap 1)
     final Set<TherapeuticModality> modalities = {};
@@ -328,6 +356,9 @@ class AppProvider with ChangeNotifier {
     }
 
     _userProfileVector = UserProfileVector(
+      userName: _userName,
+      userTypedChallenge: _userTypedChallenge,
+      userTypedAspiration: _userTypedAspiration,
       primaryArchetypes: primary,
       secondaryArchetypes: secondary,
       selectedSubLevels: subLevels,
@@ -347,9 +378,10 @@ class AppProvider with ChangeNotifier {
     final primaryMeta = ArchetypeRegistry.getMetadata(
         primary.isNotEmpty ? primary.first : UserArchetype.careerProfessional);
     _selectedGoal = primaryMeta.title;
-    _selectedChallenge =
-        subLevels.isNotEmpty ? subLevels.first : primaryMeta.shortDescription;
-    _selectedVision = tone.name;
+    _selectedChallenge = _userTypedChallenge.isNotEmpty
+        ? _userTypedChallenge
+        : (subLevels.isNotEmpty ? subLevels.first : primaryMeta.shortDescription);
+    _selectedVision = _userTypedAspiration.isNotEmpty ? _userTypedAspiration : tone.name;
     _selectedCommitment = 'Daily Routine';
     await _storageService.setSurveyAnswers(
         _selectedGoal, _selectedChallenge, _selectedVision, _selectedCommitment);

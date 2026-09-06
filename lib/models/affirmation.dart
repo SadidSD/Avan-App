@@ -106,4 +106,36 @@ class Affirmation {
       tags: (json['tags'] as List<dynamic>?)?.map((e) => e as String).toList() ?? [],
     );
   }
+
+  Affirmation copyWith({
+    String? id,
+    String? title,
+    String? quote,
+    String? category,
+    String? author,
+    bool? isFavorite,
+    List<UserArchetype>? primaryArchetypes,
+    List<String>? subLevels,
+    TherapeuticModality? modality,
+    AffirmationTone? tone,
+    List<double>? embeddingVector,
+    double? believabilityScore,
+    List<String>? tags,
+  }) {
+    return Affirmation(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      quote: quote ?? this.quote,
+      category: category ?? this.category,
+      author: author ?? this.author,
+      isFavorite: isFavorite ?? this.isFavorite,
+      primaryArchetypes: primaryArchetypes ?? this.primaryArchetypes,
+      subLevels: subLevels ?? this.subLevels,
+      modality: modality ?? this.modality,
+      tone: tone ?? this.tone,
+      embeddingVector: embeddingVector ?? this.embeddingVector,
+      believabilityScore: believabilityScore ?? this.believabilityScore,
+      tags: tags ?? this.tags,
+    );
+  }
 }

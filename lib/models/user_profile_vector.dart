@@ -10,6 +10,9 @@ class UserProfileVector {
   List<double> vector; // Active 16-dimensional continuous embedding
   List<double> baselineVector; // Permanent trait anchor vector from onboarding
   List<double> stateVector; // Dynamic session/interaction state vector
+  final String userName;
+  final String userTypedChallenge;
+  final String userTypedAspiration;
   final double believabilityPreference; // 0.0 - 1.0 (default 0.8)
   final int completedSessionsCount; // Total full sessions completed
   final int recentSkipCount; // Consecutive or recent rapid skips
@@ -54,6 +57,9 @@ class UserProfileVector {
   }
 
   UserProfileVector({
+    this.userName = 'Alex',
+    this.userTypedChallenge = '',
+    this.userTypedAspiration = '',
     this.primaryArchetypes = const [UserArchetype.careerProfessional],
     this.secondaryArchetypes = const [],
     this.selectedSubLevels = const [],
@@ -74,6 +80,9 @@ class UserProfileVector {
 
   Map<String, dynamic> toJson() {
     return {
+      'userName': userName,
+      'userTypedChallenge': userTypedChallenge,
+      'userTypedAspiration': userTypedAspiration,
       'primaryArchetypes': primaryArchetypes.map((a) => a.index).toList(),
       'secondaryArchetypes': secondaryArchetypes.map((a) => a.index).toList(),
       'selectedSubLevels': selectedSubLevels,
@@ -92,6 +101,9 @@ class UserProfileVector {
 
   factory UserProfileVector.fromJson(Map<String, dynamic> json) {
     return UserProfileVector(
+      userName: json['userName'] as String? ?? 'Alex',
+      userTypedChallenge: json['userTypedChallenge'] as String? ?? '',
+      userTypedAspiration: json['userTypedAspiration'] as String? ?? '',
       primaryArchetypes: (json['primaryArchetypes'] as List<dynamic>?)
               ?.map((e) => UserArchetype.values[e as int])
               .toList() ??
@@ -139,6 +151,9 @@ class UserProfileVector {
   }
 
   UserProfileVector copyWith({
+    String? userName,
+    String? userTypedChallenge,
+    String? userTypedAspiration,
     List<UserArchetype>? primaryArchetypes,
     List<UserArchetype>? secondaryArchetypes,
     List<String>? selectedSubLevels,
@@ -154,6 +169,9 @@ class UserProfileVector {
     int? interactionCount,
   }) {
     return UserProfileVector(
+      userName: userName ?? this.userName,
+      userTypedChallenge: userTypedChallenge ?? this.userTypedChallenge,
+      userTypedAspiration: userTypedAspiration ?? this.userTypedAspiration,
       primaryArchetypes: primaryArchetypes ?? this.primaryArchetypes,
       secondaryArchetypes: secondaryArchetypes ?? this.secondaryArchetypes,
       selectedSubLevels: selectedSubLevels ?? this.selectedSubLevels,

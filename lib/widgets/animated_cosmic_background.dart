@@ -8,11 +8,13 @@ class AnimatedCosmicBackground extends StatefulWidget {
   final Widget child;
   final AppMode mode;
 
-  const AnimatedCosmicBackground({
+  AnimatedCosmicBackground({
     Key? key,
     required this.child,
-    required this.mode,
-  }) : super(key: key);
+    AppMode? mode,
+    bool? isGrowth,
+  })  : mode = mode ?? ((isGrowth ?? true) ? AppMode.growth : AppMode.healing),
+        super(key: key);
 
   @override
   State<AnimatedCosmicBackground> createState() => _AnimatedCosmicBackgroundState();

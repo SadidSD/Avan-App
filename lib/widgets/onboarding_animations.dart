@@ -173,6 +173,7 @@ class _TypewriterTextState extends State<TypewriterText>
 class BottomPopItem extends StatefulWidget {
   final Widget child;
   final int index;
+  final Duration? delay;
   final Duration baseDelay;
   final Duration staggerDelay;
   final Duration duration;
@@ -183,6 +184,7 @@ class BottomPopItem extends StatefulWidget {
     super.key,
     required this.child,
     this.index = 0,
+    this.delay,
     this.baseDelay = const Duration(milliseconds: 260),
     this.staggerDelay = const Duration(milliseconds: 40),
     this.duration = const Duration(milliseconds: 320),
@@ -221,7 +223,7 @@ class _BottomPopItemState extends State<BottomPopItem>
       }
     });
 
-    final totalDelay = widget.baseDelay + (widget.staggerDelay * widget.index);
+    final totalDelay = widget.delay ?? (widget.baseDelay + (widget.staggerDelay * widget.index));
     _delayTimer = Timer(totalDelay, () {
       if (mounted && !_controller.isAnimating && !_controller.isCompleted) {
         _controller.forward();

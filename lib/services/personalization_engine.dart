@@ -49,6 +49,8 @@ class PersonalizationEngine {
     required List<UserArchetype> secondary,
     required List<String> subLevels,
     required AffirmationTone tone,
+    String typedChallenge = '',
+    String typedAspiration = '',
   }) {
     List<double> vec = List.filled(vectorDimensions, 0.005); // Minimal ambient noise (eliminates orthogonal drag)
 
@@ -156,7 +158,66 @@ class PersonalizationEngine {
       vec[15] += 0.3;
     }
 
-    // 5. Normalize vector
+    // 5. User-Typed Semantic Intent Overlay
+    if (typedChallenge.trim().isNotEmpty || typedAspiration.trim().isNotEmpty) {
+      final textVec = extractTextIntentVector(typedChallenge, typedAspiration);
+      for (int i = 0; i < vectorDimensions; i++) {
+        vec[i] += 0.25 * textVec[i];
+      }
+    }
+
+    // 6. Normalize vector
+    return _normalize(vec);
+  }
+
+  /// Extracts psychological and emotional intent markers from freeform user text
+  /// and maps them into a 16-dimensional continuous adjustment vector.
+  static List<double> extractTextIntentVector(String challenge, String aspiration) {
+    final text = '$challenge $aspiration'.toLowerCase();
+    final vec = List<double>.filled(vectorDimensions, 0.0);
+    if (text.trim().isEmpty) return vec;
+
+    void addWeight(int dim, double weight, List<String> keywords) {
+      for (final kw in keywords) {
+        if (text.contains(kw)) {
+          vec[dim] += weight;
+        }
+      }
+    }
+
+    // 0: Career & Ambition
+    addWeight(0, 0.45, ['career', 'job', 'work', 'boss', 'interview', 'promotion', 'business', 'startup', 'client', 'corporate', 'project', 'imposter', 'impostor']);
+    // 1: Anxiety & Nervous System
+    addWeight(1, 0.50, ['anxiety', 'anxious', 'panic', 'overwhelm', 'stress', 'worried', 'fear', 'nervous', 'racing', 'tension', 'chest', 'breath']);
+    // 2: Heartbreak & Relationships
+    addWeight(2, 0.55, ['heartbreak', 'breakup', 'break up', 'ex', 'divorce', 'unloved', 'rejected', 'lonely', 'miss him', 'miss her', 'cheated']);
+    // 3: Grief & Loss
+    addWeight(3, 0.55, ['grief', 'grieving', 'loss', 'passed away', 'death', 'died', 'mourn', 'sorrow', 'miss my']);
+    // 4: Self-Mastery & Habit
+    addWeight(4, 0.40, ['habit', 'procrastinat', 'lazy', 'discipline', 'gym', 'routine', 'consistent', 'consistency', 'scroll', 'distract', 'focus']);
+    // 5: Spiritual & Manifestation
+    addWeight(5, 0.45, ['manifest', 'universe', 'spiritual', 'alignment', 'soul', 'purpose', 'abundance', 'god', 'energy', 'vibration']);
+    // 6: Leadership & Influence
+    addWeight(6, 0.40, ['lead', 'leadership', 'team', 'manager', 'public speaking', 'authority', 'voice', 'speak up']);
+    // 7: Confidence & Self-Worth
+    addWeight(7, 0.45, ['confidence', 'confident', 'self-worth', 'worthy', 'insecure', 'doubt', 'shame', 'compare', 'comparing', 'not good enough']);
+    // 8: Parenting & Caregiving
+    addWeight(8, 0.50, ['parent', 'mom', 'dad', 'baby', 'child', 'kids', 'caregiver', 'family', 'postpartum', 'toddler']);
+    // 9: Athlete & Physical Vitality
+    addWeight(9, 0.45, ['body', 'health', 'weight', 'workout', 'run', 'athlete', 'fitness', 'diet', 'physical', 'recovery']);
+    // 10: Sensory & Neurodiversity
+    addWeight(10, 0.45, ['sensory', 'overstimulat', 'adhd', 'autism', 'noise', 'sensitive', 'simple', 'overload']);
+    // 11: Student & Academic
+    addWeight(11, 0.45, ['study', 'exam', 'test', 'school', 'college', 'degree', 'grade', 'learn', 'university', 'med school', 'bar exam']);
+    // 12: Authenticity & Identity
+    addWeight(12, 0.45, ['authentic', 'myself', 'fit in', 'belong', 'identity', 'closet', 'queer', 'transition', 'proud']);
+    // 13: Somatic Calm & Sleep
+    addWeight(13, 0.45, ['calm', 'peace', 'sleep', 'insomnia', 'rest', 'relax', 'quiet', 'still', 'night']);
+    // 14: Action & High Agency
+    addWeight(14, 0.45, ['action', 'execute', 'unstoppable', 'drive', 'ambition', 'fire', 'do it', 'achieve', 'win']);
+    // 15: Believability & Grounding
+    addWeight(15, 0.40, ['real', 'grounded', 'honest', 'toxic positivity', 'realistic', 'truth', 'safe']);
+
     return _normalize(vec);
   }
 
@@ -521,8 +582,17 @@ class PersonalizationEngine {
       mood: mood,
       limit: 1,
     );
-    if (feed.isNotEmpty) return feed.first;
-    return pool.first;
+    final base = feed.isNotEmpty ? feed.first : pool.first;
+
+    if (profile.userName.trim().isNotEmpty && profile.userName.trim() != 'Alex') {
+      final name = profile.userName.trim();
+      if (!base.quote.startsWith(name)) {
+        return base.copyWith(
+          quote: '$name, ${base.quote.substring(0, 1).toLowerCase()}${base.quote.substring(1)}',
+        );
+      }
+    }
+    return base;
   }
 
   /// Generates a dynamic situational playlist tailored to the user's primary need.

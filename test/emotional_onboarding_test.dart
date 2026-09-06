@@ -19,8 +19,9 @@ void main() {
       ),
     );
 
-    // Should find the centered AVAN brandmark
+    // Should find the AVAN brandmark and Begin Sanctuary CTA
     expect(find.text('AVAN'), findsWidgets);
-    expect(find.text('Onboarding Experience & Emotional Flow'), findsOneWidget);
+    expect(find.text('Begin Sanctuary'), findsOneWidget);
+    expect(find.text('YOUR IDENTITY'), findsOneWidget);
   });
 }

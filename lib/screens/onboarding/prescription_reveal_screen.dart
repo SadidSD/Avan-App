@@ -174,7 +174,7 @@ class _PrescriptionRevealScreenState extends State<PrescriptionRevealScreen>
 
                     // Title
                     Text(
-                      'Your First Affirmation',
+                      'Crafted for ${appProvider.userName.isNotEmpty ? appProvider.userName : "You"}',
                       style: GoogleFonts.cormorantGaramond(
                         fontSize: 32,
                         fontWeight: FontWeight.w700,
@@ -185,7 +185,7 @@ class _PrescriptionRevealScreenState extends State<PrescriptionRevealScreen>
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Synthesized specifically for your mind and current chapter',
+                      'Synthesized from your personal check-in & 16D resonance profile',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.inter(
                         fontSize: 13,

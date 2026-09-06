@@ -37,6 +37,19 @@ class StorageService {
     await _prefs?.setString('survey_commitment', commitment);
   }
 
+  // User Custom Inputs
+  String getUserTypedChallenge() => _prefs?.getString('user_typed_challenge') ?? '';
+  Future<void> setUserTypedChallenge(String challenge) async {
+    await init();
+    await _prefs?.setString('user_typed_challenge', challenge);
+  }
+
+  String getUserTypedAspiration() => _prefs?.getString('user_typed_aspiration') ?? '';
+  Future<void> setUserTypedAspiration(String aspiration) async {
+    await init();
+    await _prefs?.setString('user_typed_aspiration', aspiration);
+  }
+
   // Premium
   bool getPremiumStatus() => _prefs?.getBool('premiumStatus') ?? false;
   Future<void> setPremiumStatus(bool value) async {
