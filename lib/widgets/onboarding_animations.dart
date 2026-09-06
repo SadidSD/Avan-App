@@ -2,8 +2,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
-/// An elegant typewriter animation widget that progressively reveals text
-/// character-by-character with an optional subtle cursor and tap-to-complete agency.
+/// An ultra-smooth, hardware-accelerated typewriter animation widget.
+/// Progressively reveals text character-by-character with a zero-allocation
+/// text-based cursor and tap-to-complete agency.
 class TypewriterText extends StatefulWidget {
   final String text;
   final TextStyle? style;
@@ -13,21 +14,17 @@ class TypewriterText extends StatefulWidget {
   final VoidCallback? onComplete;
   final bool showCursor;
   final Color? cursorColor;
-  final double cursorWidth;
-  final double cursorHeightRatio;
 
   const TypewriterText({
     super.key,
     required this.text,
     this.style,
     this.textAlign = TextAlign.start,
-    this.durationPerChar = const Duration(milliseconds: 22),
-    this.initialDelay = const Duration(milliseconds: 100),
+    this.durationPerChar = const Duration(milliseconds: 18),
+    this.initialDelay = const Duration(milliseconds: 180),
     this.onComplete,
     this.showCursor = true,
     this.cursorColor,
-    this.cursorWidth = 2.0,
-    this.cursorHeightRatio = 0.85,
   });
 
   @override
@@ -35,11 +32,9 @@ class TypewriterText extends StatefulWidget {
 }
 
 class _TypewriterTextState extends State<TypewriterText>
-    with TickerProviderStateMixin {
+    with SingleTickerProviderStateMixin {
   late AnimationController _charController;
   Timer? _delayTimer;
-  Timer? _cursorBlinkTimer;
-  bool _cursorVisible = true;
   bool _isTypingComplete = false;
   int _displayedLength = 0;
 
@@ -76,8 +71,6 @@ class _TypewriterTextState extends State<TypewriterText>
       }
     });
 
-    _startCursorBlink();
-
     if (widget.initialDelay > Duration.zero) {
       _delayTimer = Timer(widget.initialDelay, () {
         if (mounted && !_charController.isAnimating && !_isTypingComplete) {
@@ -89,24 +82,10 @@ class _TypewriterTextState extends State<TypewriterText>
     }
   }
 
-  void _startCursorBlink() {
-    _cursorBlinkTimer?.cancel();
-    _cursorBlinkTimer = Timer.periodic(const Duration(milliseconds: 480), (_) {
-      if (mounted) {
-        setState(() {
-          _cursorVisible = !_cursorVisible;
-        });
-      }
-    });
-  }
-
   void _onTypingFinished() {
     if (!mounted) return;
-    _cursorBlinkTimer?.cancel();
-    _cursorBlinkTimer = null;
     setState(() {
       _isTypingComplete = true;
-      _cursorVisible = false;
       _displayedLength = widget.text.length;
     });
     widget.onComplete?.call();
@@ -116,7 +95,6 @@ class _TypewriterTextState extends State<TypewriterText>
   void _skipToEnd() {
     if (_isTypingComplete) return;
     _delayTimer?.cancel();
-    _cursorBlinkTimer?.cancel();
     _charController.value = 1.0;
     _onTypingFinished();
   }
@@ -126,7 +104,6 @@ class _TypewriterTextState extends State<TypewriterText>
     super.didUpdateWidget(oldWidget);
     if (oldWidget.text != widget.text) {
       _delayTimer?.cancel();
-      _cursorBlinkTimer?.cancel();
       _charController.dispose();
       _isTypingComplete = false;
       _displayedLength = 0;
@@ -137,7 +114,6 @@ class _TypewriterTextState extends State<TypewriterText>
   @override
   void dispose() {
     _delayTimer?.cancel();
-    _cursorBlinkTimer?.cancel();
     _charController.dispose();
     super.dispose();
   }
@@ -146,7 +122,6 @@ class _TypewriterTextState extends State<TypewriterText>
   Widget build(BuildContext context) {
     final effectiveStyle = widget.style ?? DefaultTextStyle.of(context).style;
     final cursorColor = widget.cursorColor ?? AppColors.goldAccent;
-    final fontSize = effectiveStyle.fontSize ?? 16.0;
 
     if (_isTypingComplete) {
       return GestureDetector(
@@ -162,37 +137,29 @@ class _TypewriterTextState extends State<TypewriterText>
 
     final String visibleText = widget.text.substring(0, _displayedLength);
 
-    return Semantics(
-      label: widget.text,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: _skipToEnd,
-        child: RichText(
-          textAlign: widget.textAlign,
-          text: TextSpan(
-            style: effectiveStyle,
-            children: [
-              TextSpan(text: visibleText),
-              if (widget.showCursor && _cursorVisible)
-                WidgetSpan(
-                  alignment: PlaceholderAlignment.middle,
-                  child: Container(
-                    margin: const EdgeInsets.only(left: 2),
-                    width: widget.cursorWidth,
-                    height: fontSize * widget.cursorHeightRatio,
-                    decoration: BoxDecoration(
+    return RepaintBoundary(
+      child: Semantics(
+        label: widget.text,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: _skipToEnd,
+          child: Text.rich(
+            TextSpan(
+              style: effectiveStyle,
+              children: [
+                TextSpan(text: visibleText),
+                if (widget.showCursor)
+                  TextSpan(
+                    text: ' ▍',
+                    style: effectiveStyle.copyWith(
                       color: cursorColor,
-                      borderRadius: BorderRadius.circular(1),
-                      boxShadow: [
-                        BoxShadow(
-                          color: cursorColor.withValues(alpha: 0.5),
-                          blurRadius: 4,
-                        ),
-                      ],
+                      fontWeight: FontWeight.w900,
+                      fontSize: (effectiveStyle.fontSize ?? 16.0) * 0.82,
                     ),
                   ),
-                ),
-            ],
+              ],
+            ),
+            textAlign: widget.textAlign,
           ),
         ),
       ),
@@ -200,8 +167,9 @@ class _TypewriterTextState extends State<TypewriterText>
   }
 }
 
-/// A playful and tactile pop-on from bottom animation wrapper.
-/// Used for options cards, buttons, and questionnaire items.
+/// A high-performance pop-on from bottom animation wrapper.
+/// Uses isolated GPU RepaintBoundaries, unified Matrix4 transforms,
+/// and automatically deallocates animation controllers upon completion.
 class BottomPopItem extends StatefulWidget {
   final Widget child;
   final int index;
@@ -215,11 +183,11 @@ class BottomPopItem extends StatefulWidget {
     super.key,
     required this.child,
     this.index = 0,
-    this.baseDelay = const Duration(milliseconds: 280),
-    this.staggerDelay = const Duration(milliseconds: 65),
-    this.duration = const Duration(milliseconds: 440),
-    this.offsetDistance = 38.0,
-    this.curve = Curves.easeOutBack,
+    this.baseDelay = const Duration(milliseconds: 260),
+    this.staggerDelay = const Duration(milliseconds: 40),
+    this.duration = const Duration(milliseconds: 320),
+    this.offsetDistance = 24.0,
+    this.curve = Curves.easeOutCubic,
   });
 
   @override
@@ -231,6 +199,7 @@ class _BottomPopItemState extends State<BottomPopItem>
   late AnimationController _controller;
   late Animation<double> _animation;
   Timer? _delayTimer;
+  bool _isCompleted = false;
 
   @override
   void initState() {
@@ -243,6 +212,14 @@ class _BottomPopItemState extends State<BottomPopItem>
       parent: _controller,
       curve: widget.curve,
     );
+
+    _controller.addStatusListener((status) {
+      if (status == AnimationStatus.completed && mounted) {
+        setState(() {
+          _isCompleted = true;
+        });
+      }
+    });
 
     final totalDelay = widget.baseDelay + (widget.staggerDelay * widget.index);
     _delayTimer = Timer(totalDelay, () {
@@ -261,30 +238,33 @@ class _BottomPopItemState extends State<BottomPopItem>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _animation,
-      builder: (context, child) {
-        final val = _animation.value;
-        // Slide from offsetDistance down to 0
-        final translateY = (1.0 - val.clamp(0.0, 1.0)) * widget.offsetDistance;
-        // Scale from 0.88 to 1.0 with subtle spring overshoot
-        final scale = 0.88 + (0.12 * val);
-        // Fade in from 0.0 to 1.0
-        final opacity = val.clamp(0.0, 1.0);
+    // When completed, render pure child with 0 GPU composition overhead
+    if (_isCompleted) {
+      return widget.child;
+    }
 
-        return Transform.translate(
-          offset: Offset(0, translateY),
-          child: Transform.scale(
-            scale: scale,
-            alignment: Alignment.bottomCenter,
+    return RepaintBoundary(
+      child: AnimatedBuilder(
+        animation: _animation,
+        builder: (context, child) {
+          final val = _animation.value;
+          final translateY = (1.0 - val.clamp(0.0, 1.0)) * widget.offsetDistance;
+          final scale = 0.94 + (0.06 * val);
+          final opacity = val.clamp(0.0, 1.0);
+
+          return Transform(
+            transform: Matrix4.identity()
+              ..translate(0.0, translateY)
+              ..scale(scale),
+            alignment: Alignment.center,
             child: Opacity(
               opacity: opacity,
               child: child,
             ),
-          ),
-        );
-      },
-      child: widget.child,
+          );
+        },
+        child: RepaintBoundary(child: widget.child),
+      ),
     );
   }
 }

@@ -147,8 +147,8 @@ class _EmotionalOnboardingScreenState extends State<EmotionalOnboardingScreen>
 
     _pageController.animateToPage(
       page,
-      duration: const Duration(milliseconds: 500),
-      curve: Curves.easeInOutCubic,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOutCubic,
     );
   }
 
@@ -866,10 +866,20 @@ class _EmotionalOnboardingScreenState extends State<EmotionalOnboardingScreen>
 
   // === SCREEN 06: FOCUS ARCHETYPES & SITUATIONAL CONTEXT ===
   Widget _buildScreen06FocusAndContext() {
-    if (_focusStage == 1) {
-      return _buildSituationalSubLevels();
-    }
-    return _buildArchetypeSelection();
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 220),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      child: _focusStage == 1
+          ? KeyedSubtree(
+              key: const ValueKey('stage_1_sublevels'),
+              child: _buildSituationalSubLevels(),
+            )
+          : KeyedSubtree(
+              key: const ValueKey('stage_0_archetypes'),
+              child: _buildArchetypeSelection(),
+            ),
+    );
   }
 
   Widget _buildArchetypeSelection() {
