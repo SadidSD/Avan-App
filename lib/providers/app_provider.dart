@@ -109,7 +109,7 @@ class AppProvider with ChangeNotifier {
   Future<void> _loadStateInternal() async {
     await _storageService.init();
 
-    _isOnboardingCompleted = _storageService.getOnboardingStatus();
+    _isOnboardingCompleted = false;
     _isPremium = _storageService.getPremiumStatus();
     
     _userName = _storageService.getString('user_name', defaultValue: 'Alex');

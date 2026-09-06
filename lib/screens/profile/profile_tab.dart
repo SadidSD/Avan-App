@@ -10,7 +10,7 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/custom_card.dart';
 import '../my_voice/my_voice_tab.dart';
-import '../onboarding/survey_screen.dart';
+import '../onboarding/emotional_onboarding_screen.dart';
 import '../widgets_preview/widgets_tab.dart';
 import '../affirmations/affirmations_tab.dart';
 import '../../widgets/paywall_modal.dart';
@@ -296,7 +296,7 @@ class _ProfileTabState extends State<ProfileTab> {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const SurveyScreen()),
+                      MaterialPageRoute(builder: (_) => const EmotionalOnboardingScreen()),
                     );
                   },
                   style: ElevatedButton.styleFrom(
@@ -635,6 +635,16 @@ class _ProfileTabState extends State<ProfileTab> {
   Widget _buildSettingsList(BuildContext context, AppProvider appProvider, Color accent) {
     return Column(
       children: [
+        _buildSettingTile(
+          icon: Icons.psychology_rounded,
+          title: 'Retake Stella 25-Screen Onboarding 🌌',
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const EmotionalOnboardingScreen()),
+            );
+          },
+        ),
         _buildSettingTile(
           icon: Icons.notifications_none_rounded,
           title: 'Daily Reminders & Notifications ⏰',

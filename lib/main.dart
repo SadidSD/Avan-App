@@ -39,16 +39,17 @@ class AvanApp extends StatelessWidget {
       ],
       child: Consumer<AppProvider>(
         builder: (context, appProvider, child) {
-          final appContent = MaterialApp(
+          return MaterialApp(
             title: 'AVAN - Mindset & Affirmation App',
             debugShowCheckedModeBanner: false,
             theme: AppTheme.lightTheme,
+            builder: (context, child) {
+              return MobileFrameWrapper(child: child ?? const SizedBox());
+            },
             home: appProvider.isOnboardingCompleted
                 ? MainNavigationScreen()
                 : const EmotionalOnboardingScreen(),
           );
-
-          return MobileFrameWrapper(child: appContent);
         },
       ),
     );
@@ -67,9 +68,8 @@ class MobileFrameWrapper extends StatelessWidget {
       builder: (context, constraints) {
         // If width is greater than 520px (e.g., desktop/laptop screen), render a phone device frame
         if (constraints.maxWidth > 520) {
-          return Directionality(
-            textDirection: TextDirection.ltr,
-            child: Container(
+          final mq = MediaQuery.maybeOf(context) ?? const MediaQueryData();
+          return Container(
               width: double.infinity,
               height: double.infinity,
               decoration: const BoxDecoration(
@@ -125,7 +125,7 @@ class MobileFrameWrapper extends StatelessWidget {
                           color: AppColors.background,
                           child: MediaQuery(
                             // Override MediaQuery to simulate iPhone/Android screen dimensions
-                            data: MediaQuery.of(context).copyWith(
+                            data: mq.copyWith(
                               size: Size(430, constraints.maxHeight * 0.88),
                               padding: const EdgeInsets.only(top: 54, bottom: 34),
                             ),
@@ -210,9 +210,8 @@ class MobileFrameWrapper extends StatelessWidget {
                   ],
                 ),
               ),
-            ),
-          );
-        }
+            );
+          }
 
         // Standard mobile display on narrow screens
         return child;

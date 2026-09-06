@@ -18,6 +18,7 @@ import '../../models/playlist.dart';
 import '../../models/affirmation.dart';
 import '../../models/user_archetype.dart';
 import '../../services/personalization_engine.dart';
+import '../onboarding/emotional_onboarding_screen.dart';
 
 class HomeTab extends StatefulWidget {
   const HomeTab({Key? key}) : super(key: key);
@@ -230,6 +231,40 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                           onModeChanged: (mode) {
                             appProvider.setAppMode(mode);
                           },
+                        ),
+                        const SizedBox(width: 6),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const EmotionalOnboardingScreen(),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                            decoration: BoxDecoration(
+                              color: accent.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: accent.withOpacity(0.35)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.auto_awesome_rounded, size: 14, color: accent),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Onboarding',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: accent,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ],
                     ),
