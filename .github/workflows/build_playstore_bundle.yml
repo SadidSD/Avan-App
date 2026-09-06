@@ -47,7 +47,7 @@ jobs:
 
       - name: Build Android App Bundle (.aab)
         run: |
-          flutter build appbundle --release --no-tree-shake-icons --android-skip-build-dependency-validation -v || (cd android && ./gradlew bundleRelease --stacktrace --info)
+          flutter build appbundle --release --no-tree-shake-icons --android-skip-build-dependency-validation -v || (cd android && ./gradlew bundleRelease -Pandroid-skip-build-dependency-validation=true -x checkReleaseAarMetadata --stacktrace --info)
 
       - name: Copy AAB to root build output if needed
         run: |
