@@ -5,8 +5,10 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../models/user_archetype.dart';
+import '../../models/user_profile_vector.dart';
 import '../../models/onboarding_state.dart';
 import '../../providers/app_provider.dart';
+import '../../services/personalization_engine.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/onboarding_animations.dart';
@@ -75,6 +77,8 @@ class _EmotionalOnboardingScreenState extends State<EmotionalOnboardingScreen> w
   }
 
   void _goToPage(int page) {
+    FocusManager.instance.primaryFocus?.unfocus();
+    SystemChannels.textInput.invokeMethod('TextInput.hide');
     if (page >= 0 && page < _totalPages) {
       if (page == 22) {
         _startSynthesis();
@@ -121,64 +125,41 @@ class _EmotionalOnboardingScreenState extends State<EmotionalOnboardingScreen> w
 
     final appProvider = Provider.of<AppProvider>(context, listen: false);
 
-    UserArchetype selectedArchetype;
-    switch (_state.archetypeIndex) {
-      case 0:
-        selectedArchetype = UserArchetype.careerProfessional;
-        break;
-      case 1:
-        selectedArchetype = UserArchetype.heartbreakSurvivor;
-        break;
-      case 2:
-        selectedArchetype = UserArchetype.anxiousOverthinker;
-        break;
-      case 3:
-        selectedArchetype = UserArchetype.selfImprovement;
-        break;
-      case 4:
-        selectedArchetype = UserArchetype.spiritualSeeker;
-        break;
-      default:
-        selectedArchetype = UserArchetype.selfImprovement;
+    final selectedArchetype = _state.getPrimaryArchetype();
+    final secondaryArchetype = _state.deriveSecondaryArchetype(selectedArchetype);
+
+    // Adjust tone if user customized it during preview resonance
+    var selectedTone = _state.getAffirmationTone();
+    if (_state.resonanceIndex == 1) {
+      selectedTone = AffirmationTone.gentleAndGrounding;
+    } else if (_state.resonanceIndex == 2) {
+      selectedTone = AffirmationTone.empowering;
     }
 
-    AffirmationTone selectedTone;
-    switch (_state.toneIndex) {
-      case 0:
-        selectedTone = AffirmationTone.gentleAndGrounding;
-        break;
-      case 1:
-        selectedTone = AffirmationTone.empowering;
-        break;
-      case 2:
-        selectedTone = AffirmationTone.directAndActionable;
-        break;
-      case 3:
-        selectedTone = AffirmationTone.philosophical;
-        break;
-      case 4:
-        selectedTone = AffirmationTone.simpleAndClear;
-        break;
-      default:
-        selectedTone = AffirmationTone.simpleAndClear;
-    }
+    final selectedSubLevel = _state.getSelectedSubLevel();
 
-    final subLabels = _state.getSubArchetypeLabels();
-    String selectedSubLevel = 'General';
-    if (_state.subArchetypeIndex >= 0 && _state.subArchetypeIndex < subLabels.length) {
-      selectedSubLevel = subLabels[_state.subArchetypeIndex];
-    }
+    final commitmentMinutes = [3, 5, 10, 15][_state.dailyCommitmentIndex.clamp(0, 3)];
+    final peakTimes = ['Morning', 'Night', 'Throughout Day', 'High-Stakes Moments'];
+    final peakTime = peakTimes[_state.peakNeedTimeIndex.clamp(0, 3)];
 
     appProvider.setUserArchetypeProfile(
       primary: [selectedArchetype],
-      secondary: [],
+      secondary: secondaryArchetype != null ? [secondaryArchetype] : [],
       subLevels: [selectedSubLevel],
       tone: selectedTone,
       believabilityPreference: _state.believabilityPreference,
       userName: _state.displayName == 'friend' ? 'Alex' : _state.displayName,
       typedChallenge: _state.twoAmThought,
       typedAspiration: _state.morningVision,
+      lifeStageIndex: _state.lifeStageIndex,
+      somaticIndex: _state.somaticIndex,
+      isSomaticExpansion: _state.isHighAgencyThought,
+      innerCriticIndex: _state.innerCriticIndex,
+      limitingBelief: _state.limitingBelief,
+      dailyCommitmentMinutes: commitmentMinutes,
+      peakNeedTime: peakTime,
     );
+    appProvider.completeOnboarding();
 
     Navigator.pushReplacement(
       context,
@@ -207,29 +188,29 @@ class _EmotionalOnboardingScreenState extends State<EmotionalOnboardingScreen> w
                 controller: _pageController,
                 physics: const NeverScrollableScrollPhysics(),
                 children: [
-                  _buildScreen0Sanctuary(),
-                  _buildScreen1Name(),
-                  _buildScreen2LifeStage(),
-                  _buildScreen3Intent(),
-                  _buildScreen4EmotionalState(),
-                  _buildScreen5Timeline(),
-                  _buildScreen6TwoAmQuestion(),
-                  _buildScreen7Validation(),
-                  _buildScreen8Somatic(),
-                  _buildScreen9PreviousAttempts(),
-                  _buildScreen10CoreWound(),
-                  _buildScreen11MorningVision(),
-                  _buildScreen12BestSelf(),
-                  _buildScreen13LimitingBelief(),
-                  _buildScreen14Archetype(),
-                  _buildScreen15SubArchetype(),
-                  _buildScreen16Skepticism(),
-                  _buildScreen17InnerCritic(),
-                  _buildScreen18Tone(),
-                  _buildScreen19PeakNeedTime(),
-                  _buildScreen20DailyCommitment(),
-                  _buildScreen21AffirmationPreview(),
-                  _buildScreen22NeuralSynthesis(),
+                  RepaintBoundary(child: _buildScreen0Sanctuary()),
+                  RepaintBoundary(child: _buildScreen1Name()),
+                  RepaintBoundary(child: _buildScreen2LifeStage()),
+                  RepaintBoundary(child: _buildScreen3Intent()),
+                  RepaintBoundary(child: _buildScreen4EmotionalState()),
+                  RepaintBoundary(child: _buildScreen5Timeline()),
+                  RepaintBoundary(child: _buildScreen6TwoAmQuestion()),
+                  RepaintBoundary(child: _buildScreen7Validation()),
+                  RepaintBoundary(child: _buildScreen8Somatic()),
+                  RepaintBoundary(child: _buildScreen9PreviousAttempts()),
+                  RepaintBoundary(child: _buildScreen10CoreWound()),
+                  RepaintBoundary(child: _buildScreen11MorningVision()),
+                  RepaintBoundary(child: _buildScreen12BestSelf()),
+                  RepaintBoundary(child: _buildScreen13LimitingBelief()),
+                  RepaintBoundary(child: _buildScreen14Archetype()),
+                  RepaintBoundary(child: _buildScreen15SubArchetype()),
+                  RepaintBoundary(child: _buildScreen16Skepticism()),
+                  RepaintBoundary(child: _buildScreen17InnerCritic()),
+                  RepaintBoundary(child: _buildScreen18Tone()),
+                  RepaintBoundary(child: _buildScreen19PeakNeedTime()),
+                  RepaintBoundary(child: _buildScreen20DailyCommitment()),
+                  RepaintBoundary(child: _buildScreen21AffirmationPreview()),
+                  RepaintBoundary(child: _buildScreen22NeuralSynthesis()),
                 ],
               ),
             ),
@@ -390,12 +371,15 @@ class _EmotionalOnboardingScreenState extends State<EmotionalOnboardingScreen> w
   }
 
   Widget _buildScreen6TwoAmQuestion() {
+    final isHighAgency = _state.isHighAgencyThought || _state.activeTrack == EmotionalTrack.expansion;
     return OnboardingTypeScreen(
-      prompt: '${_state.displayName}, this is just between us.\nWhat thought keeps you awake at 2 AM?',
+      prompt: _state.getTwoAmPrompt(),
       controller: _twoAmController,
-      hintText: 'Type freely — no one else will see this.',
+      hintText: isHighAgency
+          ? 'e.g. Scaling my business, hitting my athletic PR, launching new idea...'
+          : 'Type freely — no one else will see this.',
       maxLines: 3,
-      ctaText: 'Share',
+      ctaText: isHighAgency ? 'Lock It In' : 'Share',
       onContinue: () {
         _state.twoAmThought = _twoAmController.text.trim();
         _goToPage(7);
@@ -408,7 +392,7 @@ class _EmotionalOnboardingScreenState extends State<EmotionalOnboardingScreen> w
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24.0),
         child: TypewriterText(
-          text: '${_state.displayName}, that takes courage to say out loud.\n\nWhat you\'re feeling? It\'s more common than you think.\n\nAnd it\'s exactly why this space exists.',
+          text: _state.getValidationText(),
           style: GoogleFonts.inter(
             color: AppColors.textPrimary,
             fontSize: 22,
@@ -429,12 +413,14 @@ class _EmotionalOnboardingScreenState extends State<EmotionalOnboardingScreen> w
   }
 
   Widget _buildScreen8Somatic() {
+    final labels = _state.getSomaticLabels();
+    final emojis = _state.getSomaticEmojis();
     return OnboardingTapScreen(
-      prompt: 'When that thought hits, where do you feel it most in your body?',
-      options: List.generate(OnboardingState.somaticLabels.length, (i) {
+      prompt: _state.getSomaticPrompt(),
+      options: List.generate(labels.length, (i) {
         return OnboardingOption(
-          emoji: OnboardingState.somaticEmojis[i],
-          label: OnboardingState.somaticLabels[i],
+          emoji: emojis[i],
+          label: labels[i],
         );
       }),
       selectedIndex: _state.somaticIndex,
@@ -443,12 +429,14 @@ class _EmotionalOnboardingScreenState extends State<EmotionalOnboardingScreen> w
   }
 
   Widget _buildScreen9PreviousAttempts() {
+    final labels = _state.getPreviousAttemptsLabels();
+    final emojis = _state.getPreviousAttemptsEmojis();
     return OnboardingTapScreen(
-      prompt: 'Have you tried anything before to feel better?',
-      options: List.generate(OnboardingState.previousAttemptsLabels.length, (i) {
+      prompt: _state.getPreviousAttemptsPrompt(),
+      options: List.generate(labels.length, (i) {
         return OnboardingOption(
-          emoji: OnboardingState.previousAttemptsEmojis[i],
-          label: OnboardingState.previousAttemptsLabels[i],
+          emoji: emojis[i],
+          label: labels[i],
         );
       }),
       selectedIndex: _state.previousAttemptsIndex,
@@ -458,8 +446,11 @@ class _EmotionalOnboardingScreenState extends State<EmotionalOnboardingScreen> w
 
   Widget _buildScreen10CoreWound() {
     final labels = _state.getCoreWoundLabels();
+    final prompt = _state.isHighAgencyThought
+        ? '${_state.displayName}, what internal friction slows down your momentum most?'
+        : 'If you had to name the hardest part, ${_state.displayName}, which of these feels closest?';
     return OnboardingTapScreen(
-      prompt: 'If you had to name the hardest part, ${_state.displayName}, which of these feels closest?',
+      prompt: prompt,
       options: List.generate(labels.length, (i) {
         return OnboardingOption(
           emoji: OnboardingState.coreWoundEmojis[i],
@@ -474,9 +465,16 @@ class _EmotionalOnboardingScreenState extends State<EmotionalOnboardingScreen> w
   Widget _buildScreen11MorningVision() {
     return OnboardingTypeScreen(
       prompt: 'Now imagine a different morning, ${_state.displayName}.\nYou wake up and feel... what?',
+      subtitle: 'How do you want to feel the moment your eyes open each day?',
       controller: _morningVisionController,
       hintText: 'Describe in a few words',
       ctaText: 'That\'s what I want',
+      suggestionChips: const [
+        'Deeply Calm 🌿',
+        'Energized & Confident ⚡',
+        'Clear & Focused 🎯',
+        'Grateful for Life 🌸',
+      ],
       onContinue: () {
         _state.morningVision = _morningVisionController.text.trim();
         _goToPage(12);
@@ -542,7 +540,8 @@ class _EmotionalOnboardingScreenState extends State<EmotionalOnboardingScreen> w
 
   Widget _buildScreen16Skepticism() {
     return OnboardingTapScreen(
-      prompt: 'Be honest, ${_state.displayName}.\nHave affirmations ever felt... fake to you?',
+      prompt: 'Be honest, ${_state.displayName}.\nHave affirmations ever felt... fake or forced to you?',
+      subtitle: 'Most affirmations fail because they feel unearned. AVAN calibrates to your real psychological readiness.',
       options: List.generate(OnboardingState.skepticismLabels.length, (i) {
         return OnboardingOption(
           emoji: OnboardingState.skepticismEmojis[i],
@@ -611,23 +610,50 @@ class _EmotionalOnboardingScreenState extends State<EmotionalOnboardingScreen> w
   }
 
   Widget _buildScreen21AffirmationPreview() {
-    String affirmationText;
-    switch (_state.toneIndex) {
-      case 0:
-        affirmationText = '${_state.displayName}, you are safe. You are held. Every breath is proof that you belong here.';
-        break;
-      case 1:
-        affirmationText = '${_state.displayName}, you are magnetic. Unstoppable. Every room changes when you walk in.';
-        break;
-      case 2:
-        affirmationText = '${_state.displayName}, you have the power to act. Right now. No permission needed.';
-        break;
-      case 3:
-        affirmationText = '${_state.displayName}, the obstacle is the way. Your struggle is forging something unbreakable.';
-        break;
-      default:
-        affirmationText = '${_state.displayName}, you are exactly where you need to be. Trust the process.';
-    }
+    final primary = _state.getPrimaryArchetype();
+    final secondary = _state.deriveSecondaryArchetype(primary);
+    final tone = _state.getAffirmationTone();
+    final subLevel = _state.getSelectedSubLevel();
+
+    final tempVec = PersonalizationEngine.buildArchetypeBaseVector(
+      primary: [primary],
+      secondary: secondary != null ? [secondary] : [],
+      subLevels: [subLevel],
+      tone: tone,
+      typedChallenge: _state.twoAmThought,
+      typedAspiration: _state.morningVision,
+      lifeStageIndex: _state.lifeStageIndex,
+      somaticIndex: _state.somaticIndex,
+      isSomaticExpansion: _state.isHighAgencyThought,
+      innerCriticIndex: _state.innerCriticIndex,
+      limitingBelief: _state.limitingBelief,
+    );
+
+    final tempProfile = UserProfileVector(
+      userName: _state.displayName,
+      primaryArchetypes: [primary],
+      secondaryArchetypes: secondary != null ? [secondary] : [],
+      selectedSubLevels: [subLevel],
+      preferredTone: tone,
+      vector: tempVec,
+      baselineVector: tempVec,
+      stateVector: tempVec,
+      believabilityPreference: _state.believabilityPreference,
+    );
+
+    final appProvider = Provider.of<AppProvider>(context, listen: false);
+    final pool = appProvider.getAllGlobalAffirmations();
+    final hero = PersonalizationEngine.getHeroAffirmation(
+      profile: tempProfile,
+      pool: pool,
+      isGrowthMode: _state.activeTrack == EmotionalTrack.expansion,
+    );
+
+    final primaryMeta = ArchetypeRegistry.getMetadata(primary);
+    final secondaryMeta = secondary != null ? ArchetypeRegistry.getMetadata(secondary) : null;
+    final affirmationText = hero.quote.isNotEmpty
+        ? hero.quote
+        : '${_state.displayName}, your mind is clear, calm, and primed for purposeful action.';
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
@@ -635,8 +661,37 @@ class _EmotionalOnboardingScreenState extends State<EmotionalOnboardingScreen> w
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.growthAccent.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.growthAccent.withOpacity(0.3)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.auto_awesome_rounded, size: 14, color: AppColors.growthAccent),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Calibrated for ${_state.displayName}',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.growthAccent,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
           TypewriterText(
-            text: '${_state.displayName}, based on everything you\'ve shared, here\'s a thought crafted just for you:',
+            text: '${_state.displayName}, based on your ${primaryMeta.title.toLowerCase()}${secondaryMeta != null ? ' & ${secondaryMeta.title.toLowerCase()}' : ''} calibration, here is your anchor:',
             style: GoogleFonts.inter(
               color: AppColors.textPrimary,
               fontSize: 20,
@@ -644,39 +699,88 @@ class _EmotionalOnboardingScreenState extends State<EmotionalOnboardingScreen> w
               height: 1.3,
             ),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
           BottomPopItem(
             delay: const Duration(milliseconds: 300),
             child: Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: AppColors.background,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: AppColors.growthAccent.withOpacity(0.5)),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.growthAccent.withOpacity(0.2),
-                    blurRadius: 20,
+                    color: AppColors.growthAccent.withOpacity(0.18),
+                    blurRadius: 24,
                     spreadRadius: 2,
                   ),
                 ],
               ),
-              child: Text(
-                affirmationText,
-                style: GoogleFonts.cormorantGaramond(
-                  color: AppColors.textPrimary,
-                  fontSize: 24,
-                  fontWeight: FontWeight.w600,
-                  fontStyle: FontStyle.italic,
-                  height: 1.4,
-                ),
-                textAlign: TextAlign.center,
+              child: Column(
+                children: [
+                  Text(
+                    '"$affirmationText"',
+                    style: GoogleFonts.cormorantGaramond(
+                      color: AppColors.textPrimary,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w600,
+                      fontStyle: FontStyle.italic,
+                      height: 1.4,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 8,
+                    runSpacing: 6,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceElevated,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: Text(
+                          primaryMeta.title,
+                          style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                      if (secondaryMeta != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceElevated,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: Text(
+                            secondaryMeta.title,
+                            style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
+                          ),
+                        ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceElevated,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: Text(
+                          tone.name,
+                          style: GoogleFonts.inter(fontSize: 11, color: AppColors.growthAccent, fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ),
-          const SizedBox(height: 40),
+          const SizedBox(height: 32),
           Text(
-            'Does this feel right?',
+            'Does this resonance hit the mark?',
             style: GoogleFonts.inter(
               color: AppColors.textSecondary,
               fontSize: 16,

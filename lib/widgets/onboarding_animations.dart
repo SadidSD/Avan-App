@@ -20,7 +20,7 @@ class TypewriterText extends StatefulWidget {
     required this.text,
     this.style,
     this.textAlign = TextAlign.start,
-    this.durationPerChar = const Duration(milliseconds: 18),
+    this.durationPerChar = const Duration(milliseconds: 38),
     this.initialDelay = const Duration(milliseconds: 180),
     this.onComplete,
     this.showCursor = true,
@@ -34,6 +34,7 @@ class TypewriterText extends StatefulWidget {
 class _TypewriterTextState extends State<TypewriterText>
     with SingleTickerProviderStateMixin {
   late AnimationController _charController;
+  late Animation<double> _curvedAnimation;
   Timer? _delayTimer;
   bool _isTypingComplete = false;
   int _displayedLength = 0;
@@ -54,10 +55,15 @@ class _TypewriterTextState extends State<TypewriterText>
       duration: Duration(milliseconds: totalDurationMs),
     );
 
-    _charController.addListener(() {
+    _curvedAnimation = CurvedAnimation(
+      parent: _charController,
+      curve: Curves.easeOutQuad,
+    );
+
+    _curvedAnimation.addListener(() {
       if (!mounted) return;
       final newLength =
-          (_charController.value * widget.text.length).round().clamp(0, widget.text.length);
+          (_curvedAnimation.value * widget.text.length).round().clamp(0, widget.text.length);
       if (newLength != _displayedLength) {
         setState(() {
           _displayedLength = newLength;

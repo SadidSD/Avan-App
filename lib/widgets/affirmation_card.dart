@@ -97,7 +97,7 @@ class AffirmationCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                // Subtle bottom gradient for text contrast
+                // Atmospheric Category Gradient Overlay for distinct visual identity
                 Positioned.fill(
                   child: IgnorePointer(
                     child: ClipRRect(
@@ -109,16 +109,7 @@ class AffirmationCard extends StatelessWidget {
                       ),
                       child: Container(
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Colors.black.withOpacity(0.05),
-                              Colors.black.withOpacity(0.15),
-                            ],
-                            stops: const [0.0, 0.5, 1.0],
-                          ),
+                          gradient: _getAtmosphericOverlay(),
                         ),
                       ),
                     ),
@@ -281,6 +272,58 @@ class AffirmationCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  LinearGradient _getAtmosphericOverlay() {
+    final lower = playlistName.toLowerCase();
+    if (lower.contains('anxiety') || lower.contains('panic') || lower.contains('calm') || lower.contains('stress')) {
+      return const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0x66162E4A), Color(0x990A1A2F)],
+      );
+    } else if (lower.contains('morning') || lower.contains('neural') || lower.contains('flow') || lower.contains('energy')) {
+      return const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0x66114B32), Color(0x990A2E1F)],
+      );
+    } else if (lower.contains('heartbreak') || lower.contains('breakup') || lower.contains('contact') || lower.contains('grief') || lower.contains('loss')) {
+      return const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0x664A1525), Color(0x992B0D16)],
+      );
+    } else if (lower.contains('career') || lower.contains('founder') || lower.contains('leader') || lower.contains('executive') || lower.contains('imposter')) {
+      return const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0x664A3815), Color(0x99291E0B)],
+      );
+    } else if (lower.contains('sleep') || lower.contains('night') || lower.contains('scan')) {
+      return const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0x770D1B2A), Color(0xAA060C14)],
+      );
+    } else if (lower.contains('student') || lower.contains('exam') || lower.contains('procrastination')) {
+      return const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0x662C1D4D), Color(0x99180E2E)],
+      );
+    } else if (lower.contains('athlet') || lower.contains('game') || lower.contains('endurance')) {
+      return const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0x664D1D1D), Color(0x992E0E0E)],
+      );
+    }
+    return LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [accentColor.withOpacity(0.35), const Color(0x881A110D)],
     );
   }
 }

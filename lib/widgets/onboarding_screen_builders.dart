@@ -27,6 +27,7 @@ class OnboardingTypeScreen extends StatelessWidget {
   final VoidCallback onContinue;
   final int maxLines;
   final bool autofocus;
+  final List<String>? suggestionChips;
 
   const OnboardingTypeScreen({
     Key? key,
@@ -38,6 +39,7 @@ class OnboardingTypeScreen extends StatelessWidget {
     required this.onContinue,
     this.maxLines = 1,
     this.autofocus = true,
+    this.suggestionChips,
   }) : super(key: key);
 
   @override
@@ -68,9 +70,9 @@ class OnboardingTypeScreen extends StatelessWidget {
               ),
             ),
           ],
-          const SizedBox(height: 40),
+          const SizedBox(height: 32),
           BottomPopItem(
-            delay: const Duration(milliseconds: 400),
+            delay: const Duration(milliseconds: 300),
             child: LiquidGlassInputField(
               controller: controller,
               hintText: hintText,
@@ -78,9 +80,40 @@ class OnboardingTypeScreen extends StatelessWidget {
               autofocus: autofocus,
             ),
           ),
+          if (suggestionChips != null && suggestionChips!.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: suggestionChips!.map((chip) {
+                return GestureDetector(
+                  onTap: () {
+                    final cleanText = chip.replaceAll(RegExp(r'[\u{1F300}-\u{1FAFF}]', unicode: true), '').trim();
+                    controller.text = cleanText;
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceElevated,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Text(
+                      chip,
+                      style: GoogleFonts.inter(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
           const SizedBox(height: 24),
           BottomPopItem(
-            delay: const Duration(milliseconds: 500),
+            delay: const Duration(milliseconds: 400),
             child: CustomButton(
               text: ctaText,
               onPressed: onContinue,
@@ -94,6 +127,7 @@ class OnboardingTypeScreen extends StatelessWidget {
 
 class OnboardingTapScreen extends StatelessWidget {
   final String prompt;
+  final String? subtitle;
   final List<OnboardingOption> options;
   final int selectedIndex;
   final ValueChanged<int> onSelect;
@@ -101,6 +135,7 @@ class OnboardingTapScreen extends StatelessWidget {
   const OnboardingTapScreen({
     Key? key,
     required this.prompt,
+    this.subtitle,
     required this.options,
     required this.selectedIndex,
     required this.onSelect,
@@ -123,7 +158,19 @@ class OnboardingTapScreen extends StatelessWidget {
               height: 1.3,
             ),
           ),
-          const SizedBox(height: 32),
+          if (subtitle != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              subtitle!,
+              style: GoogleFonts.inter(
+                color: AppColors.textSecondary,
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+                height: 1.4,
+              ),
+            ),
+          ],
+          const SizedBox(height: 28),
           ...List.generate(options.length, (index) {
             final option = options[index];
             final isSelected = index == selectedIndex;

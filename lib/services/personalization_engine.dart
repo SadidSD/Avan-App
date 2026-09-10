@@ -51,6 +51,11 @@ class PersonalizationEngine {
     required AffirmationTone tone,
     String typedChallenge = '',
     String typedAspiration = '',
+    int lifeStageIndex = -1,
+    int somaticIndex = -1,
+    bool isSomaticExpansion = false,
+    int innerCriticIndex = -1,
+    String limitingBelief = '',
   }) {
     List<double> vec = List.filled(vectorDimensions, 0.005); // Minimal ambient noise (eliminates orthogonal drag)
 
@@ -159,14 +164,49 @@ class PersonalizationEngine {
     }
 
     // 5. User-Typed Semantic Intent Overlay
-    if (typedChallenge.trim().isNotEmpty || typedAspiration.trim().isNotEmpty) {
-      final textVec = extractTextIntentVector(typedChallenge, typedAspiration);
+    final combinedText = '$typedChallenge $typedAspiration $limitingBelief'.trim();
+    if (combinedText.isNotEmpty) {
+      final textVec = extractTextIntentVector(typedChallenge, '$typedAspiration $limitingBelief');
       for (int i = 0; i < vectorDimensions; i++) {
         vec[i] += 0.25 * textVec[i];
       }
     }
 
-    // 6. Normalize vector
+    // 6. Life Stage Context
+    if (lifeStageIndex == 0) {
+      vec[11] += 0.25; // Student & Academic
+    } else if (lifeStageIndex == 1) {
+      vec[0] += 0.20; // Early career professional
+    } else if (lifeStageIndex == 3) {
+      vec[5] += 0.20; // 50+ reflective wisdom
+      vec[13] += 0.20; // Somatic calm
+    }
+
+    // 7. Somatic Nervous System Expression
+    if (somaticIndex >= 0) {
+      if (isSomaticExpansion) {
+        if (somaticIndex == 0) { vec[14] += 0.30; vec[9] += 0.20; } // Restless electricity -> action/vitality
+        if (somaticIndex == 1) { vec[4] += 0.30; vec[0] += 0.20; }  // Buzzing laser focus -> deep work/career
+        if (somaticIndex == 2) { vec[13] += 0.25; vec[4] += 0.20; } // Wired intensity -> calm/discipline
+        if (somaticIndex == 3) { vec[9] += 0.35; vec[14] += 0.25; } // Physical readiness -> athletic/action
+        if (somaticIndex == 4) { vec[10] += 0.30; vec[13] += 0.25; }// Overstimulated -> sensory/calm
+      } else {
+        if (somaticIndex == 0) { vec[1] += 0.35; vec[13] += 0.35; } // Chest tightness -> anxiety & somatic calm
+        if (somaticIndex == 1) { vec[4] += 0.25; vec[13] += 0.25; } // Head spinning -> self-mastery & calm
+        if (somaticIndex == 2) { vec[1] += 0.30; vec[13] += 0.30; } // Stomach knots -> anxiety & calm
+        if (somaticIndex == 3) { vec[13] += 0.30; }                  // Shoulders tension -> somatic calm
+        if (somaticIndex == 4) { vec[12] += 0.30; vec[13] += 0.25; }// Throat lump -> authentic voice & calm
+      }
+    }
+
+    // 8. Cognitive Distortion & Inner Critic Calibration
+    if (innerCriticIndex == 0) { vec[7] += 0.25; } // "Not good enough" -> self-worth
+    if (innerCriticIndex == 1) { vec[0] += 0.20; vec[7] += 0.20; } // "Everyone is ahead" -> career comparison
+    if (innerCriticIndex == 2) { vec[14] += 0.25; vec[7] += 0.20; } // "Going to fail again" -> action & self-worth
+    if (innerCriticIndex == 3) { vec[7] += 0.30; vec[15] += 0.20; } // "Don't deserve" -> core worth & believability
+    if (innerCriticIndex == 4) { vec[1] += 0.30; vec[13] += 0.25; } // "Something bad about to happen" -> anxiety & somatic calm
+
+    // 9. Normalize vector
     return _normalize(vec);
   }
 

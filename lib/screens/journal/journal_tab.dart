@@ -40,12 +40,31 @@ class _JournalTabState extends State<JournalTab> {
           style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.bold, color: AppColors.textPrimary),
         ),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: AppColors.accentForMode(appProvider.isGrowthMode).withOpacity(0.15),
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.accentForMode(appProvider.isGrowthMode).withOpacity(0.3)),
+              ),
+              child: Icon(Icons.edit_note_rounded, color: AppColors.accentForMode(appProvider.isGrowthMode), size: 20),
+            ),
+            tooltip: 'New Reflection',
+            onPressed: () => _showAddEntryDialog(context, appProvider),
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: AppColors.accentForMode(appProvider.isGrowthMode),
-        onPressed: () => _showAddEntryDialog(context, appProvider),
-        icon: const Icon(Icons.add_rounded, color: Colors.white),
-        label: const Text('New Entry', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 84.0),
+        child: FloatingActionButton.extended(
+          backgroundColor: AppColors.accentForMode(appProvider.isGrowthMode),
+          onPressed: () => _showAddEntryDialog(context, appProvider),
+          icon: const Icon(Icons.add_rounded, color: Colors.white),
+          label: const Text('New Entry', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+        ),
       ),
       body: SafeArea(
         child: Padding(
@@ -92,14 +111,43 @@ class _JournalTabState extends State<JournalTab> {
               Expanded(
                 child: filteredEntries.isEmpty
                     ? Center(
-                        child: Text(
-                          appProvider.journalEntries.isEmpty
-                              ? 'No journal entries yet. Tap + to write one!'
-                              : 'No matching entries found.',
-                          style: const TextStyle(color: AppColors.textSecondary),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.menu_book_rounded, size: 52, color: AppColors.textMuted.withOpacity(0.5)),
+                            const SizedBox(height: 12),
+                            Text(
+                              appProvider.journalEntries.isEmpty
+                                  ? 'No journal entries yet'
+                                  : 'No matching entries found.',
+                              style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary, fontSize: 16),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              appProvider.journalEntries.isEmpty
+                                  ? 'Capture your inner thoughts and track your emotional shifts.'
+                                  : 'Try adjusting your search query or filter.',
+                              style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                              textAlign: TextAlign.center,
+                            ),
+                            if (appProvider.journalEntries.isEmpty) ...[
+                              const SizedBox(height: 20),
+                              ElevatedButton.icon(
+                                onPressed: () => _showAddEntryDialog(context, appProvider),
+                                icon: const Icon(Icons.add_rounded, color: Colors.white, size: 18),
+                                label: const Text('Write First Reflection', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.accentForMode(appProvider.isGrowthMode),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                       )
                     : ListView.builder(
+                        padding: const EdgeInsets.only(bottom: 120),
                         itemCount: filteredEntries.length,
                         itemBuilder: (context, index) {
                           final entry = filteredEntries[index];

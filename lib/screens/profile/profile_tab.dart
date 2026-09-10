@@ -637,11 +637,53 @@ class _ProfileTabState extends State<ProfileTab> {
       children: [
         _buildSettingTile(
           icon: Icons.psychology_rounded,
-          title: 'Retake Stella 25-Screen Onboarding 🌌',
+          title: 'Recalibrate Personalization Engine 🌌',
           onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const EmotionalOnboardingScreen()),
+            showDialog(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                backgroundColor: AppColors.surfaceElevated,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  side: const BorderSide(color: AppColors.border),
+                ),
+                title: Text(
+                  'Recalibrate Mindset Engine',
+                  style: GoogleFonts.inter(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+                content: Text(
+                  'This will guide you through the personalization journey to update your emotional baseline, archetype vectors, and custom tone. Would you like to proceed?',
+                  style: GoogleFonts.inter(
+                    color: AppColors.textSecondary,
+                    fontSize: 14,
+                    height: 1.4,
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: Text('Cancel', style: GoogleFonts.inter(color: AppColors.textMuted)),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const EmotionalOnboardingScreen()),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: accent,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: Text('Recalibrate', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
             );
           },
         ),

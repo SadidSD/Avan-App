@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:record/record.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../../services/tts_service.dart';
 import '../../theme/app_colors.dart';
@@ -331,18 +332,57 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
     }
   }
 
+  void _switchMode(int mode) async {
+    if (_activeModeIndex == mode) return;
+    if (_isRecording) {
+      await _stopRecording();
+    }
+    try {
+      await _audioPlayer.stop();
+      await _ttsService.stop();
+      await _speechToText.stop();
+    } catch (_) {}
+    if (mounted) {
+      setState(() {
+        _activeModeIndex = mode;
+        _isSpeaking = false;
+        _isPlayingCustomRecording = false;
+        _currentlyPlayingId = null;
+        _micState = MicState.idle;
+      });
+    }
+  }
+
   // --- My Voice Studio Actions ---
   void _startTimer() {
     _recordingTimer?.cancel();
     _recordingTimer = Timer.periodic(const Duration(seconds: 1), (Timer t) {
-      setState(() => _recordDuration++);
+      if (mounted) setState(() => _recordDuration++);
     });
   }
 
   Future<void> _startRecording() async {
     try {
-      if (await _audioRecorder.hasPermission()) {
-        await _audioRecorder.start(const RecordConfig(), path: '');
+      try {
+        await _audioPlayer.stop();
+        _ttsService.stop();
+      } catch (_) {}
+
+      final hasPermission = await _audioRecorder.hasPermission();
+      if (!hasPermission) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Microphone permission is required for Voice Studio.')),
+          );
+        }
+        return;
+      }
+
+      final tempDir = await getTemporaryDirectory();
+      final filePath = '${tempDir.path}/rec_${DateTime.now().millisecondsSinceEpoch}.m4a';
+      await _audioRecorder.start(const RecordConfig(encoder: AudioEncoder.aacLc), path: filePath);
+
+      if (mounted) {
         setState(() {
           _isRecording = true;
           _isPaused = false;
@@ -352,31 +392,62 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
       }
     } catch (e) {
       debugPrint("Error starting record: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Unable to start recording: $e')),
+        );
+      }
     }
   }
 
   Future<void> _pauseRecording() async {
-    await _audioRecorder.pause();
-    _recordingTimer?.cancel();
-    setState(() => _isPaused = true);
+    try {
+      await _audioRecorder.pause();
+      _recordingTimer?.cancel();
+      if (mounted) setState(() => _isPaused = true);
+    } catch (e) {
+      debugPrint("Error pausing record: $e");
+    }
   }
 
   Future<void> _resumeRecording() async {
-    await _audioRecorder.resume();
-    setState(() => _isPaused = false);
-    _startTimer();
+    try {
+      await _audioRecorder.resume();
+      if (mounted) {
+        setState(() => _isPaused = false);
+        _startTimer();
+      }
+    } catch (e) {
+      debugPrint("Error resuming record: $e");
+    }
   }
 
   Future<void> _stopRecording({String? defaultTitle}) async {
-    final path = await _audioRecorder.stop();
-    _recordingTimer?.cancel();
-    setState(() {
-      _isRecording = false;
-      _isPaused = false;
-    });
+    try {
+      _recordingTimer?.cancel();
+      final path = await _audioRecorder.stop();
+      if (mounted) {
+        setState(() {
+          _isRecording = false;
+          _isPaused = false;
+        });
 
-    if (mounted) {
-      _showSaveDialog(path ?? 'simulated_audio_path_${DateTime.now().millisecondsSinceEpoch}.mp3', defaultTitle: defaultTitle);
+        if (path != null && path.isNotEmpty) {
+          _showSaveDialog(path, defaultTitle: defaultTitle);
+        }
+      }
+    } catch (e) {
+      debugPrint("Error stopping record: $e");
+      _recordingTimer?.cancel();
+      if (mounted) {
+        setState(() {
+          _isRecording = false;
+          _isPaused = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error saving recording: $e')),
+        );
+      }
     }
   }
 
@@ -442,7 +513,14 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
   Future<void> _playPauseUserRecording(UserRecording rec) async {
     final audioProvider = context.read<AudioProvider>();
     if (_currentlyPlayingId == rec.id && _isPlayingCustomRecording) {
-      await _audioPlayer.pause();
+      try {
+        await _audioPlayer.pause();
+      } catch (_) {}
+      if (mounted) {
+        setState(() {
+          _isPlayingCustomRecording = false;
+        });
+      }
     } else {
       if (audioProvider.isPlaying) {
         audioProvider.pause();
@@ -454,13 +532,26 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
         speakTts: false,
       );
       try {
-        await _audioPlayer.play(kIsWeb ? UrlSource(rec.audioPath) : DeviceFileSource(rec.audioPath));
+        await _audioPlayer.stop();
+        if (kIsWeb) {
+          await _audioPlayer.play(UrlSource(rec.audioPath));
+        } else {
+          await _audioPlayer.play(DeviceFileSource(rec.audioPath));
+        }
+        if (mounted) {
+          setState(() {
+            _currentlyPlayingId = rec.id;
+            _isPlayingCustomRecording = true;
+          });
+        }
       } catch (e) {
         debugPrint('Playing audio stream: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Could not play recording: $e')),
+          );
+        }
       }
-      setState(() {
-        _currentlyPlayingId = rec.id;
-      });
     }
   }
 
@@ -551,7 +642,7 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
                       children: [
                         Expanded(
                           child: GestureDetector(
-                            onTap: () => setState(() => _activeModeIndex = 0),
+                            onTap: () => _switchMode(0),
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 250),
                               decoration: BoxDecoration(
@@ -587,7 +678,7 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
                         ),
                         Expanded(
                           child: GestureDetector(
-                            onTap: () => setState(() => _activeModeIndex = 1),
+                            onTap: () => _switchMode(1),
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 250),
                               decoration: BoxDecoration(
@@ -884,8 +975,9 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
           // Shortcut to Record This Affirmation into Studio
           Center(
             child: TextButton.icon(
-              onPressed: () {
-                setState(() => _activeModeIndex = 1);
+              onPressed: () async {
+                _switchMode(1);
+                await Future.delayed(const Duration(milliseconds: 150));
                 _startRecording();
               },
               icon: Icon(Icons.mic_none_rounded, size: 18, color: AppColors.accentForMode(context.read<AppProvider>().isGrowthMode)),

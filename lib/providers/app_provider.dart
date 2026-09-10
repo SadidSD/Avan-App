@@ -18,6 +18,7 @@ class AppProvider with ChangeNotifier {
 
   bool _isPremium = true;
   bool _isOnboardingCompleted = false;
+  bool _isInitialized = false;
   int _currentNavIndex = 0;
 
   String _userName = 'Alex';
@@ -55,6 +56,7 @@ class AppProvider with ChangeNotifier {
 
   bool get isPremium => true;
   bool get isOnboardingCompleted => _isOnboardingCompleted;
+  bool get isInitialized => _isInitialized;
   int get currentNavIndex => _currentNavIndex;
 
   String get userName => _userName;
@@ -109,7 +111,7 @@ class AppProvider with ChangeNotifier {
   Future<void> _loadStateInternal() async {
     await _storageService.init();
 
-    _isOnboardingCompleted = false;
+    _isOnboardingCompleted = _storageService.getOnboardingStatus();
     _isPremium = _storageService.getPremiumStatus();
     
     _userName = _storageService.getString('user_name', defaultValue: 'Alex');
@@ -163,6 +165,7 @@ class AppProvider with ChangeNotifier {
     _activeVisionBoard = _storageService.getActiveVisionBoard();
     _savedBoards = _storageService.getSavedVisionBoards();
 
+    _isInitialized = true;
     notifyListeners();
   }
 
@@ -324,6 +327,13 @@ class AppProvider with ChangeNotifier {
     String? userName,
     String typedChallenge = '',
     String typedAspiration = '',
+    int lifeStageIndex = -1,
+    int somaticIndex = -1,
+    bool isSomaticExpansion = false,
+    int innerCriticIndex = -1,
+    String limitingBelief = '',
+    int dailyCommitmentMinutes = 10,
+    String peakNeedTime = 'Morning',
   }) async {
     await loadState();
 
@@ -347,6 +357,11 @@ class AppProvider with ChangeNotifier {
       tone: tone,
       typedChallenge: _userTypedChallenge,
       typedAspiration: _userTypedAspiration,
+      lifeStageIndex: lifeStageIndex,
+      somaticIndex: somaticIndex,
+      isSomaticExpansion: isSomaticExpansion,
+      innerCriticIndex: innerCriticIndex,
+      limitingBelief: limitingBelief,
     );
     // Derive clinical modalities from selected archetypes (Fix for Gap 1)
     final Set<TherapeuticModality> modalities = {};

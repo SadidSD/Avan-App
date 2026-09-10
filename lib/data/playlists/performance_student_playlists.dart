@@ -10,7 +10,7 @@ final List<Playlist> performanceStudentPlaylists = [
     description: 'Channel nervous energy into explosive readiness. Optimal arousal regulation and visualization.',
     primaryArchetypes: [UserArchetype.athlete],
     isPremium: true,
-    coverImageUrl: 'assets/images/playlists/pregame.jpg',
+    imagePath: 'assets/images/pregame_tunnel_focus.jpg',
     durationString: '8 min',
     ambientSound: AmbientSound.solfeggio528,
     affirmations: [
@@ -132,7 +132,7 @@ final List<Playlist> performanceStudentPlaylists = [
     description: 'Passion and perseverance over raw talent. Tools to manage physical discomfort and keep pushing.',
     primaryArchetypes: [UserArchetype.athlete, UserArchetype.selfImprovement],
     isPremium: true,
-    coverImageUrl: 'assets/images/playlists/endurance.jpg',
+    imagePath: 'assets/images/endurance_ridge_dawn.jpg',
     durationString: '10 min',
     ambientSound: AmbientSound.binauralTheta,
     affirmations: [
@@ -254,7 +254,7 @@ final List<Playlist> performanceStudentPlaylists = [
     description: 'Honor the pain of the lost season without toxic positivity. Rebuild identity and patience during rehabilitation.',
     primaryArchetypes: [UserArchetype.athlete],
     isPremium: true,
-    coverImageUrl: 'assets/images/playlists/injury.jpg',
+    imagePath: 'assets/images/injury_recovery_fern.jpg',
     durationString: '10 min',
     ambientSound: AmbientSound.ocean,
     affirmations: [
@@ -376,7 +376,7 @@ final List<Playlist> performanceStudentPlaylists = [
     description: 'Overcome test anxiety and optimize working memory. Trust your preparation and deliberate practice.',
     primaryArchetypes: [UserArchetype.student],
     isPremium: true,
-    coverImageUrl: 'assets/images/playlists/exam.jpg',
+    imagePath: 'assets/images/exam_study_clarity.jpg',
     durationString: '10 min',
     ambientSound: AmbientSound.binauralTheta,
     affirmations: [
@@ -498,7 +498,7 @@ final List<Playlist> performanceStudentPlaylists = [
     description: 'Overcome the start-line problem. Implementation intentions and strategies to make future rewards feel present.',
     primaryArchetypes: [UserArchetype.student, UserArchetype.selfImprovement],
     isPremium: true,
-    coverImageUrl: 'assets/images/playlists/procrastination.jpg',
+    imagePath: 'assets/images/antiprocrastination_desk.jpg',
     durationString: '10 min',
     ambientSound: AmbientSound.forest,
     affirmations: [

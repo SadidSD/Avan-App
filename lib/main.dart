@@ -7,19 +7,26 @@ import 'screens/main_navigation_screen.dart';
 import 'theme/app_theme.dart';
 import 'theme/app_colors.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const AvanApp());
+  final appProvider = AppProvider();
+  await appProvider.loadState();
+  runApp(AvanApp(appProvider: appProvider));
 }
 
 class AvanApp extends StatelessWidget {
-  const AvanApp({Key? key}) : super(key: key);
+  final AppProvider? appProvider;
+
+  const AvanApp({Key? key, this.appProvider}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AppProvider()),
+        if (appProvider != null)
+          ChangeNotifierProvider<AppProvider>.value(value: appProvider!)
+        else
+          ChangeNotifierProvider<AppProvider>(create: (_) => AppProvider()),
         ChangeNotifierProxyProvider<AppProvider, AudioProvider>(
           create: (_) => AudioProvider(),
           update: (_, appProvider, audioProvider) {
@@ -46,9 +53,18 @@ class AvanApp extends StatelessWidget {
             builder: (context, child) {
               return MobileFrameWrapper(child: child ?? const SizedBox());
             },
-            home: appProvider.isOnboardingCompleted
-                ? MainNavigationScreen()
-                : const EmotionalOnboardingScreen(),
+            home: !appProvider.isInitialized
+                ? const Scaffold(
+                    backgroundColor: AppColors.background,
+                    body: Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.goldAccent,
+                      ),
+                    ),
+                  )
+                : (appProvider.isOnboardingCompleted
+                    ? MainNavigationScreen()
+                    : const EmotionalOnboardingScreen()),
           );
         },
       ),

@@ -11,7 +11,7 @@ final List<Playlist> bodyMindSleepPlaylists = [
     isPremium: true,
     totalDuration: '10 min',
     ambientSound: AmbientSound.ocean,
-    coverImageUrl: 'assets/images/playlists/body_neutrality.jpg',
+    imagePath: 'assets/images/body_neutrality_pool.jpg',
     affirmations: [
       Affirmation(
         id: 'aff_bdy_01',
@@ -132,7 +132,7 @@ final List<Playlist> bodyMindSleepPlaylists = [
     isPremium: true,
     totalDuration: '10 min',
     ambientSound: AmbientSound.nightCrickets,
-    coverImageUrl: 'assets/images/playlists/midnight_awakening.jpg',
+    imagePath: 'assets/images/midnight_awakening_moon.jpg',
     affirmations: [
       Affirmation(
         id: 'aff_mnw_01',
@@ -253,7 +253,7 @@ final List<Playlist> bodyMindSleepPlaylists = [
     isPremium: true,
     totalDuration: '10 min',
     ambientSound: AmbientSound.fireplace,
-    coverImageUrl: 'assets/images/playlists/matrescence.jpg',
+    imagePath: 'assets/images/postpartum_linen_calm.jpg',
     affirmations: [
       Affirmation(
         id: 'aff_mat_01',
@@ -374,7 +374,7 @@ final List<Playlist> bodyMindSleepPlaylists = [
     isPremium: true,
     totalDuration: '10 min',
     ambientSound: AmbientSound.windChimes,
-    coverImageUrl: 'assets/images/playlists/hormonal_transition.jpg',
+    imagePath: 'assets/images/midlife_olive_tree.jpg',
     affirmations: [
       Affirmation(
         id: 'aff_hmn_01',
@@ -495,7 +495,7 @@ final List<Playlist> bodyMindSleepPlaylists = [
     isPremium: true,
     totalDuration: '10 min',
     ambientSound: AmbientSound.solfeggio432,
-    coverImageUrl: 'assets/images/playlists/aging_dignity.jpg',
+    imagePath: 'assets/images/aging_teak_maple.jpg',
     affirmations: [
       Affirmation(
         id: 'aff_agi_01',

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/custom_card.dart';
 import '../../widgets/custom_button.dart';
@@ -16,6 +17,44 @@ class _WidgetsTabState extends State<WidgetsTab> {
   String _selectedTheme = 'Dark Espresso'; // Dark Espresso, Soft Beige, Warm Gradient, Minimal White
   String _selectedRefreshFreq = 'Every 6 Hours'; // Every 2 Hours, Every 6 Hours, Daily
   String _selectedFont = 'Clean Sans'; // Clean Sans, Elegant Serif, Bold Rounded
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedWidgetSettings();
+  }
+
+  Future<void> _loadSavedWidgetSettings() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      setState(() {
+        _selectedWidgetType = prefs.getString('pref_widget_type') ?? _selectedWidgetType;
+        _selectedContentType = prefs.getString('pref_widget_content') ?? _selectedContentType;
+        _selectedTheme = prefs.getString('pref_widget_theme') ?? _selectedTheme;
+        _selectedRefreshFreq = prefs.getString('pref_widget_refresh') ?? _selectedRefreshFreq;
+        _selectedFont = prefs.getString('pref_widget_font') ?? _selectedFont;
+      });
+    } catch (_) {}
+  }
+
+  Future<void> _saveWidgetSettings() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('pref_widget_type', _selectedWidgetType);
+      await prefs.setString('pref_widget_content', _selectedContentType);
+      await prefs.setString('pref_widget_theme', _selectedTheme);
+      await prefs.setString('pref_widget_refresh', _selectedRefreshFreq);
+      await prefs.setString('pref_widget_font', _selectedFont);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Widget style configuration saved & synchronized! 🎨✨'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (_) {}
+  }
 
   Color get _widgetBgColor {
     switch (_selectedTheme) {
@@ -181,8 +220,13 @@ class _WidgetsTabState extends State<WidgetsTab> {
 
               // Add Widget Button
               CustomButton(
-                text: 'Add Widget to Screen ✨',
-                onPressed: () => _showAddWidgetInstructions(context),
+                text: 'Save & Add Widget to Screen ✨',
+                onPressed: () async {
+                  await _saveWidgetSettings();
+                  if (context.mounted) {
+                    _showAddWidgetInstructions(context);
+                  }
+                },
               ),
               const SizedBox(height: 40),
             ],
@@ -349,7 +393,7 @@ class _WidgetsTabState extends State<WidgetsTab> {
   void _showAddWidgetInstructions(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.cardSurface,
+      backgroundColor: AppColors.surfaceElevated,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24.0)),
       ),
@@ -362,10 +406,10 @@ class _WidgetsTabState extends State<WidgetsTab> {
             children: [
               Row(
                 children: const [
-                  Icon(Icons.palette_rounded, color: AppColors.goldAccent, size: 22),
+                  Icon(Icons.widgets_rounded, color: AppColors.goldAccent, size: 22),
                   SizedBox(width: 8),
                   Text(
-                    'Interactive Studio Preview',
+                    'Widget Setup Guide',
                     style: TextStyle(
                       fontFamily: 'Plus Jakarta Sans',
                       fontSize: 18,
@@ -384,23 +428,23 @@ class _WidgetsTabState extends State<WidgetsTab> {
                   border: Border.all(color: AppColors.border),
                 ),
                 child: const Text(
-                  '🎨 You can design and test your widget style live! Native iOS WidgetKit & Android AppWidget integration is launching in AVAN v2 for direct home screen syncing.',
-                  style: TextStyle(fontSize: 12, color: AppColors.textPrimary, height: 1.4),
+                  '✅ Your customized layout and theme preset are saved! To place the widget on your home screen:',
+                  style: TextStyle(fontSize: 12.5, color: AppColors.textPrimary, height: 1.4),
                 ),
               ),
               const SizedBox(height: 16),
               const Text(
-                'How to add when v2 arrives:',
+                'Setup Steps (Android & iOS):',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textSecondary),
               ),
               const SizedBox(height: 12),
               _buildStepItem('1', 'Go to your phone\'s Home Screen or Lock Screen.'),
-              _buildStepItem('2', 'Touch and hold an empty space until apps jiggle.'),
-              _buildStepItem('3', 'Tap the (+) plus button at the top corner.'),
-              _buildStepItem('4', 'Search for "AVAN" and select your customized layout.'),
+              _buildStepItem('2', 'Touch & hold an empty space until the menu appears.'),
+              _buildStepItem('3', 'Tap Widgets (Android) or the (+) icon at the top (iOS).'),
+              _buildStepItem('4', 'Select AVAN and place your customized widget layout.'),
               const SizedBox(height: 20),
               CustomButton(
-                text: 'Got It!',
+                text: 'Done',
                 onPressed: () => Navigator.pop(context),
               ),
             ],
@@ -418,9 +462,13 @@ class _WidgetsTabState extends State<WidgetsTab> {
           Container(
             width: 28,
             height: 28,
-            decoration: const BoxDecoration(color: AppColors.softBeige, shape: BoxShape.circle),
+            decoration: BoxDecoration(
+              color: AppColors.goldAccent.withOpacity(0.18),
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.goldAccent.withOpacity(0.4)),
+            ),
             child: Center(
-              child: Text(step, style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.buttonDark)),
+              child: Text(step, style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.goldAccent, fontSize: 12)),
             ),
           ),
           const SizedBox(width: 12),

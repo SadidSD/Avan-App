@@ -44,19 +44,50 @@ class AudioEngineService {
     }
   }
 
+  bool _isDucked = false;
+  Timer? _duckingTimer;
+
   bool get isPlaying => _isPlaying;
   double get voiceVolume => _voiceVolume;
   double get voiceSpeed => _voiceSpeed;
   double get ambientVolume => _ambientVolume;
   AmbientSound get currentSound => _currentSound;
 
-  /// Speaks the affirmation quote aloud and manages ambient soundscape
+  void _duckAmbient(bool duck) {
+    if (_currentSound == AmbientSound.none) return;
+    _duckingTimer?.cancel();
+    _isDucked = duck;
+    final double targetVol = duck ? (_ambientVolume * 0.3) : _ambientVolume;
+
+    // Smooth fade over 200ms
+    const steps = 5;
+    final double startVol = duck ? _ambientVolume : (_ambientVolume * 0.3);
+    final double delta = (targetVol - startVol) / steps;
+    int currentStep = 0;
+
+    _duckingTimer = Timer.periodic(const Duration(milliseconds: 40), (timer) {
+      currentStep++;
+      final v = (startVol + delta * currentStep).clamp(0.0, 1.0);
+      try {
+        _ambientPlayer.setVolume(v);
+      } catch (_) {}
+      if (currentStep >= steps) {
+        timer.cancel();
+        try {
+          _ambientPlayer.setVolume(targetVol);
+        } catch (_) {}
+      }
+    });
+  }
+
+  /// Speaks the affirmation quote aloud and manages ambient soundscape with ducking
   Future<void> speakAffirmation(String text) async {
     _isPlaying = true;
 
-    // 1. Play background ambient if active
+    // 1. Play background ambient if active and duck volume so speech is clear
     if (_currentSound != AmbientSound.none) {
       _playAmbientInternal();
+      _duckAmbient(true);
     }
 
     // 2. Synthesize speech
@@ -71,7 +102,8 @@ class AudioEngineService {
     if (_currentSound != AmbientSound.none) {
       try {
         final wavBytes = AmbientAudioSynthesizer.getWavBytesForSound(_currentSound);
-        await _ambientPlayer.setVolume(_ambientVolume);
+        final effectiveVol = _isDucked ? (_ambientVolume * 0.3) : _ambientVolume;
+        await _ambientPlayer.setVolume(effectiveVol);
         await _ambientPlayer.play(BytesSource(wavBytes));
       } catch (e) {
         debugPrint("Ambient playback error: $e");
@@ -81,6 +113,7 @@ class AudioEngineService {
 
   Future<void> pause() async {
     _isPlaying = false;
+    _duckingTimer?.cancel();
     try {
       await _ttsService.pause();
       await _ambientPlayer.pause();
@@ -99,6 +132,8 @@ class AudioEngineService {
 
   Future<void> stop() async {
     _isPlaying = false;
+    _duckingTimer?.cancel();
+    _isDucked = false;
     try {
       await _ttsService.stop();
       await _ambientPlayer.stop();
@@ -120,7 +155,8 @@ class AudioEngineService {
     } else {
       try {
         final wavBytes = AmbientAudioSynthesizer.getWavBytesForSound(sound);
-        await _ambientPlayer.setVolume(_ambientVolume);
+        final effectiveVol = _isDucked ? (_ambientVolume * 0.3) : _ambientVolume;
+        await _ambientPlayer.setVolume(effectiveVol);
         await _ambientPlayer.play(BytesSource(wavBytes));
       } catch (e) {
         debugPrint("Ambient switch error: $e");
@@ -130,11 +166,15 @@ class AudioEngineService {
 
   void setAmbientVolume(double vol) {
     _ambientVolume = vol.clamp(0.0, 1.0);
-    _ambientPlayer.setVolume(_ambientVolume);
+    final effectiveVol = _isDucked ? (_ambientVolume * 0.3) : _ambientVolume;
+    _ambientPlayer.setVolume(effectiveVol);
   }
 
   void setAffirmationCompletionHandler(VoidCallback callback) {
-    _ttsService.setCompletionHandler(callback);
+    _ttsService.setCompletionHandler(() {
+      _duckAmbient(false); // Restore background music during the reflection gap!
+      callback();
+    });
   }
 
   void dispose() {

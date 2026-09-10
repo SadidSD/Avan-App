@@ -131,15 +131,35 @@ class AudioProvider with ChangeNotifier {
 
   /// Opens a playlist at a specific affirmation index and opens the Player Screen
   void openPlaylist(Playlist playlist, [BuildContext? context, int initialIndex = 0]) {
+    final bool isDifferent = _currentPlaylist?.id != playlist.id;
+
+    if (isDifferent) {
+      // Reset position to 0 and cancel all prior playlist session timers
+      _gapTimer?.cancel();
+      _watchdogTimer?.cancel();
+      _sessionTicker?.cancel();
+      _audioService.stop();
+      _currentAffirmationIndex = (initialIndex >= 0 && initialIndex < playlist.affirmations.length)
+          ? initialIndex
+          : 0;
+      _sessionPositionSeconds = 0;
+    } else {
+      if (initialIndex != _currentAffirmationIndex) {
+        _gapTimer?.cancel();
+        _watchdogTimer?.cancel();
+        _currentAffirmationIndex = (initialIndex >= 0 && initialIndex < playlist.affirmations.length)
+            ? initialIndex
+            : 0;
+        _sessionPositionSeconds = (_currentAffirmationIndex * _intervalPerAffirmation);
+      }
+    }
+
     _currentPlaylist = playlist;
     // Auto-activate the playlist's unique curated background soundscape!
     _audioService.setAmbientSound(playlist.defaultAmbientSound);
 
     final count = playlist.affirmations.isNotEmpty ? playlist.affirmations.length : 1;
     _sessionDurationSeconds = count * _intervalPerAffirmation;
-    _currentAffirmationIndex = (initialIndex >= 0 && initialIndex < playlist.affirmations.length)
-        ? initialIndex
-        : 0;
     _sessionPositionSeconds = (_currentAffirmationIndex * _intervalPerAffirmation);
     _isPlayerOpen = true;
 

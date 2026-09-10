@@ -1,7 +1,7 @@
 name: avan_app
 description: AVAN Mindset & Affirmation App - Warm, Calm, Minimal & Meaningful.
 publish_to: 'none'
-version: 1.0.3+4
+version: 1.0.4+5
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -22,9 +22,7 @@ dependencies:
   in_app_purchase: ^3.2.0
   image_picker: ^1.1.2
   cupertino_icons: ^1.0.6
-
-dependency_overrides:
-  record_platform_interface: 1.2.0
+  path_provider: ^2.1.6
 
 dev_dependencies:
   flutter_test:
@@ -48,3 +46,65 @@ flutter:
     - assets/images/onboarding_moon_clouds.jpg
     - assets/images/featured_meditation.jpg
     - assets/images/sleep_story_night.jpg
+    - assets/images/morning_neural_activation.jpg
+    - assets/images/deep_work_flow.jpg
+    - assets/images/sleep_onset_scan.jpg
+    - assets/images/stress_reset_sos.jpg
+    - assets/images/gratitude_neuro.jpg
+    - assets/images/self_worth_found.jpg
+    - assets/images/panic_tension_rel.jpg
+    - assets/images/social_anxiety_calm.jpg
+    - assets/images/bedtime_rumination.jpg
+    - assets/images/emotional_flood_rec.jpg
+    - assets/images/breakup_shock_surv.jpg
+    - assets/images/nocontact_strength.jpg
+    - assets/images/worth_rebuild_kint.jpg
+    - assets/images/bereavement_candle.jpg
+    - assets/images/founder_resilience.jpg
+    - assets/images/exec_presence_clarity.jpg
+    - assets/images/imposter_syndrome_ant.jpg
+    - assets/images/lgbtq_self_acceptance.jpg
+    - assets/images/trans_identity_prism.jpg
+    - assets/images/cultural_identity_text.jpg
+    - assets/images/pregame_tunnel_focus.jpg
+    - assets/images/endurance_ridge_dawn.jpg
+    - assets/images/injury_recovery_fern.jpg
+    - assets/images/exam_study_clarity.jpg
+    - assets/images/antiprocrastination_desk.jpg
+    - assets/images/patient_parenting_nurs.jpg
+    - assets/images/caregiver_porch_rest.jpg
+    - assets/images/abundance_spring_gold.jpg
+    - assets/images/intuition_mountain_tarn.jpg
+    - assets/images/proud_sunrise_porch.jpg
+    - assets/images/adhd_hourglass_reset.jpg
+    - assets/images/rsd_blanket_cocoon.jpg
+    - assets/images/task_stepping_stones.jpg
+    - assets/images/sensory_felt_quiet.jpg
+    - assets/images/dopamine_bonsai_calm.jpg
+    - assets/images/chronic_pain_spring.jpg
+    - assets/images/freeze_to_flow_ice.jpg
+    - assets/images/inner_child_treehouse.jpg
+    - assets/images/anger_discharge_waves.jpg
+    - assets/images/boundary_orchard_gate.jpg
+    - assets/images/scarcity_seedling_hands.jpg
+    - assets/images/negotiation_skyline_poise.jpg
+    - assets/images/public_stage_spotlight.jpg
+    - assets/images/career_pivot_crossroads.jpg
+    - assets/images/lighthouse_storm_shield.jpg
+    - assets/images/solitude_cabin_hearth.jpg
+    - assets/images/divorce_sunlit_room.jpg
+    - assets/images/anxious_attachment_anchor.jpg
+    - assets/images/avoidant_courtyard_roses.jpg
+    - assets/images/social_trust_mugs.jpg
+    - assets/images/body_neutrality_pool.jpg
+    - assets/images/midnight_awakening_moon.jpg
+    - assets/images/postpartum_linen_calm.jpg
+    - assets/images/midlife_olive_tree.jpg
+    - assets/images/aging_teak_maple.jpg
+    - assets/images/dopamine_mountain_lake.jpg
+    - assets/images/evening_pen_candle.jpg
+    - assets/images/stoic_marble_bust.jpg
+    - assets/images/creative_studio_canvas.jpg
+    - assets/images/crisis_calm_center.jpg
+    - assets/images/ruthless_chess_king.jpg
+    - assets/images/

@@ -141,6 +141,8 @@ class _LiquidGlassInputFieldState extends State<LiquidGlassInputField> {
                       onSubmitted: (_) => widget.onSubmitted?.call(),
                       decoration: InputDecoration(
                         isDense: true,
+                        filled: false,
+                        fillColor: Colors.transparent,
                         contentPadding: EdgeInsets.zero,
                         hintText: widget.hintText,
                         hintStyle: GoogleFonts.inter(
@@ -149,6 +151,11 @@ class _LiquidGlassInputFieldState extends State<LiquidGlassInputField> {
                           color: AppColors.textMuted.withOpacity(0.8),
                         ),
                         border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        disabledBorder: InputBorder.none,
+                        errorBorder: InputBorder.none,
+                        focusedErrorBorder: InputBorder.none,
                       ),
                     ),
                   ),
