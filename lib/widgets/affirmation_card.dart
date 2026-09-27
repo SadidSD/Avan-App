@@ -85,6 +85,8 @@ class AffirmationCard extends StatelessWidget {
                       child: Image.asset(
                         imagePath,
                         fit: BoxFit.cover,
+                        cacheWidth: 360,
+                        cacheHeight: 220,
                         errorBuilder: (context, error, stackTrace) => Container(
                           color: AppColors.surfaceElevated,
                           child: const Icon(
@@ -115,86 +117,88 @@ class AffirmationCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                // Duration badge (top-left)
+                // Duration badge (top-left) (Zero-overhead high performance glass)
                 Positioned(
                   top: 8,
                   left: 8,
                   child: IgnorePointer(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 7.0, vertical: 3.5),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.8),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Colors.white.withOpacity(0.5),
-                              width: 0.8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 7.0, vertical: 3.5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xEEFFFFFF),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.white,
+                          width: 0.8,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.08),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.access_time_rounded,
+                            size: 10,
+                            color: AppColors.textPrimary,
+                          ),
+                          const SizedBox(width: 3),
+                          Text(
+                            '${durationMinutes}m',
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                              letterSpacing: 0.3,
                             ),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.access_time_rounded,
-                                size: 10,
-                                color: AppColors.textPrimary,
-                              ),
-                              const SizedBox(width: 3),
-                              Text(
-                                '${durationMinutes}m',
-                                style: GoogleFonts.inter(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.textPrimary,
-                                  letterSpacing: 0.3,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                        ],
                       ),
                     ),
                   ),
                 ),
-                // Favorite heart button (top-right)
+                // Favorite heart button (top-right) (Zero-overhead high performance glass)
                 Positioned(
                   top: 8,
                   right: 8,
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
                     onTap: onFavoriteToggle,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-                        child: Container(
-                          padding: const EdgeInsets.all(5.5),
-                          decoration: BoxDecoration(
-                            color: isFavorite
-                                ? accentColor.withOpacity(0.2)
-                                : Colors.white.withOpacity(0.8),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: isFavorite
-                                  ? accentColor.withOpacity(0.5)
-                                  : Colors.white.withOpacity(0.5),
-                              width: 0.8,
-                            ),
-                          ),
-                          child: Icon(
-                            isFavorite
-                                ? Icons.favorite_rounded
-                                : Icons.favorite_border_rounded,
-                            color: isFavorite
-                                ? accentColor
-                                : AppColors.textSecondary,
-                            size: 14.0,
-                          ),
+                    child: Container(
+                      padding: const EdgeInsets.all(5.5),
+                      decoration: BoxDecoration(
+                        color: isFavorite
+                            ? accentColor.withOpacity(0.25)
+                            : const Color(0xEEFFFFFF),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isFavorite
+                              ? accentColor.withOpacity(0.6)
+                              : Colors.white,
+                          width: 0.8,
                         ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.08),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        isFavorite
+                            ? Icons.favorite_rounded
+                            : Icons.favorite_border_rounded,
+                        color: isFavorite
+                            ? accentColor
+                            : AppColors.textSecondary,
+                        size: 14.0,
                       ),
                     ),
                   ),

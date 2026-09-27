@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "659993815762",
+    "project_id": "avan-7231e",
+    "storage_bucket": "avan-7231e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:659993815762:android:453139c26e31d33b1b9b0b",
+        "android_client_info": {
+          "package_name": "com.avanapp.avan_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDDt-V-0QJ_Z_Z79SNkS-1w9AmwL00Cz_A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

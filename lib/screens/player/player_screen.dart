@@ -42,6 +42,17 @@ class _PlayerScreenState extends State<PlayerScreen> with SingleTickerProviderSt
     final audioProvider = Provider.of<AudioProvider>(context);
     final appProvider = Provider.of<AppProvider>(context);
     final playlist = audioProvider.currentPlaylist;
+    if (playlist == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && Navigator.canPop(context)) {
+          Navigator.pop(context);
+        }
+      });
+      return const Scaffold(
+        backgroundColor: AppColors.background,
+        body: SizedBox.shrink(),
+      );
+    }
     final currentAffirmation = audioProvider.currentAffirmation;
     final isGrowth = appProvider.isGrowthMode;
     final accent = AppColors.accentForMode(isGrowth);
@@ -75,7 +86,7 @@ class _PlayerScreenState extends State<PlayerScreen> with SingleTickerProviderSt
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            playlist?.title.toUpperCase() ?? 'AVAN AFFIRMATIONS',
+                            playlist.title.toUpperCase(),
                             style: GoogleFonts.inter(
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
@@ -86,9 +97,9 @@ class _PlayerScreenState extends State<PlayerScreen> with SingleTickerProviderSt
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
                           ),
-                          if (playlist?.category != null)
+                          if (playlist.category.isNotEmpty)
                             Text(
-                              playlist!.category,
+                              playlist.category,
                               style: GoogleFonts.inter(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
@@ -115,11 +126,68 @@ class _PlayerScreenState extends State<PlayerScreen> with SingleTickerProviderSt
                             }
                           },
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.tune_rounded,
-                              color: AppColors.textPrimary, size: 22),
-                          onPressed: () =>
+                        const SizedBox(width: 4),
+                        GestureDetector(
+                          key: const ValueKey('top_bar_mixer_button'),
+                          onTap: () =>
                               _showMixerSheet(context, audioProvider, appProvider),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 250),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: audioProvider.currentSound != AmbientSound.none
+                                  ? (isGrowth ? const Color(0xFFFAF3E0) : accent.withOpacity(0.15))
+                                  : AppColors.surfaceElevated.withOpacity(0.85),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: audioProvider.currentSound != AmbientSound.none
+                                    ? accent.withOpacity(0.5)
+                                    : AppColors.border,
+                                width: 1,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: audioProvider.currentSound != AmbientSound.none
+                                      ? accent.withOpacity(0.12)
+                                      : Colors.black.withOpacity(0.04),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  audioProvider.currentSound != AmbientSound.none
+                                      ? Icons.graphic_eq_rounded
+                                      : Icons.tune_rounded,
+                                  size: 15,
+                                  color: audioProvider.currentSound != AmbientSound.none
+                                      ? (isGrowth ? const Color(0xFF9E6B00) : accent)
+                                      : AppColors.textPrimary,
+                                ),
+                                const SizedBox(width: 5),
+                                ConstrainedBox(
+                                  constraints: const BoxConstraints(maxWidth: 85),
+                                  child: Text(
+                                    audioProvider.currentSound != AmbientSound.none
+                                        ? _soundDisplayName(audioProvider.currentSound)
+                                        : 'Mixer',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: audioProvider.currentSound != AmbientSound.none
+                                          ? (isGrowth ? const Color(0xFF9E6B00) : accent)
+                                          : AppColors.textPrimary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -131,80 +199,89 @@ class _PlayerScreenState extends State<PlayerScreen> with SingleTickerProviderSt
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                  child: Column(
-                    children: [
-                      const Spacer(flex: 1),
+                  child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final availableHeight = constraints.maxHeight;
+                    final isCompact = availableHeight < 620;
+                    final artworkOuter = isCompact ? 140.0 : 200.0;
+                    final artworkInner = isCompact ? 130.0 : 190.0;
 
-                      // Animated Breathing Artwork Visualizer
-                      AnimatedBuilder(
-                        animation: _breathingAnimation,
-                        builder: (context, child) {
-                          final scale = audioProvider.isPlaying
-                              ? _breathingAnimation.value
-                              : 1.0;
-                          return Transform.scale(
-                            scale: scale,
-                            child: Container(
-                              width: 200,
-                              height: 200,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: glow.withOpacity(audioProvider.isPlaying ? 0.35 : 0.1),
-                                    blurRadius: audioProvider.isPlaying ? 36 : 20,
-                                    spreadRadius: audioProvider.isPlaying ? 6 : 0,
-                                  ),
-                                  const BoxShadow(
-                                    color: Color(0x1A3D2C1E),
-                                    blurRadius: 24,
-                                    offset: Offset(0, 10),
-                                  ),
-                                ],
-                              ),
-                              child: Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  // Outer Ring
-                                  Container(
-                                    width: 200,
-                                    height: 200,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: accent.withOpacity(0.3),
-                                        width: 2.0,
+                    return Column(
+                      children: [
+                        const Spacer(flex: 1),
+
+                        // Animated Breathing Artwork Visualizer
+                        AnimatedBuilder(
+                          animation: _breathingAnimation,
+                          builder: (context, child) {
+                            final scale = audioProvider.isPlaying
+                                ? _breathingAnimation.value
+                                : 1.0;
+                            return Transform.scale(
+                              scale: scale,
+                              child: Container(
+                                width: artworkOuter,
+                                height: artworkOuter,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: glow.withOpacity(audioProvider.isPlaying ? 0.35 : 0.1),
+                                      blurRadius: audioProvider.isPlaying ? 36 : 20,
+                                      spreadRadius: audioProvider.isPlaying ? 6 : 0,
+                                    ),
+                                    const BoxShadow(
+                                      color: Color(0x1A3D2C1E),
+                                      blurRadius: 24,
+                                      offset: const Offset(0, 10),
+                                    ),
+                                  ],
+                                ),
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    // Outer Ring
+                                    Container(
+                                      width: artworkOuter,
+                                      height: artworkOuter,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: accent.withOpacity(0.3),
+                                          width: 2.0,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  // Artwork
-                                  ClipOval(
-                                    child: SizedBox(
-                                      width: 190,
-                                      height: 190,
-                                      child: Image.asset(
-                                        playlist?.imagePath ?? 'assets/images/featured_meditation.jpg',
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) => Container(
-                                          color: AppColors.surfaceSolid,
-                                          child: Center(
-                                            child: Icon(Icons.spa_rounded, size: 64, color: accent),
+                                    // Artwork
+                                    ClipOval(
+                                      child: SizedBox(
+                                        width: artworkInner,
+                                        height: artworkInner,
+                                        child: Image.asset(
+                                          playlist.imagePath,
+                                          fit: BoxFit.cover,
+                                          cacheWidth: 500,
+                                          cacheHeight: 500,
+                                          errorBuilder: (context, error, stackTrace) => Container(
+                                            color: AppColors.surfaceSolid,
+                                            child: Center(
+                                              child: Icon(Icons.spa_rounded, size: 64, color: accent),
+                                            ),
                                           ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
-                          );
-                        },
-                      ),
+                            );
+                          },
+                        ),
 
                       const Spacer(flex: 1),
 
                       // Progress / Archetype Pill
-                      if (playlist != null && playlist.affirmations.isNotEmpty)
+                      if (playlist.affirmations.isNotEmpty)
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                           decoration: BoxDecoration(
@@ -406,10 +483,178 @@ class _PlayerScreenState extends State<PlayerScreen> with SingleTickerProviderSt
                         ],
                       ),
 
+                      const SizedBox(height: 18),
+
+                      // Dedicated Atmosphere & Soundscape Mixer Interactive Capsule
+                      _buildMixerCapsule(context, audioProvider, appProvider, accent, isGrowth),
+
                       const Spacer(flex: 1),
                     ],
-                  ),
+                  );
+                },
+              ),
+            ),
+          ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _soundDisplayName(AmbientSound sound) {
+    switch (sound) {
+      case AmbientSound.solfeggio528:
+        return '✨ 528Hz Miracle';
+      case AmbientSound.solfeggio432:
+        return '🔮 432Hz Calm';
+      case AmbientSound.solfeggio639:
+        return '💚 639Hz Heart';
+      case AmbientSound.solfeggio852:
+        return '🌌 852Hz Intuition';
+      case AmbientSound.binauralTheta:
+        return '🧠 Theta Focus';
+      case AmbientSound.rain:
+        return '🌧️ Rain';
+      case AmbientSound.ocean:
+        return '🌊 Ocean Waves';
+      case AmbientSound.forest:
+        return '🌲 Forest Breeze';
+      case AmbientSound.fireplace:
+        return '🔥 Cozy Hearth';
+      case AmbientSound.windChimes:
+        return '🎐 Wind Chimes';
+      case AmbientSound.nightCrickets:
+        return '🦗 Night Crickets';
+      case AmbientSound.whiteNoise:
+        return '⚪ Gentle Air';
+      case AmbientSound.none:
+        return 'Off';
+    }
+  }
+
+  Widget _buildMixerCapsule(
+    BuildContext context,
+    AudioProvider audioProvider,
+    AppProvider appProvider,
+    Color accent,
+    bool isGrowth,
+  ) {
+    final bool isSoundActive = audioProvider.currentSound != AmbientSound.none;
+    final soundName = _soundDisplayName(audioProvider.currentSound);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        key: const ValueKey('interactive_mixer_capsule'),
+        onTap: () => _showMixerSheet(context, audioProvider, appProvider),
+        borderRadius: BorderRadius.circular(24),
+        splashColor: accent.withOpacity(0.12),
+        highlightColor: accent.withOpacity(0.06),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+          decoration: BoxDecoration(
+            color: isSoundActive
+                ? (isGrowth ? const Color(0xFFFAF3E0) : accent.withOpacity(0.12))
+                : AppColors.surfaceElevated.withOpacity(0.95),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: isSoundActive
+                  ? accent.withOpacity(0.45)
+                  : AppColors.border,
+              width: 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: isSoundActive
+                    ? accent.withOpacity(0.15)
+                    : Colors.black.withOpacity(0.04),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: isSoundActive
+                      ? (isGrowth ? const Color(0xFFF3E5C8) : accent.withOpacity(0.2))
+                      : AppColors.surfaceSolid,
+                  shape: BoxShape.circle,
                 ),
+                child: Icon(
+                  isSoundActive ? Icons.graphic_eq_rounded : Icons.tune_rounded,
+                  size: 18,
+                  color: isSoundActive
+                      ? (isGrowth ? const Color(0xFF9E6B00) : accent)
+                      : AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            isSoundActive ? soundName : 'Audio & Soundscape Mixer',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                        if (isSoundActive) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: accent.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'Active',
+                              style: GoogleFonts.inter(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: isGrowth ? const Color(0xFF9E6B00) : accent,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      isSoundActive
+                          ? 'Tap to adjust soundscape volume & gap pacing'
+                          : 'Tap to blend 528Hz, rain & customize pacing',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 13,
+                color: AppColors.textSecondary.withOpacity(0.7),
               ),
             ],
           ),
@@ -458,6 +703,9 @@ class _PlayerScreenState extends State<PlayerScreen> with SingleTickerProviderSt
             final accent = AppColors.accentForMode(isGrowth);
 
             return Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.85,
+              ),
               padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
               decoration: BoxDecoration(
                 color: AppColors.surfaceElevated,
@@ -471,10 +719,12 @@ class _PlayerScreenState extends State<PlayerScreen> with SingleTickerProviderSt
                   ),
                 ],
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                   Center(
                     child: Container(
                       width: 40,
@@ -567,14 +817,14 @@ class _PlayerScreenState extends State<PlayerScreen> with SingleTickerProviderSt
                       style: GoogleFonts.inter(
                           fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
                   const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8,
-                    children: [
-                      _pacingChip('Quick (2s Gap)', 2, audioProvider, accent, setSheetState),
-                      _pacingChip('Natural (3.5s Gap)', 3, audioProvider, accent, setSheetState),
-                      _pacingChip('Deep (6s Gap)', 6, audioProvider, accent, setSheetState),
-                    ],
-                  ),
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        _pacingChip('Default (2s Silence)', 2, audioProvider, accent, setSheetState),
+                        _pacingChip('Calm (4s Silence)', 4, audioProvider, accent, setSheetState),
+                        _pacingChip('Deep (6s Silence)', 6, audioProvider, accent, setSheetState),
+                      ],
+                    ),
 
                   const SizedBox(height: 20),
                   Text('Sleep Timer',
@@ -593,7 +843,8 @@ class _PlayerScreenState extends State<PlayerScreen> with SingleTickerProviderSt
                   ),
                 ],
               ),
-            );
+            ),
+          );
           },
         );
       },

@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class GlassCard extends StatefulWidget {
@@ -11,6 +12,7 @@ class GlassCard extends StatefulWidget {
   final double? width;
   final double? height;
   final Gradient? gradient;
+  final bool? enableBlur;
 
   const GlassCard({
     Key? key,
@@ -23,6 +25,7 @@ class GlassCard extends StatefulWidget {
     this.width,
     this.height,
     this.gradient,
+    this.enableBlur,
   }) : super(key: key);
 
   @override
@@ -53,10 +56,47 @@ class _GlassCardState extends State<GlassCard> with SingleTickerProviderStateMix
 
   @override
   Widget build(BuildContext context) {
+    // High-performance optimization: On Android devices, bypass heavy BackdropFilter
+    // offscreen buffer copy unless explicitly enabled, preventing Skia/Impeller frame drops.
+    final bool shouldBlur = widget.enableBlur ??
+        (!kIsWeb && defaultTargetPlatform != TargetPlatform.android);
+
+    Widget content = Container(
+      padding: widget.padding,
+      decoration: BoxDecoration(
+        gradient: widget.gradient ??
+            LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white.withOpacity(shouldBlur ? 0.85 : 0.94),
+                Colors.white.withOpacity(shouldBlur ? 0.65 : 0.86),
+              ],
+            ),
+        borderRadius: BorderRadius.circular(widget.borderRadius),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.6),
+          width: 1.0,
+        ),
+      ),
+      child: widget.child,
+    );
+
+    if (shouldBlur) {
+      content = BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 16.0, sigmaY: 16.0),
+        child: content,
+      );
+    }
+
     return GestureDetector(
-      onTap: widget.onTap,
       onTapDown: widget.onTap != null ? (_) => _controller.forward() : null,
-      onTapUp: widget.onTap != null ? (_) => _controller.reverse() : null,
+      onTapUp: widget.onTap != null
+          ? (_) {
+              _controller.reverse();
+              widget.onTap!();
+            }
+          : null,
       onTapCancel: widget.onTap != null ? () => _controller.reverse() : null,
       child: AnimatedBuilder(
         animation: _scaleAnimation,
@@ -87,29 +127,7 @@ class _GlassCardState extends State<GlassCard> with SingleTickerProviderStateMix
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(widget.borderRadius),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 16.0, sigmaY: 16.0),
-              child: Container(
-                padding: widget.padding,
-                decoration: BoxDecoration(
-                  gradient: widget.gradient ??
-                      LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          Colors.white.withOpacity(0.85),
-                          Colors.white.withOpacity(0.65),
-                        ],
-                      ),
-                  borderRadius: BorderRadius.circular(widget.borderRadius),
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.6),
-                    width: 1.0,
-                  ),
-                ),
-                child: widget.child,
-              ),
-            ),
+            child: content,
           ),
         ),
       ),

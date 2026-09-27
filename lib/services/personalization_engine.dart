@@ -3,6 +3,7 @@ import '../models/affirmation.dart';
 import '../models/user_archetype.dart';
 import '../models/user_profile_vector.dart';
 import '../models/playlist.dart';
+import '../services/audio_engine_service.dart';
 
 class PlaylistMatch {
   final Playlist playlist;
@@ -484,12 +485,12 @@ class PersonalizationEngine {
       double modeBoost = 1.0;
       if (isGrowthMode) {
         // Growth mode boosts Action [14] and Ambition [0]
-        if (aff.embeddingVector.length > 14 && aff.embeddingVector[14] > 0.6) {
+        if (aff.embeddingVector.length > 14 && aff.embeddingVector[14] > 0.5) {
           modeBoost = 1.25;
         }
       } else {
         // Healing mode boosts Somatic Calm [13], Anxiety Grounding [1], Heartbreak [2], Grief [3]
-        if (aff.embeddingVector.length > 13 && aff.embeddingVector[13] > 0.6) {
+        if (aff.embeddingVector.length > 13 && aff.embeddingVector[13] > 0.5) {
           modeBoost = 1.25;
         }
       }
@@ -614,39 +615,41 @@ class PersonalizationEngine {
     required List<Affirmation> pool,
     required bool isGrowthMode,
     String? mood,
+    Map<String, int>? lastListenedTimestamps,
   }) {
     final feed = getPersonalizedFeed(
       profile: profile,
       pool: pool,
       isGrowthMode: isGrowthMode,
       mood: mood,
+      lastListenedTimestamps: lastListenedTimestamps,
       limit: 1,
     );
     final base = feed.isNotEmpty ? feed.first : pool.first;
 
-    if (profile.userName.trim().isNotEmpty && profile.userName.trim() != 'Alex') {
-      final name = profile.userName.trim();
-      if (!base.quote.startsWith(name)) {
+    final rawName = profile.userName.trim();
+    if (rawName.isNotEmpty && rawName.toLowerCase() != 'friend' && rawName.toLowerCase() != 'alex') {
+      if (!base.quote.startsWith(rawName)) {
         return base.copyWith(
-          quote: '$name, ${base.quote.substring(0, 1).toLowerCase()}${base.quote.substring(1)}',
+          quote: '$rawName, ${base.quote.substring(0, 1).toLowerCase()}${base.quote.substring(1)}',
         );
       }
     }
     return base;
   }
 
-  /// Generates a dynamic situational playlist tailored to the user's primary need.
+  /// Generates a dynamic situational playlist tailored to the user's primary need,
+  /// active mode (Growth vs Healing), active mood, habituation decay, and circadian time-of-day.
   static Playlist generateSituationalPlaylist({
     required UserProfileVector profile,
     required List<Affirmation> pool,
     required bool isGrowthMode,
+    String? mood,
+    Map<String, int>? lastListenedTimestamps,
   }) {
-    final feed = getPersonalizedFeed(
-      profile: profile,
-      pool: pool,
-      isGrowthMode: isGrowthMode,
-      limit: 8,
-    );
+    final int hour = DateTime.now().hour;
+    final bool isMorning = hour >= 5 && hour < 12;
+    final bool isAfternoon = hour >= 12 && hour < 18;
 
     final primaryMeta = ArchetypeRegistry.getMetadata(
       profile.primaryArchetypes.isNotEmpty
@@ -654,13 +657,91 @@ class PersonalizationEngine {
           : UserArchetype.careerProfessional,
     );
 
+    String title;
+    String category;
+    String imagePath;
+    AmbientSound defaultAmbient;
+
+    final lowerMood = mood?.toLowerCase() ?? '';
+    if (lowerMood.contains('anxious')) {
+      title = isGrowthMode
+          ? 'Nervous System Grounding & Poise'
+          : 'Nervous System Grounding & Calm';
+      category = 'Anxiety Relief';
+      imagePath = isGrowthMode
+          ? 'assets/images/crisis_calm_center.jpg'
+          : 'assets/images/panic_tension_release.jpg';
+      defaultAmbient = isGrowthMode ? AmbientSound.solfeggio528 : AmbientSound.rain;
+    } else if (lowerMood.contains('sad')) {
+      title = isGrowthMode
+          ? 'Resilience, Worth & Renewal'
+          : 'Comfort, Compassion & Healing';
+      category = isGrowthMode ? 'Self-Rebuild' : 'Emotional Recovery';
+      imagePath = 'assets/images/emotional_flooding.jpg';
+      defaultAmbient = isGrowthMode ? AmbientSound.solfeggio852 : AmbientSound.windChimes;
+    } else if (lowerMood.contains('tired')) {
+      title = isGrowthMode
+          ? 'Mental Refresh & Energy Renewal'
+          : 'Restorative Restoration & Recovery';
+      category = isGrowthMode ? 'Vitality Recharge' : 'Deep Rest';
+      imagePath = 'assets/images/sleep_onset_scan.jpg';
+      defaultAmbient = isGrowthMode ? AmbientSound.windChimes : AmbientSound.nightCrickets;
+    } else if (lowerMood.contains('motivated') || lowerMood.contains('ambitious')) {
+      title = isGrowthMode
+          ? 'Peak Drive & Flow Activation'
+          : 'Gentle Purpose & Sustainable Flow';
+      category = isGrowthMode ? 'High Performance' : 'Mindful Purpose';
+      imagePath = 'assets/images/deep_work_flow.jpg';
+      defaultAmbient = isGrowthMode ? AmbientSound.solfeggio528 : AmbientSound.forest;
+    } else if (lowerMood.contains('peaceful') || lowerMood.contains('grounding') || lowerMood.contains('calm')) {
+      title = isGrowthMode
+          ? 'Grounded Power & Focus: ${primaryMeta.title}'
+          : 'Serenity, Presence & Inner Peace';
+      category = isGrowthMode ? 'Centered Focus' : 'Centered Mindfulness';
+      imagePath = isGrowthMode
+          ? 'assets/images/creative_studio_canvas.jpg'
+          : 'assets/images/gratitude_neuroplasticity.jpg';
+      defaultAmbient = isGrowthMode ? AmbientSound.binauralTheta : AmbientSound.forest;
+    } else if (isMorning) {
+      title = isGrowthMode
+          ? 'Morning Momentum: ${primaryMeta.title}'
+          : 'Gentle Morning Awakening';
+      category = isGrowthMode ? 'Morning Prime' : 'Gentle Awaken';
+      imagePath = 'assets/images/morning_neural_activation.jpg';
+      defaultAmbient = isGrowthMode ? AmbientSound.solfeggio528 : AmbientSound.solfeggio432;
+    } else if (isAfternoon) {
+      title = isGrowthMode
+          ? 'Midday Peak Flow: ${primaryMeta.title}'
+          : 'Midday Calming & Reset';
+      category = isGrowthMode ? 'Daily Flow' : 'Afternoon Calm';
+      imagePath = 'assets/images/featured_meditation.jpg';
+      defaultAmbient = isGrowthMode ? AmbientSound.binauralTheta : AmbientSound.rain;
+    } else {
+      title = isGrowthMode
+          ? 'Evening Mastery: ${primaryMeta.title}'
+          : 'Nighttime Restoration: ${primaryMeta.title}';
+      category = isGrowthMode ? 'Evening Review' : 'Evening Unwind';
+      imagePath = 'assets/images/bedtime_rumination.jpg';
+      defaultAmbient = AmbientSound.nightCrickets;
+    }
+
+    final feed = getPersonalizedFeed(
+      profile: profile,
+      pool: pool,
+      isGrowthMode: isGrowthMode,
+      mood: mood,
+      lastListenedTimestamps: lastListenedTimestamps,
+      limit: 8,
+    );
+
     return Playlist(
       id: 'pl_personalized_dynamic',
-      title: '${primaryMeta.title} Mastery',
+      title: title,
       duration: '10 min',
-      category: primaryMeta.title,
-      imagePath: 'assets/images/onboarding_archway_sun.jpg',
+      category: category,
+      imagePath: imagePath,
       isPremium: false,
+      defaultAmbientSound: defaultAmbient,
       affirmations: feed,
     );
   }
@@ -710,7 +791,7 @@ class PersonalizationEngine {
       final double cohesionFactor = 0.90 + 0.10 * playlist.cohesionScore;
 
       // 3. Multiplicative Confidence Modulators (Fix for Flaw 4 - Hybrid Metric Distortion)
-      // Archetype affinity: x1.15 multiplier using effectiveTargetArchetypes to eliminate metadata blind spots
+      // Archetype affinity: x1.35 multiplier using effectiveTargetArchetypes to eliminate metadata blind spots
       double archetypeFactor = 1.0;
       bool hasArchetypeAffinity = false;
       final effectiveArchetypes = playlist.effectiveTargetArchetypes;
@@ -718,13 +799,13 @@ class PersonalizationEngine {
         for (var primary in profile.primaryArchetypes) {
           if (effectiveArchetypes.contains(primary)) {
             hasArchetypeAffinity = true;
-            archetypeFactor = 1.15;
+            archetypeFactor = 1.35;
             break;
           }
         }
       }
 
-      // Sub-level affinity: x1.10 multiplier using effectiveTargetSubLevels (with robust string match)
+      // Sub-level affinity: x1.30 multiplier using effectiveTargetSubLevels (with robust string match)
       double subLevelFactor = 1.0;
       final effectiveSubLevels = playlist.effectiveTargetSubLevels;
       if (effectiveSubLevels.isNotEmpty) {
@@ -734,44 +815,126 @@ class PersonalizationEngine {
             final lowerTs = ts.toLowerCase();
             return lowerTs.contains(lowerSub) || lowerSub.contains(lowerTs);
           })) {
-            subLevelFactor = 1.10;
+            subLevelFactor = 1.30;
             break;
           }
         }
       }
 
-      // Mode alignment: x1.06 multiplier instead of additive scalar
-      double modeFactor = 1.0;
-      if (isGrowthMode) {
-        if (centroid.length > 14 && centroid[14] > 0.3) {
-          modeFactor = 1.06;
-        }
-      } else {
-        if (centroid.length > 13 && centroid[13] > 0.3) {
-          modeFactor = 1.06;
+      // 4. Contextual Mood Modulation (Calculated prior to mode gating so explicit mood needs take precedence)
+      final String pId = playlist.id.toLowerCase();
+      double moodFactor = 1.0;
+      bool hasMoodMatch = false;
+      if (mood != null && mood.isNotEmpty) {
+        final lowerMood = mood.toLowerCase();
+        if (lowerMood.contains('anxious') && (pId.contains('panic') || pId.contains('anxiety') || pId.contains('sos') || pId.contains('flood'))) {
+          moodFactor = 1.80;
+          hasMoodMatch = true;
+        } else if (lowerMood.contains('sad') && (pId.contains('worth') || pId.contains('breakup') || pId.contains('bereavement') || pId.contains('inner_child'))) {
+          moodFactor = 1.80;
+          hasMoodMatch = true;
+        } else if (lowerMood.contains('tired') && (pId.contains('sleep') || pId.contains('bedtime') || pId.contains('recovery') || pId.contains('burnout'))) {
+          moodFactor = 1.80;
+          hasMoodMatch = true;
+        } else if (lowerMood.contains('motivated') && (pId.contains('founder') || pId.contains('exec') || pId.contains('flow') || pId.contains('ruthless') || pId.contains('pregame'))) {
+          moodFactor = 1.80;
+          hasMoodMatch = true;
+        } else if (lowerMood.contains('grounding') || lowerMood.contains('peaceful')) {
+          if (pId.contains('gratitude') || pId.contains('calm') || pId.contains('intuition') || pId.contains('somatic')) {
+            moodFactor = 1.50;
+            hasMoodMatch = true;
+          }
         }
       }
 
-      // 4. Dynamic ZPD Believability Gating for Playlists (Fix for Flaw 4)
+      // 5. Dynamic Mode Alignment
+      final double growthDimScore = (centroid.length > 14 ? centroid[14] : 0.0) * 0.30 +
+                                   (centroid.isNotEmpty ? centroid[0] : 0.0) * 0.25 +
+                                   (centroid.length > 4 ? centroid[4] : 0.0) * 0.20 +
+                                   (centroid.length > 6 ? centroid[6] : 0.0) * 0.15 +
+                                   (centroid.length > 9 ? centroid[9] : 0.0) * 0.15 +
+                                   (centroid.length > 11 ? centroid[11] : 0.0) * 0.15;
+      final double healingDimScore = (centroid.length > 13 ? centroid[13] : 0.0) * 0.30 +
+                                    (centroid.length > 1 ? centroid[1] : 0.0) * 0.25 +
+                                    (centroid.length > 2 ? centroid[2] : 0.0) * 0.25 +
+                                    (centroid.length > 3 ? centroid[3] : 0.0) * 0.20 +
+                                    (centroid.length > 8 ? centroid[8] : 0.0) * 0.15 +
+                                    (centroid.length > 10 ? centroid[10] : 0.0) * 0.15;
+
+      double modeFactor = 1.0;
+      if (isGrowthMode) {
+        if (growthDimScore > 0.20 || growthDimScore >= healingDimScore || hasMoodMatch) {
+          modeFactor = 1.80 + (growthDimScore * 1.30);
+        } else {
+          // Deprioritize acute trauma/grief/sleep playlists in growth mode
+          modeFactor = (0.35 / (1.0 + healingDimScore)).clamp(0.15, 0.45);
+        }
+      } else {
+        // Healing mode elevates restorative, calming, and emotional soothing content
+        if (healingDimScore > 0.20 || healingDimScore >= growthDimScore || hasMoodMatch) {
+          modeFactor = 2.00 + (healingDimScore * 1.40);
+        } else {
+          // Deprioritize aggressive sales, high-stakes negotiation, and ruthless execution in healing mode
+          modeFactor = (0.30 / (1.0 + growthDimScore)).clamp(0.12, 0.40);
+        }
+      }
+
+      // Contextual archetype gating by mode (bypassed if playlist directly matches active mood):
+      // In Healing mode, do not accelerate purely aggressive execution playlists with archetype multipliers
+      if (!isGrowthMode && growthDimScore > 0.35 && healingDimScore < 0.25 && !hasMoodMatch) {
+        archetypeFactor = 0.65;
+        subLevelFactor = 0.65;
+      }
+      // In Growth mode, do not accelerate purely acute grief/panic playlists with archetype multipliers
+      if (isGrowthMode && healingDimScore > 0.35 && growthDimScore < 0.25 && !hasMoodMatch) {
+        archetypeFactor = 0.65;
+        subLevelFactor = 0.65;
+      }
+
+      // 6. Circadian Time-of-Day Dynamics (Gentle positive nudge)
+      double circadianFactor = 1.0;
+      final int hour = DateTime.now().hour;
+      final bool isMorning = hour >= 5 && hour < 12;
+      final bool isAfternoon = hour >= 12 && hour < 18;
+      final bool isNight = hour >= 18 || hour < 5;
+
+      if (isMorning) {
+        if (pId.contains('morning') || pId.contains('activation') || pId.contains('flow')) {
+          circadianFactor = 1.08;
+        }
+      } else if (isAfternoon) {
+        if (pId.contains('flow') || pId.contains('stress_sos') || pId.contains('presence')) {
+          circadianFactor = 1.06;
+        }
+      } else if (isNight) {
+        if (pId.contains('sleep') || pId.contains('bedtime') || pId.contains('shutdown') || pId.contains('unwind')) {
+          circadianFactor = 1.10;
+        }
+      }
+
+      // 7. Dynamic ZPD Believability Gating for Playlists (Fix for Flaw 4)
       final double userBelievabilityNeed = profile.effectiveBelievabilityPreference;
       final double deltaBelievability = math.max(0.0, userBelievabilityNeed - playlist.averageBelievabilityScore);
       final double believabilityGate = math.exp(-3.0 * deltaBelievability * deltaBelievability);
 
       // Multiplicative base score
-      final double baseScore = sim * cohesionFactor * archetypeFactor * subLevelFactor * modeFactor * believabilityGate;
+      final double baseScore = sim * cohesionFactor * archetypeFactor * subLevelFactor * modeFactor * circadianFactor * moodFactor * believabilityGate;
 
-      // 4. Circadian Day-Seeded Exploration Jitter (+/- 2%) (Fix for Flaw 6 - Deterministic Feed Stagnation)
+      // 8. Circadian Day-Seeded Exploration Jitter (+/- 2%) (Fix for Flaw 6 - Deterministic Feed Stagnation)
       final double jitter = 0.02 * math.sin(playlist.id.hashCode.toDouble() + dayOfYear.toDouble());
 
-      final double clampedScore = (baseScore + jitter).clamp(0.0, 0.99);
-
-      // Match percentage string: map to realistic user-facing resonance (e.g. 60%-99%)
-      final percentVal = (clampedScore * 100).round().clamp(60, 99);
-      final percentStr = '$percentVal%';
+      // Continuous normalized relevance score in [0.0, 0.99] using strictly monotonic saturation.
+      // Preserves 100% of floating-point ranking resolution without hard-ceiling clamping ties.
+      final double compositeScore = baseScore + jitter;
+      final double normalizedScore = ((1.0 - math.exp(-math.max(0.0, compositeScore) / 0.95)) * 0.985).clamp(0.01, 0.99);
 
       // Resonance reason
       String reason = 'Curated for your profile';
-      if (hasArchetypeAffinity && profile.primaryArchetypes.isNotEmpty) {
+      if (!isGrowthMode && healingDimScore > 0.20) {
+        reason = 'Optimized for grounding & calm';
+      } else if (isGrowthMode && growthDimScore > 0.20) {
+        reason = 'Optimized for high performance';
+      } else if (hasArchetypeAffinity && profile.primaryArchetypes.isNotEmpty) {
         final meta = ArchetypeRegistry.getMetadata(profile.primaryArchetypes.first);
         reason = 'Aligned with ${meta.title}';
       } else if (isGrowthMode) {
@@ -780,15 +943,18 @@ class PersonalizationEngine {
         reason = 'Optimized for grounding & calm';
       }
 
+      // Realistic user-facing match percentage string
+      final int percentVal = (50 + (normalizedScore * 49)).round().clamp(60, 99);
+
       matches.add(PlaylistMatch(
         playlist: playlist,
-        matchScore: clampedScore,
-        matchPercent: percentStr,
+        matchScore: normalizedScore,
+        matchPercent: '$percentVal%',
         resonanceReason: reason,
       ));
     }
 
-    // Sort descending by matchScore
+    // Sort descending by true monotonic normalized matchScore
     matches.sort((a, b) => b.matchScore.compareTo(a.matchScore));
 
     return matches;

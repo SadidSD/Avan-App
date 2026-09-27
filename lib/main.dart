@@ -1,3 +1,4 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/app_provider.dart';
@@ -7,8 +8,20 @@ import 'screens/main_navigation_screen.dart';
 import 'theme/app_theme.dart';
 import 'theme/app_colors.dart';
 
+import 'services/adapty_service.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await Firebase.initializeApp();
+  } catch (e) {
+    debugPrint('[Firebase] Init exception (handled): $e');
+  }
+  try {
+    await AdaptyService().initialize();
+  } catch (e) {
+    debugPrint('[Adapty] Init exception (handled): $e');
+  }
   final appProvider = AppProvider();
   await appProvider.loadState();
   runApp(AvanApp(appProvider: appProvider));

@@ -78,37 +78,39 @@ class _AudioPlayerBarState extends State<AudioPlayerBar>
               },
               child: Stack(
                 children: [
-                  // Animated gradient progress line at the top
+                  // Animated gradient progress line at the top (Isolated with RepaintBoundary)
                   Positioned(
                     top: 0,
                     left: 0,
                     right: 0,
-                    child: AnimatedBuilder(
-                      animation: _progressController,
-                      builder: (context, child) {
-                        return Container(
-                          height: 2.0,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                AppColors.accentForMode(
-                                        appProvider.isGrowthMode)
-                                    .withOpacity(0.3),
-                                AppColors.accentForMode(
-                                    appProvider.isGrowthMode),
-                                AppColors.accentForMode(
-                                        appProvider.isGrowthMode)
-                                    .withOpacity(0.3),
-                              ],
-                              stops: [
-                                0.0,
-                                _progressController.value,
-                                1.0,
-                              ],
+                    child: RepaintBoundary(
+                      child: AnimatedBuilder(
+                        animation: _progressController,
+                        builder: (context, child) {
+                          return Container(
+                            height: 2.0,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  AppColors.accentForMode(
+                                          appProvider.isGrowthMode)
+                                      .withOpacity(0.3),
+                                  AppColors.accentForMode(
+                                      appProvider.isGrowthMode),
+                                  AppColors.accentForMode(
+                                          appProvider.isGrowthMode)
+                                      .withOpacity(0.3),
+                                ],
+                                stops: [
+                                  0.0,
+                                  _progressController.value,
+                                  1.0,
+                                ],
+                              ),
                             ),
-                          ),
-                        );
-                      },
+                          );
+                        },
+                      ),
                     ),
                   ),
                   Padding(
@@ -138,6 +140,8 @@ class _AudioPlayerBarState extends State<AudioPlayerBar>
                               width: 44,
                               height: 44,
                               fit: BoxFit.cover,
+                              cacheWidth: 120,
+                              cacheHeight: 120,
                               errorBuilder: (context, error, stackTrace) {
                                 return Container(
                                   width: 44,
@@ -198,10 +202,47 @@ class _AudioPlayerBarState extends State<AudioPlayerBar>
                                   appProvider.isGrowthMode),
                               size: 38,
                             ),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                              minWidth: 40,
+                              minHeight: 40,
+                            ),
                             onPressed: () {
                               audioProvider.togglePlayPause();
                             },
                           ),
+                        ),
+                        const SizedBox(width: 4),
+                        // Close / Dismiss mini player button
+                        IconButton(
+                          key: const ValueKey('close_player_button'),
+                          icon: Container(
+                            width: 28,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceElevated.withOpacity(0.8),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: AppColors.border.withOpacity(0.5),
+                                width: 1.0,
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.close_rounded,
+                              size: 16,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                            minWidth: 32,
+                            minHeight: 32,
+                          ),
+                          splashRadius: 18,
+                          tooltip: 'Close player',
+                          onPressed: () {
+                            audioProvider.closePlayer();
+                          },
                         ),
                       ],
                     ),

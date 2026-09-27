@@ -105,85 +105,104 @@ class _AnimatedCosmicBackgroundState extends State<AnimatedCosmicBackground>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: Listenable.merge([_orbController, _modeController]),
-      builder: (context, _) {
-        final double t = _orbController.value * 2 * math.pi;
+    final size = MediaQuery.of(context).size;
+    final screenHeight = size.height;
+    final screenWidth = size.width;
 
-        return Stack(
-          children: [
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    _topColorAnim.value ?? const Color(0xFFFFF8F2),
-                    _midColorAnim.value ?? const Color(0xFFFFF8F2),
-                    _bottomColorAnim.value ?? const Color(0xFFFBF0E6),
-                  ],
-                ),
-              ),
-            ),
-            // Ambient warm glow patches
-            Positioned(
-              left: -50,
-              top: MediaQuery.of(context).size.height * 0.2 + math.sin(t) * 20,
-              child: Container(
-                width: 300,
-                height: 300,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: const Color(0xFFFCE8D5).withOpacity(0.4),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFFFCE8D5).withOpacity(0.25),
-                      blurRadius: 100,
-                      spreadRadius: 50,
+    return Stack(
+      children: [
+        // Layer 1: GPU-isolated continuous background animation
+        Positioned.fill(
+          child: RepaintBoundary(
+            child: AnimatedBuilder(
+              animation: Listenable.merge([_orbController, _modeController]),
+              builder: (context, _) {
+                final double t = _orbController.value * 2 * math.pi;
+
+                return Stack(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            _topColorAnim.value ?? const Color(0xFFFFF8F2),
+                            _midColorAnim.value ?? const Color(0xFFFFF8F2),
+                            _bottomColorAnim.value ?? const Color(0xFFFBF0E6),
+                          ],
+                        ),
+                      ),
+                    ),
+                    // Ambient warm glow patches (GPU-friendly RadialGradient with zero convolution cost)
+                    Positioned(
+                      left: -50,
+                      top: screenHeight * 0.2 + math.sin(t) * 20,
+                      child: Container(
+                        width: 320,
+                        height: 320,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            colors: [
+                              Color(0x66FCE8D5),
+                              Color(0x22FCE8D5),
+                              Colors.transparent,
+                            ],
+                            stops: [0.0, 0.45, 1.0],
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      right: -50,
+                      bottom: screenHeight * 0.1 + math.cos(t) * 20,
+                      child: Container(
+                        width: 320,
+                        height: 320,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            colors: [
+                              Color(0x55FCE8D5),
+                              Color(0x18FCE8D5),
+                              Colors.transparent,
+                            ],
+                            stops: [0.0, 0.45, 1.0],
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Floating Orbs
+                    Positioned(
+                      left: screenWidth * 0.2 + math.cos(t) * 50,
+                      top: screenHeight * 0.1 + math.sin(t) * 50,
+                      child: _buildOrb(240, _orbColorAnim.value),
+                    ),
+                    Positioned(
+                      right: screenWidth * 0.1 + math.sin(t * 1.2) * 60,
+                      top: screenHeight * 0.4 + math.cos(t * 1.2) * 60,
+                      child: _buildOrb(200, _orbColorAnim.value),
+                    ),
+                    Positioned(
+                      left: screenWidth * 0.3 + math.cos(t * 0.8) * 40,
+                      bottom: screenHeight * 0.15 + math.sin(t * 0.8) * 40,
+                      child: _buildOrb(160, _orbColorAnim.value),
                     ),
                   ],
-                ),
-              ),
+                );
+              },
             ),
-            Positioned(
-              right: -50,
-              bottom: MediaQuery.of(context).size.height * 0.1 + math.cos(t) * 20,
-              child: Container(
-                width: 300,
-                height: 300,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: const Color(0xFFFCE8D5).withOpacity(0.3),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFFFCE8D5).withOpacity(0.2),
-                      blurRadius: 100,
-                      spreadRadius: 50,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            // Floating Orbs
-            Positioned(
-              left: MediaQuery.of(context).size.width * 0.2 + math.cos(t) * 50,
-              top: MediaQuery.of(context).size.height * 0.1 + math.sin(t) * 50,
-              child: _buildOrb(240, _orbColorAnim.value),
-            ),
-            Positioned(
-              right: MediaQuery.of(context).size.width * 0.1 + math.sin(t * 1.2) * 60,
-              top: MediaQuery.of(context).size.height * 0.4 + math.cos(t * 1.2) * 60,
-              child: _buildOrb(200, _orbColorAnim.value),
-            ),
-            Positioned(
-              left: MediaQuery.of(context).size.width * 0.3 + math.cos(t * 0.8) * 40,
-              bottom: MediaQuery.of(context).size.height * 0.15 + math.sin(t * 0.8) * 40,
-              child: _buildOrb(160, _orbColorAnim.value),
-            ),
-            widget.child,
-          ],
-        );
-      },
+          ),
+        ),
+
+        // Layer 2: GPU-isolated child content (zero invalidation from background animation)
+        Positioned.fill(
+          child: RepaintBoundary(
+            child: widget.child,
+          ),
+        ),
+      ],
     );
   }
 

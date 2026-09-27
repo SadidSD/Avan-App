@@ -9,7 +9,7 @@ import '../../theme/app_colors.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/animated_cosmic_background.dart';
 import '../../widgets/custom_button.dart';
-import '../main_navigation_screen.dart';
+import '../paywall/paywall_screen.dart';
 
 class PrescriptionRevealScreen extends StatefulWidget {
   const PrescriptionRevealScreen({Key? key}) : super(key: key);
@@ -91,19 +91,7 @@ class _PrescriptionRevealScreenState extends State<PrescriptionRevealScreen>
   }
 
   void _enterSanctuary(BuildContext context) {
-    final appProvider = Provider.of<AppProvider>(context, listen: false);
-    appProvider.completeOnboarding();
-
-    Navigator.pushAndRemoveUntil(
-      context,
-      PageRouteBuilder(
-        pageBuilder: (_, __, ___) => MainNavigationScreen(),
-        transitionsBuilder: (_, animation, __, child) =>
-            FadeTransition(opacity: animation, child: child),
-        transitionDuration: const Duration(milliseconds: 700),
-      ),
-      (route) => false,
-    );
+    PaywallScreen.open(context, isOnboarding: true);
   }
 
   @override

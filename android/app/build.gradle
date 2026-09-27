@@ -2,6 +2,7 @@ plugins {
     id "com.android.application"
     id "org.jetbrains.kotlin.android"
     id "dev.flutter.flutter-gradle-plugin"
+    id "com.google.gms.google-services"
 }
 
 android {
@@ -25,10 +26,10 @@ android {
 
     defaultConfig {
         applicationId "com.avanapp.avan_app"
-        minSdkVersion 23
+        minSdkVersion flutter.minSdkVersion
         targetSdkVersion 36
-        versionCode 6
-        versionName "1.0.5"
+        versionCode 13
+        versionName "1.0.12"
     }
 
     signingConfigs {

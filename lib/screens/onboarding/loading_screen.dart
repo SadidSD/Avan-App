@@ -43,7 +43,8 @@ class _LoadingScreenState extends State<LoadingScreen>
 
   void _initSynthesisSteps() {
     final appProvider = Provider.of<AppProvider>(context, listen: false);
-    final name = appProvider.userName.isNotEmpty ? appProvider.userName : 'Alex';
+    final rawName = appProvider.userName.trim();
+    final hasRealName = rawName.isNotEmpty && rawName.toLowerCase() != 'friend' && rawName.toLowerCase() != 'alex';
     final primaryType = appProvider.userProfileVector.primaryArchetypes.isNotEmpty
         ? appProvider.userProfileVector.primaryArchetypes.first
         : UserArchetype.careerProfessional;
@@ -55,7 +56,7 @@ class _LoadingScreenState extends State<LoadingScreen>
         (appProvider.userProfileVector.believabilityPreference * 100).toInt();
 
     final List<String> computedSteps = [
-      'Connecting to $name\'s cognitive baseline...',
+      hasRealName ? 'Connecting to $rawName\'s cognitive baseline...' : 'Connecting to your cognitive baseline...',
     ];
 
     if (challenge.isNotEmpty) {
@@ -78,7 +79,11 @@ class _LoadingScreenState extends State<LoadingScreen>
       computedSteps.add('Synthesizing resonance vectors for ${meta.title}...');
     }
 
-    computedSteps.add('Assembling $name\'s personalized audio prescription...');
+    computedSteps.add(
+      hasRealName
+          ? 'Assembling $rawName\'s personalized audio prescription...'
+          : 'Assembling your personalized audio prescription...',
+    );
     computedSteps.add('Your Space is Calibrated ✨');
 
     setState(() {

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../models/affirmation.dart';
@@ -17,12 +18,15 @@ class AudioProvider with ChangeNotifier {
   int _currentAffirmationIndex = 0;
   bool _isPlayerOpen = false;
 
-  // Pacing: 3 to 4 seconds gap between affirmations
-  int _gapBetweenAffirmations = 3; 
-  int _intervalPerAffirmation = 7; 
+  // Pacing: exactly 2 seconds of silence gap between affirmations
+  int _gapBetweenAffirmations = 2; 
+  int _intervalPerAffirmation = 6; 
   int _sessionDurationSeconds = 56;
   int _sessionPositionSeconds = 0;
   bool _isLoopEnabled = false;
+
+  List<int> _affirmationDurations = [];
+  List<int> _affirmationStartOffsets = [];
 
   Timer? _sessionTicker;
   Timer? _gapTimer;
@@ -67,12 +71,47 @@ class AudioProvider with ChangeNotifier {
   int get currentAffirmationIndex => _currentAffirmationIndex;
   bool get isPlayerOpen => _isPlayerOpen;
 
+  int _estimateAffirmationDuration(Affirmation aff) {
+    final words = aff.quote.trim().split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
+    final double speed = _audioService.voiceSpeed > 0 ? _audioService.voiceSpeed : 1.0;
+    // Calibrated natural speech rate: ~2.1 words per second at speed 1.0 (calm pacing)
+    final double speechSeconds = (words / (2.1 * speed)).clamp(3.0, 18.0);
+    final double totalSeconds = speechSeconds + _gapBetweenAffirmations;
+    return totalSeconds.round();
+  }
+
+  void _recalculateSessionTimeline() {
+    if (_currentPlaylist == null || _currentPlaylist!.affirmations.isEmpty) {
+      _affirmationDurations = [10];
+      _affirmationStartOffsets = [0];
+      _sessionDurationSeconds = 10;
+      return;
+    }
+
+    final affs = _currentPlaylist!.affirmations;
+    _affirmationDurations = affs.map(_estimateAffirmationDuration).toList();
+
+    int runningOffset = 0;
+    _affirmationStartOffsets = [];
+    for (final dur in _affirmationDurations) {
+      _affirmationStartOffsets.add(runningOffset);
+      runningOffset += dur;
+    }
+    _sessionDurationSeconds = math.max(runningOffset, 1);
+  }
+
+  int _calculateRemainingEstimatedSeconds() {
+    int remaining = 0;
+    for (int i = _currentAffirmationIndex; i < _affirmationDurations.length; i++) {
+      remaining += _affirmationDurations[i];
+    }
+    return remaining;
+  }
+
   void setIntervalPerAffirmation(int gapSeconds) {
     _gapBetweenAffirmations = gapSeconds.clamp(2, 8);
     _intervalPerAffirmation = 4 + _gapBetweenAffirmations;
-    final count = _currentPlaylist?.affirmations.length ?? 8;
-    _sessionDurationSeconds = count * _intervalPerAffirmation;
-    _sessionPositionSeconds = _currentAffirmationIndex * _intervalPerAffirmation;
+    _recalculateSessionTimeline();
     notifyListeners();
   }
 
@@ -133,6 +172,9 @@ class AudioProvider with ChangeNotifier {
   void openPlaylist(Playlist playlist, [BuildContext? context, int initialIndex = 0]) {
     final bool isDifferent = _currentPlaylist?.id != playlist.id;
 
+    _currentPlaylist = playlist;
+    _recalculateSessionTimeline();
+
     if (isDifferent) {
       // Reset position to 0 and cancel all prior playlist session timers
       _gapTimer?.cancel();
@@ -142,7 +184,9 @@ class AudioProvider with ChangeNotifier {
       _currentAffirmationIndex = (initialIndex >= 0 && initialIndex < playlist.affirmations.length)
           ? initialIndex
           : 0;
-      _sessionPositionSeconds = 0;
+      _sessionPositionSeconds = (_currentAffirmationIndex < _affirmationStartOffsets.length)
+          ? _affirmationStartOffsets[_currentAffirmationIndex]
+          : 0;
     } else {
       if (initialIndex != _currentAffirmationIndex) {
         _gapTimer?.cancel();
@@ -150,17 +194,14 @@ class AudioProvider with ChangeNotifier {
         _currentAffirmationIndex = (initialIndex >= 0 && initialIndex < playlist.affirmations.length)
             ? initialIndex
             : 0;
-        _sessionPositionSeconds = (_currentAffirmationIndex * _intervalPerAffirmation);
+        _sessionPositionSeconds = (_currentAffirmationIndex < _affirmationStartOffsets.length)
+            ? _affirmationStartOffsets[_currentAffirmationIndex]
+            : 0;
       }
     }
 
-    _currentPlaylist = playlist;
     // Auto-activate the playlist's unique curated background soundscape!
     _audioService.setAmbientSound(playlist.defaultAmbientSound);
-
-    final count = playlist.affirmations.isNotEmpty ? playlist.affirmations.length : 1;
-    _sessionDurationSeconds = count * _intervalPerAffirmation;
-    _sessionPositionSeconds = (_currentAffirmationIndex * _intervalPerAffirmation);
     _isPlayerOpen = true;
 
     _playCurrentAffirmation();
@@ -224,8 +265,8 @@ class AudioProvider with ChangeNotifier {
       onAffirmationCompleted?.call(completedAff);
     }
 
-    // Natural 3.5s reflection gap with ambient background music
-    _gapTimer = Timer(Duration(milliseconds: (_gapBetweenAffirmations * 1000 + 500)), () {
+    // Exactly 2 seconds silence gap before next affirmation
+    _gapTimer = Timer(Duration(seconds: _gapBetweenAffirmations), () {
       if (!_audioService.isPlaying) return;
       _advanceToNextAffirmation();
     });
@@ -242,8 +283,8 @@ class AudioProvider with ChangeNotifier {
 
       // Fallback watchdog in case platform callback doesn't fire
       final words = aff.quote.split(' ').length;
-      final estimatedSec = (words / 2.0).ceil().clamp(3, 9);
-      final maxWaitSec = estimatedSec + _gapBetweenAffirmations + 2;
+      final estimatedSec = (words / 2.0).ceil().clamp(3, 16);
+      final maxWaitSec = estimatedSec + _gapBetweenAffirmations + 3;
       _watchdogTimer = Timer(Duration(seconds: maxWaitSec), () {
         if (_audioService.isPlaying) {
           _advanceToNextAffirmation();
@@ -258,7 +299,18 @@ class AudioProvider with ChangeNotifier {
 
     if (_currentAffirmationIndex < totalAffs - 1) {
       _currentAffirmationIndex++;
-      _sessionPositionSeconds = (_currentAffirmationIndex * _intervalPerAffirmation);
+
+      // Smooth progression: update recorded start offset without jumping the current timeline
+      if (_currentAffirmationIndex < _affirmationStartOffsets.length) {
+        _affirmationStartOffsets[_currentAffirmationIndex] = _sessionPositionSeconds;
+      }
+
+      // Dynamically ensure total session duration has enough room for remaining affirmations
+      final remainingEstimate = _calculateRemainingEstimatedSeconds();
+      if (_sessionPositionSeconds + remainingEstimate > _sessionDurationSeconds) {
+        _sessionDurationSeconds = _sessionPositionSeconds + remainingEstimate;
+      }
+
       _playCurrentAffirmation();
     } else if (_isLoopEnabled) {
       _currentAffirmationIndex = 0;
@@ -283,6 +335,13 @@ class AudioProvider with ChangeNotifier {
     _sessionTicker = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!_audioService.isPlaying) return;
 
+      // Expand total duration dynamically if speech + gap is running slightly longer
+      // so the ticker never gets stuck before the playlist finishes
+      if (_sessionPositionSeconds >= _sessionDurationSeconds - 1 &&
+          _currentAffirmationIndex < (_currentPlaylist?.affirmations.length ?? 1) - 1) {
+        _sessionDurationSeconds = _sessionPositionSeconds + 2;
+      }
+
       if (_sessionPositionSeconds < _sessionDurationSeconds) {
         _sessionPositionSeconds++;
         notifyListeners();
@@ -298,20 +357,22 @@ class AudioProvider with ChangeNotifier {
         _sessionPositionSeconds = 0;
         _currentAffirmationIndex = 0;
       }
-      _playCurrentAffirmation();
+      if (_isCurrentSpeechFinished && _currentAffirmationIndex < (_currentPlaylist?.affirmations.length ?? 1) - 1) {
+        _advanceToNextAffirmation();
+      } else {
+        _playCurrentAffirmation();
+      }
       _startSessionTicker();
       notifyListeners();
     }
   }
 
   void pause() {
-    if (_audioService.isPlaying) {
-      _gapTimer?.cancel();
-      _watchdogTimer?.cancel();
-      _sessionTicker?.cancel();
-      _audioService.pause();
-      notifyListeners();
-    }
+    _gapTimer?.cancel();
+    _watchdogTimer?.cancel();
+    _sessionTicker?.cancel();
+    _audioService.pause();
+    notifyListeners();
   }
 
   void stop() {
@@ -326,8 +387,17 @@ class AudioProvider with ChangeNotifier {
     _gapTimer?.cancel();
     _watchdogTimer?.cancel();
     _sessionPositionSeconds = seconds.clamp(0, _sessionDurationSeconds);
+
+    int targetIndex = 0;
+    for (int i = _affirmationStartOffsets.length - 1; i >= 0; i--) {
+      if (_sessionPositionSeconds >= _affirmationStartOffsets[i]) {
+        targetIndex = i;
+        break;
+      }
+    }
+
     final totalAffs = _currentPlaylist?.affirmations.length ?? 1;
-    final targetIndex = (_sessionPositionSeconds / _intervalPerAffirmation).floor().clamp(0, totalAffs - 1);
+    targetIndex = targetIndex.clamp(0, totalAffs - 1);
 
     if (targetIndex != _currentAffirmationIndex) {
       _currentAffirmationIndex = targetIndex;
@@ -356,7 +426,10 @@ class AudioProvider with ChangeNotifier {
 
     if (_currentAffirmationIndex < totalAffs - 1) {
       _currentAffirmationIndex++;
-      _sessionPositionSeconds = (_currentAffirmationIndex * _intervalPerAffirmation);
+      final targetOffset = (_currentAffirmationIndex < _affirmationStartOffsets.length)
+          ? _affirmationStartOffsets[_currentAffirmationIndex]
+          : _sessionPositionSeconds;
+      _sessionPositionSeconds = math.max(_sessionPositionSeconds, targetOffset);
       _playCurrentAffirmation();
     } else if (_isLoopEnabled) {
       _currentAffirmationIndex = 0;
@@ -376,7 +449,10 @@ class AudioProvider with ChangeNotifier {
 
     if (_currentAffirmationIndex > 0) {
       _currentAffirmationIndex--;
-      _sessionPositionSeconds = (_currentAffirmationIndex * _intervalPerAffirmation);
+      final targetOffset = (_currentAffirmationIndex < _affirmationStartOffsets.length)
+          ? _affirmationStartOffsets[_currentAffirmationIndex]
+          : 0;
+      _sessionPositionSeconds = targetOffset;
       _playCurrentAffirmation();
     } else {
       _sessionPositionSeconds = 0;
@@ -387,9 +463,13 @@ class AudioProvider with ChangeNotifier {
 
   void closePlayer() {
     _isPlayerOpen = false;
+    _currentPlaylist = null;
+    _currentAffirmationIndex = 0;
+    _sessionPositionSeconds = 0;
     _gapTimer?.cancel();
     _watchdogTimer?.cancel();
     _sessionTicker?.cancel();
+    _audioService.setAmbientSound(AmbientSound.none);
     _audioService.stop();
     notifyListeners();
   }
@@ -401,6 +481,7 @@ class AudioProvider with ChangeNotifier {
 
   void setVoiceSpeed(double speed) {
     _audioService.setVoiceSpeed(speed);
+    _recalculateSessionTimeline();
     notifyListeners();
   }
 
@@ -417,6 +498,7 @@ class AudioProvider with ChangeNotifier {
   void setGapBetweenAffirmations(int seconds) {
     _gapBetweenAffirmations = seconds.clamp(1, 10);
     _intervalPerAffirmation = 4 + _gapBetweenAffirmations;
+    _recalculateSessionTimeline();
     notifyListeners();
   }
 

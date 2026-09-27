@@ -13,7 +13,7 @@ import '../my_voice/my_voice_tab.dart';
 import '../onboarding/emotional_onboarding_screen.dart';
 import '../widgets_preview/widgets_tab.dart';
 import '../affirmations/affirmations_tab.dart';
-import '../../widgets/paywall_modal.dart';
+import '../paywall/paywall_screen.dart';
 
 class ProfileTab extends StatefulWidget {
   const ProfileTab({Key? key}) : super(key: key);
@@ -83,6 +83,10 @@ class _ProfileTabState extends State<ProfileTab> {
 
               // 2. Identity & Mindset Archetype Card
               _buildIdentityCard(context, appProvider, accent, archetypeLabel, archetypeSubLabel),
+              if (!appProvider.isSignedIn) ...[
+                const SizedBox(height: 14),
+                _buildGoogleSignInCard(context, appProvider, accent),
+              ],
               const SizedBox(height: 20),
 
               // 3. Neuroplastic Consistency & Analytics Card
@@ -155,15 +159,32 @@ class _ProfileTabState extends State<ProfileTab> {
                     ),
                   ],
                 ),
-                child: Center(
-                  child: Text(
-                    appProvider.userName.isNotEmpty ? appProvider.userName[0].toUpperCase() : 'A',
-                    style: GoogleFonts.cormorantGaramond(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: accent,
-                    ),
-                  ),
+                child: ClipOval(
+                  child: (appProvider.userPhotoUrl != null && appProvider.userPhotoUrl!.isNotEmpty)
+                      ? Image.network(
+                          appProvider.userPhotoUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Center(
+                            child: Text(
+                              appProvider.userName.isNotEmpty ? appProvider.userName[0].toUpperCase() : 'A',
+                              style: GoogleFonts.cormorantGaramond(
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                                color: accent,
+                              ),
+                            ),
+                          ),
+                        )
+                      : Center(
+                          child: Text(
+                            appProvider.userName.isNotEmpty ? appProvider.userName[0].toUpperCase() : 'A',
+                            style: GoogleFonts.cormorantGaramond(
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
+                              color: accent,
+                            ),
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(width: 16),
@@ -187,6 +208,10 @@ class _ProfileTabState extends State<ProfileTab> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
+                        if (appProvider.isSignedIn) ...[
+                          const SizedBox(width: 4),
+                          const Icon(Icons.check_circle_rounded, size: 15, color: Color(0xFF4285F4)),
+                        ],
                         const SizedBox(width: 6),
                         if (appProvider.isPremium)
                           Container(
@@ -209,7 +234,7 @@ class _ProfileTabState extends State<ProfileTab> {
                           )
                         else
                           GestureDetector(
-                            onTap: () => PaywallModal.show(context),
+                            onTap: () => PaywallScreen.open(context),
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
@@ -233,8 +258,15 @@ class _ProfileTabState extends State<ProfileTab> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      appProvider.userEmail,
-                      style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
+                      appProvider.userEmail.isNotEmpty
+                          ? appProvider.userEmail
+                          : 'Tap to add email address',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: appProvider.userEmail.isNotEmpty
+                            ? AppColors.textSecondary
+                            : AppColors.textMuted,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -318,12 +350,132 @@ class _ProfileTabState extends State<ProfileTab> {
   }
 
   // ===========================================================================
+  // GOOGLE SIGN-IN & CLOUD BACKUP CARD
+  // ===========================================================================
+  Widget _buildGoogleSignInCard(BuildContext context, AppProvider appProvider, Color accent) {
+    return CustomCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF4285F4).withOpacity(0.12),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0xFF4285F4).withOpacity(0.3)),
+                ),
+                child: const Icon(
+                  Icons.account_circle_rounded,
+                  color: Color(0xFF4285F4),
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Account & Cloud Backup',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Protect your streaks, journals & sync across devices',
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: appProvider.isSyncing
+                      ? null
+                      : () async {
+                          final ok = await appProvider.signInWithGoogle();
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  ok
+                                      ? 'Connected with Google! Cloud Vault is active ☁️✨'
+                                      : 'Google Sign-In cancelled or failed.',
+                                ),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        },
+                  icon: appProvider.isSyncing
+                      ? const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Icon(Icons.login_rounded, size: 16),
+                  label: Text(
+                    appProvider.isSyncing ? 'Signing In...' : 'Sign in with Google',
+                    style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF4285F4),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton(
+                onPressed: () => _showCloudVaultModal(context, appProvider),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.textPrimary,
+                  side: const BorderSide(color: AppColors.border),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                ),
+                child: Text(
+                  'Details',
+                  style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ===========================================================================
   // 2. CONSISTENCY & ANALYTICS CARD
   // ===========================================================================
   Widget _buildConsistencyCard(BuildContext context, AppProvider appProvider, Color accent) {
     final streak = appProvider.streakData;
     final weekdays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-    final currentDayIndex = (DateTime.now().weekday - 1) % 7;
+    final now = DateTime.now();
+    final currentDayIndex = (now.weekday - 1) % 7;
+
+    final isTodayActive = streak.lastActiveDate != null &&
+        streak.lastActiveDate!.year == now.year &&
+        streak.lastActiveDate!.month == now.month &&
+        streak.lastActiveDate!.day == now.day;
 
     return CustomCard(
       padding: const EdgeInsets.all(18),
@@ -355,25 +507,42 @@ class _ProfileTabState extends State<ProfileTab> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppColors.goldAccent.withOpacity(0.12),
+                  color: (streak.currentStreak > 0 ? AppColors.goldAccent : AppColors.textMuted).withOpacity(0.12),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.goldAccent.withOpacity(0.3)),
+                  border: Border.all(
+                    color: (streak.currentStreak > 0 ? AppColors.goldAccent : AppColors.textMuted).withOpacity(0.3),
+                  ),
                 ),
                 child: Text(
-                  'Consistency High',
-                  style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.goldAccent),
+                  streak.currentStreak >= 7
+                      ? 'Streak Unstoppable 🔥'
+                      : (streak.currentStreak > 0 ? 'Consistency Active ✨' : 'Start Today 🌱'),
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: streak.currentStreak > 0 ? AppColors.goldAccent : AppColors.textSecondary,
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 16),
 
-          // 7-Day Consistency Dots Row
+          // 7-Day Consistency Dots Row (Real Activity Tracking)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: List.generate(7, (index) {
               final isToday = index == currentDayIndex;
-              final isDone = index <= currentDayIndex;
+              final bool isDone;
+              if (index > currentDayIndex) {
+                isDone = false; // Future days in current week cannot be completed yet
+              } else if (isToday) {
+                isDone = isTodayActive;
+              } else {
+                final daysAgo = currentDayIndex - index;
+                final requiredStreak = isTodayActive ? (daysAgo + 1) : daysAgo;
+                isDone = streak.currentStreak >= requiredStreak && streak.currentStreak > 0;
+              }
 
               return Column(
                 children: [
@@ -413,14 +582,34 @@ class _ProfileTabState extends State<ProfileTab> {
           const Divider(height: 1, color: AppColors.border),
           const SizedBox(height: 14),
 
-          // Milestone Achievement Badges
+          // Milestone Achievement Badges (Real Unlocked Status)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildMilestoneBadge(Icons.spa_rounded, AppColors.growthAccent, 'Mindful Pioneer'),
-              _buildMilestoneBadge(Icons.local_fire_department_rounded, AppColors.goldAccent, '7-Day Spark'),
-              _buildMilestoneBadge(Icons.mic_rounded, AppColors.healingAccent, 'Voice Master'),
-              _buildMilestoneBadge(Icons.dashboard_rounded, Colors.purpleAccent, 'Visionary'),
+              _buildMilestoneBadge(
+                icon: Icons.spa_rounded,
+                color: AppColors.growthAccent,
+                label: 'Pioneer',
+                isUnlocked: streak.totalListeningDays >= 1,
+              ),
+              _buildMilestoneBadge(
+                icon: Icons.local_fire_department_rounded,
+                color: AppColors.goldAccent,
+                label: '7-Day Spark',
+                isUnlocked: streak.longestStreak >= 7,
+              ),
+              _buildMilestoneBadge(
+                icon: Icons.mic_rounded,
+                color: AppColors.healingAccent,
+                label: 'Voice Master',
+                isUnlocked: appProvider.userRecordings.isNotEmpty,
+              ),
+              _buildMilestoneBadge(
+                icon: Icons.dashboard_rounded,
+                color: Colors.purpleAccent,
+                label: 'Visionary',
+                isUnlocked: appProvider.activeVisionBoard.blocks.isNotEmpty,
+              ),
             ],
           ),
         ],
@@ -428,22 +617,54 @@ class _ProfileTabState extends State<ProfileTab> {
     );
   }
 
-  Widget _buildMilestoneBadge(IconData icon, Color color, String label) {
+  Widget _buildMilestoneBadge({
+    required IconData icon,
+    required Color color,
+    required String label,
+    required bool isUnlocked,
+  }) {
+    final effectiveColor = isUnlocked ? color : AppColors.textMuted;
     return Column(
       children: [
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.12),
+            color: isUnlocked ? color.withOpacity(0.14) : AppColors.surfaceElevated,
             shape: BoxShape.circle,
-            border: Border.all(color: color.withOpacity(0.4), width: 1.5),
+            border: Border.all(
+              color: isUnlocked ? color.withOpacity(0.5) : AppColors.border,
+              width: 1.5,
+            ),
           ),
-          child: Icon(icon, color: color, size: 20),
+          child: Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.center,
+            children: [
+              Icon(icon, color: effectiveColor, size: 20),
+              if (!isUnlocked)
+                Positioned(
+                  bottom: -3,
+                  right: -3,
+                  child: Container(
+                    padding: const EdgeInsets.all(1.5),
+                    decoration: const BoxDecoration(
+                      color: AppColors.surface,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.lock_rounded, size: 8, color: AppColors.textMuted),
+                  ),
+                ),
+            ],
+          ),
         ),
         const SizedBox(height: 4),
         Text(
           label,
-          style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+          style: GoogleFonts.inter(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            color: isUnlocked ? AppColors.textSecondary : AppColors.textMuted,
+          ),
         ),
       ],
     );
@@ -688,6 +909,13 @@ class _ProfileTabState extends State<ProfileTab> {
           },
         ),
         _buildSettingTile(
+          icon: Icons.workspace_premium_rounded,
+          title: appProvider.isPremium
+              ? 'AVAN Unlimited Status: Active ✨'
+              : 'Unlock AVAN Unlimited (7-Day Trial) 💎',
+          onTap: () => PaywallScreen.open(context),
+        ),
+        _buildSettingTile(
           icon: Icons.notifications_none_rounded,
           title: 'Daily Reminders & Notifications ⏰',
           onTap: () => _showRemindersModal(context),
@@ -698,9 +926,16 @@ class _ProfileTabState extends State<ProfileTab> {
           onTap: () => _showAudioSettingsModal(context),
         ),
         _buildSettingTile(
-          icon: Icons.cloud_done_outlined,
-          title: 'Cloud Sync & Multi-Device Backup ☁️',
-          onTap: () => _showCloudSyncDialog(context, appProvider),
+          icon: appProvider.isSignedIn ? Icons.cloud_done_rounded : Icons.cloud_outlined,
+          title: appProvider.isSignedIn
+              ? 'Cloud Vault & Sync Active ☁️'
+              : 'Sign in with Google / Cloud Sync ☁️',
+          subtitle: appProvider.isSignedIn
+              ? (appProvider.lastSyncTime != null
+                  ? 'Last backup saved • Tap to manage'
+                  : 'Secured with ${appProvider.userEmail.isNotEmpty ? appProvider.userEmail : "Google"}')
+              : 'Tap to connect Google & secure streak',
+          onTap: () => _showCloudVaultModal(context, appProvider),
         ),
         _buildSettingTile(
           icon: Icons.widgets_outlined,
@@ -712,6 +947,24 @@ class _ProfileTabState extends State<ProfileTab> {
             );
           },
         ),
+        _buildSettingTile(
+          icon: Icons.privacy_tip_outlined,
+          title: 'Privacy Policy 🛡️',
+          onTap: () => _showPrivacyPolicyModal(context),
+        ),
+        _buildSettingTile(
+          icon: Icons.description_outlined,
+          title: 'Terms of Service 📜',
+          onTap: () => _showTermsOfServiceModal(context),
+        ),
+        if (appProvider.isSignedIn)
+          _buildSettingTile(
+            icon: Icons.delete_forever_rounded,
+            title: 'Delete Account & Wipe Cloud Vault ⚠️',
+            subtitle: 'Permanently remove cloud vault and linked Google account',
+            isDestructive: true,
+            onTap: () => _showDeleteAccountDialog(context, appProvider),
+          ),
         _buildSettingTile(
           icon: Icons.restart_alt_rounded,
           title: 'Reset App & Clear All Memory 🔄',
@@ -725,6 +978,7 @@ class _ProfileTabState extends State<ProfileTab> {
   Widget _buildSettingTile({
     required IconData icon,
     required String title,
+    String? subtitle,
     required VoidCallback onTap,
     bool isDestructive = false,
   }) {
@@ -738,13 +992,28 @@ class _ProfileTabState extends State<ProfileTab> {
             Icon(icon, size: 20, color: isDestructive ? Colors.redAccent : AppColors.textSecondary),
             const SizedBox(width: 14),
             Expanded(
-              child: Text(
-                title,
-                style: GoogleFonts.inter(
-                  fontWeight: FontWeight.w500,
-                  fontSize: 14,
-                  color: isDestructive ? Colors.redAccent : AppColors.textPrimary,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14,
+                      color: isDestructive ? Colors.redAccent : AppColors.textPrimary,
+                    ),
+                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        color: isDestructive ? Colors.redAccent.withOpacity(0.8) : AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
             const Icon(Icons.arrow_forward_ios_rounded, size: 12, color: AppColors.textSecondary),
@@ -811,51 +1080,474 @@ class _ProfileTabState extends State<ProfileTab> {
     );
   }
 
-  void _showCloudSyncDialog(BuildContext context, AppProvider appProvider) {
+  void _showCloudVaultModal(BuildContext context, AppProvider appProvider) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.surfaceElevated,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          final isSyncing = appProvider.isSyncing;
+          final isSignedIn = appProvider.isSignedIn;
+          final lastSync = appProvider.lastSyncTime;
+          final accent = AppColors.accentForMode(appProvider.isGrowthMode);
+
+          String lastSyncStr = 'Not synced yet';
+          if (lastSync != null) {
+            final now = DateTime.now();
+            final diff = now.difference(lastSync);
+            if (diff.inMinutes < 1) {
+              lastSyncStr = 'Just now';
+            } else if (diff.inHours < 1) {
+              lastSyncStr = '${diff.inMinutes}m ago';
+            } else if (diff.inDays < 1) {
+              lastSyncStr = '${diff.inHours}h ago';
+            } else {
+              lastSyncStr = '${lastSync.month}/${lastSync.day} at ${lastSync.hour.toString().padLeft(2, '0')}:${lastSync.minute.toString().padLeft(2, '0')}';
+            }
+          }
+
+          return SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Drag Handle
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.border,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+
+                  // Header
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: AppColors.goldAccent.withOpacity(0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.cloud_sync_rounded, color: AppColors.goldAccent, size: 22),
+                      ),
+                      const SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Cloud Vault & Sync',
+                            style: GoogleFonts.cormorantGaramond(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              fontStyle: FontStyle.italic,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          Text(
+                            isSignedIn ? 'Linked & Protected ☁️' : 'Optional Multi-Device Backup',
+                            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Privacy Assurance Box
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E2429),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.greenAccent.withOpacity(0.2)),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Icon(Icons.shield_outlined, color: Colors.greenAccent, size: 20),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Zero Voice-Leak Guarantee: Your audio recordings from "Say After Me" remain 100% on this device. We only secure your streak count, journals, vision boards, and favorites.',
+                            style: TextStyle(fontSize: 11.5, color: Colors.white70, height: 1.4),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  if (!isSignedIn) ...[
+                    // Benefits list
+                    _buildSyncBenefitRow(
+                      icon: Icons.local_fire_department_rounded,
+                      color: Colors.orangeAccent,
+                      title: 'Protect Your Streak & Badges',
+                      desc: 'Switch phones or reinstall without resetting your consistency.',
+                    ),
+                    const SizedBox(height: 12),
+                    _buildSyncBenefitRow(
+                      icon: Icons.menu_book_rounded,
+                      color: Colors.cyanAccent,
+                      title: 'Private Journal Backup',
+                      desc: 'Save your daily mindful reflections and emotional insights.',
+                    ),
+                    const SizedBox(height: 12),
+                    _buildSyncBenefitRow(
+                      icon: Icons.auto_awesome_rounded,
+                      color: AppColors.goldAccent,
+                      title: 'Vision Boards & Intentions',
+                      desc: 'Preserve your dream boards, goals, and personalized vectors.',
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Google Sign In Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: ElevatedButton(
+                        onPressed: isSyncing
+                            ? null
+                            : () async {
+                                setModalState(() {});
+                                final ok = await appProvider.signInWithGoogle();
+                                if (context.mounted) {
+                                  Navigator.pop(ctx);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        ok
+                                            ? 'Connected with Google! Cloud Vault is active ☁️✨'
+                                            : 'Google Sign-In cancelled or failed.',
+                                      ),
+                                      behavior: SnackBarBehavior.floating,
+                                    ),
+                                  );
+                                }
+                              },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: Colors.black87,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          elevation: 2,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.account_circle_rounded, color: Color(0xFF4285F4), size: 24),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Continue with Google',
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Center(
+                      child: Text(
+                        'No password needed. AVAN will never post or share your data.',
+                        style: GoogleFonts.inter(fontSize: 10.5, color: AppColors.textMuted),
+                      ),
+                    ),
+                  ] else ...[
+                    // Signed In Account Details
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 20,
+                                backgroundColor: accent.withOpacity(0.2),
+                                backgroundImage: (appProvider.userPhotoUrl != null && appProvider.userPhotoUrl!.isNotEmpty)
+                                    ? NetworkImage(appProvider.userPhotoUrl!)
+                                    : null,
+                                child: (appProvider.userPhotoUrl == null || appProvider.userPhotoUrl!.isEmpty)
+                                    ? Text(
+                                        appProvider.userName.isNotEmpty ? appProvider.userName[0].toUpperCase() : 'G',
+                                        style: TextStyle(fontWeight: FontWeight.bold, color: accent),
+                                      )
+                                    : null,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      appProvider.userName,
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    Text(
+                                      appProvider.userEmail,
+                                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.greenAccent.withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.greenAccent.withOpacity(0.3)),
+                                ),
+                                child: const Text(
+                                  'ACTIVE',
+                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.greenAccent),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          const Divider(height: 1, color: AppColors.border),
+                          const SizedBox(height: 10),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('Last Synced', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                              Text(lastSyncStr, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Sync & Restore Action Buttons
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: isSyncing
+                                ? null
+                                : () async {
+                                    final ok = await appProvider.syncToCloud();
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            ok ? 'Cloud Vault updated successfully! ☁️✨' : 'Sync failed. Please check connection.',
+                                          ),
+                                          behavior: SnackBarBehavior.floating,
+                                        ),
+                                      );
+                                    }
+                                  },
+                            icon: isSyncing
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                  )
+                                : const Icon(Icons.cloud_upload_outlined, size: 18),
+                            label: Text(isSyncing ? 'Syncing...' : 'Sync Now'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.buttonDark,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: isSyncing
+                                ? null
+                                : () async {
+                                    final confirm = await showDialog<bool>(
+                                      context: context,
+                                      builder: (alertCtx) => AlertDialog(
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                        title: const Text('Restore from Cloud?'),
+                                        content: const Text(
+                                          'This will replace your current on-device streak, journals, and vision boards with the version saved in your Cloud Vault.',
+                                          style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(alertCtx, false),
+                                            child: const Text('Cancel'),
+                                          ),
+                                          ElevatedButton(
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: AppColors.buttonDark,
+                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                            ),
+                                            onPressed: () => Navigator.pop(alertCtx, true),
+                                            child: const Text('Restore Now', style: TextStyle(color: Colors.white)),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+
+                                    if (confirm == true) {
+                                      final ok = await appProvider.restoreFromCloud();
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              ok ? 'Data restored from Cloud Vault! 🚀' : 'Restore failed.',
+                                            ),
+                                            behavior: SnackBarBehavior.floating,
+                                          ),
+                                        );
+                                      }
+                                    }
+                                  },
+                            icon: const Icon(Icons.cloud_download_outlined, size: 18),
+                            label: const Text('Restore'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.textPrimary,
+                              side: const BorderSide(color: AppColors.border),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Sign Out Button
+                    Center(
+                      child: TextButton.icon(
+                        onPressed: () async {
+                          await appProvider.signOut();
+                          if (context.mounted) {
+                            Navigator.pop(ctx);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Signed out of Google. Switched back to guest mode.'),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        },
+                        icon: const Icon(Icons.logout_rounded, size: 16, color: AppColors.textSecondary),
+                        label: const Text('Sign Out & Return to Guest Mode', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSyncBenefitRow({
+    required IconData icon,
+    required Color color,
+    required String title,
+    required String desc,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, color: color, size: 18),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                desc,
+                style: const TextStyle(fontSize: 11.5, color: AppColors.textSecondary, height: 1.3),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showDeleteAccountDialog(BuildContext context, AppProvider appProvider) {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (dialogCtx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Row(
           children: const [
-            Icon(Icons.shield_rounded, color: AppColors.goldAccent),
+            Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 24),
             SizedBox(width: 8),
-            Text('Data Vault & Auto-Backup', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Text('Delete Account Forever?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           ],
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              appProvider.isCloudSyncEnabled
-                  ? 'Your journal entries, streak progress, and vision boards are safely preserved in your encrypted on-device data vault.'
-                  : 'Enable automated local backups to ensure your progress, journals, and vision boards are safely preserved on this device. (Multi-device cloud sync coming in v2).',
-              style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4),
-            ),
-          ],
+        content: const Text(
+          'This will permanently delete your AVAN account and wipe all cloud-saved records (streaks, journals, vision boards) from Firestore.\n\nThis action is irreversible and compliant with Google Play data safety regulations.',
+          style: TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.45),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+          ),
           ElevatedButton(
-            onPressed: () {
-              appProvider.setCloudSync(!appProvider.isCloudSyncEnabled);
-              Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(appProvider.isCloudSyncEnabled ? 'Auto-Backup Paused' : 'Local Vault Backup Active! 💾✨'),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            },
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.buttonDark,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              backgroundColor: Colors.redAccent,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            child: Text(
-              appProvider.isCloudSyncEnabled ? 'Pause Backup' : 'Enable Backup',
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-            ),
+            onPressed: () async {
+              Navigator.pop(dialogCtx);
+              final ok = await appProvider.deleteAccount();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      ok
+                          ? 'Account and Cloud Vault permanently deleted.'
+                          : 'Failed to delete account. Please try again or re-login.',
+                    ),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+            },
+            child: const Text('Delete Everything', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -1047,6 +1739,150 @@ class _ProfileTabState extends State<ProfileTab> {
             Text(question, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary)),
             const SizedBox(height: 4),
             Text(answer, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.4)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showPrivacyPolicyModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.85,
+        maxChildSize: 0.95,
+        minChildSize: 0.5,
+        expand: false,
+        builder: (_, scrollCtrl) => Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFF13131D),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          padding: const EdgeInsets.fromLTRB(22, 16, 22, 28),
+          child: ListView(
+            controller: scrollCtrl,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: const [
+                  Icon(Icons.privacy_tip_rounded, color: AppColors.goldAccent, size: 24),
+                  SizedBox(width: 10),
+                  Text('Privacy Policy 🛡️', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                ],
+              ),
+              const SizedBox(height: 14),
+              _buildPolicySection(
+                title: '1. On-Device Voice & Audio Privacy',
+                content: 'All personal voice recordings created in My Voice Studio and microphone data used during Say After Me speech practice remain 100% on your local device. AVAN does not upload, stream, analyze on remote servers, or sell your audio recordings or biometric voiceprints to any third parties.',
+              ),
+              _buildPolicySection(
+                title: '2. Personalization & Vector Storage',
+                content: 'Your archetype preferences, emotional baseline inputs, custom vision boards, reflections, and streak statistics are stored securely in local app sandbox storage. If you enable Cloud Sync, data is encrypted in transit and at rest.',
+              ),
+              _buildPolicySection(
+                title: '3. In-App Purchases & Subscriptions',
+                content: 'All financial transactions and subscription lifecycles are processed directly by Google Play Store (Google Play Billing) or Apple App Store (StoreKit). AVAN never sees, processes, or stores your credit card or banking details. Subscriptions can be managed or canceled anytime in your device store settings.',
+              ),
+              _buildPolicySection(
+                title: '4. Permissions Explained',
+                content: '• Microphone (RECORD_AUDIO): Requested only when you intentionally record affirmations or practice speech pronunciation.\n• Audio Settings (MODIFY_AUDIO_SETTINGS): Used to optimize background ambient Solfeggio soundscape mixing during playback.',
+              ),
+              _buildPolicySection(
+                title: '5. Contact & Data Rights',
+                content: 'You can erase all stored data anytime using the "Reset App & Clear All Memory" button in Settings. For privacy inquiries or data requests, contact privacy@avanapp.com.',
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showTermsOfServiceModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.85,
+        maxChildSize: 0.95,
+        minChildSize: 0.5,
+        expand: false,
+        builder: (_, scrollCtrl) => Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFF13131D),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          padding: const EdgeInsets.fromLTRB(22, 16, 22, 28),
+          child: ListView(
+            controller: scrollCtrl,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: const [
+                  Icon(Icons.description_rounded, color: AppColors.goldAccent, size: 24),
+                  SizedBox(width: 10),
+                  Text('Terms of Service 📜', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                ],
+              ),
+              const SizedBox(height: 14),
+              _buildPolicySection(
+                title: '1. Mindset & Wellness Sanctuary',
+                content: 'AVAN is an affirmation, mindfulness, and neuroplastic mindset tool designed for personal wellness and habit formation. It does not provide medical diagnosis, clinical psychiatric care, or psychotherapy.',
+              ),
+              _buildPolicySection(
+                title: '2. Subscriptions & 7-Day Free Trial',
+                content: 'The AVAN Annual Membership includes a 7-day free trial. If not canceled at least 24 hours before the trial ends, your Google Play / Apple ID account will be billed for the annual subscription. Monthly subscriptions renew automatically each month until canceled.',
+              ),
+              _buildPolicySection(
+                title: '3. Intellectual Property',
+                content: 'Curated playlists, Solfeggio soundscape synthesis algorithms, and visual designs are the proprietary assets of AVAN. You retain full ownership of any original personal affirmations, vision board images, and voice recordings you create.',
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPolicySection({required String title, required String content}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14.0),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceElevated,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.goldAccent)),
+            const SizedBox(height: 6),
+            Text(content, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.45)),
           ],
         ),
       ),

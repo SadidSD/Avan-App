@@ -1,4 +1,10 @@
+import 'dart:io';
+import 'dart:convert';
+import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/affirmation.dart';
 import '../models/journal_entry.dart';
 import '../models/playlist.dart';
@@ -9,20 +15,31 @@ import '../models/user_recording.dart';
 import '../models/vision_board.dart';
 import '../services/storage_service.dart';
 import '../services/personalization_engine.dart';
+import '../services/widget_service.dart';
+import '../services/purchase_service.dart';
+import '../services/auth_service.dart';
+import '../services/cloud_sync_service.dart';
+import '../services/adapty_service.dart';
 import '../data/playlists_data.dart' as playlists_data;
 
 enum AppMode { growth, healing, auto }
 
 class AppProvider with ChangeNotifier {
   final StorageService _storageService = StorageService();
+  final AuthService _authService = AuthService();
+  final CloudSyncService _cloudSyncService = CloudSyncService();
 
-  bool _isPremium = true;
+  StreamSubscription<User?>? _authSubscription;
+  bool _isSyncing = false;
+  DateTime? _lastSyncTime;
+
+  bool _isPremium = false;
   bool _isOnboardingCompleted = false;
   bool _isInitialized = false;
   int _currentNavIndex = 0;
 
-  String _userName = 'Alex';
-  String _userEmail = 'alex@email.com';
+  String _userName = 'Friend';
+  String _userEmail = '';
   bool _isCloudSyncEnabled = false;
 
   String _userTypedChallenge = '';
@@ -54,7 +71,26 @@ class AppProvider with ChangeNotifier {
   );
   List<VisionBoard> _savedBoards = [];
 
-  bool get isPremium => true;
+  // Performance optimization: Memoized personalization results
+  List<PlaylistMatch>? _cachedPersonalizedPlaylists;
+  String? _cachedPersonalizedPlaylistsKey;
+
+  Playlist? _cachedSituationalPlaylist;
+  String? _cachedSituationalPlaylistKey;
+
+  Affirmation? _cachedHeroAffirmation;
+  String? _cachedHeroAffirmationKey;
+
+  void _invalidatePersonalizationCache() {
+    _cachedPersonalizedPlaylists = null;
+    _cachedPersonalizedPlaylistsKey = null;
+    _cachedSituationalPlaylist = null;
+    _cachedSituationalPlaylistKey = null;
+    _cachedHeroAffirmation = null;
+    _cachedHeroAffirmationKey = null;
+  }
+
+  bool get isPremium => _isPremium;
   bool get isOnboardingCompleted => _isOnboardingCompleted;
   bool get isInitialized => _isInitialized;
   int get currentNavIndex => _currentNavIndex;
@@ -95,7 +131,17 @@ class AppProvider with ChangeNotifier {
   StreakData get streakData => _streakData;
   List<JournalEntry> get journalEntries => _journalEntries;
   List<String> get favoriteAffirmations => _favoriteAffirmations;
+  List<String> get favorites => _favoriteAffirmations;
   List<UserRecording> get userRecordings => _userRecordings;
+
+  StorageService get storageService => _storageService;
+  AuthService get authService => _authService;
+  CloudSyncService get cloudSyncService => _cloudSyncService;
+  AdaptyService get adaptyService => AdaptyService();
+  bool get isSignedIn => _authService.isSignedIn;
+  String? get userPhotoUrl => _authService.photoUrl;
+  bool get isSyncing => _isSyncing;
+  DateTime? get lastSyncTime => _lastSyncTime;
 
   Future<void>? _loadStateFuture;
 
@@ -103,7 +149,16 @@ class AppProvider with ChangeNotifier {
     loadState();
   }
 
-  Future<void> loadState() {
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    super.dispose();
+  }
+
+  Future<void> loadState({bool forceReload = false}) {
+    if (forceReload) {
+      _loadStateFuture = null;
+    }
     _loadStateFuture ??= _loadStateInternal();
     return _loadStateFuture!;
   }
@@ -113,9 +168,21 @@ class AppProvider with ChangeNotifier {
 
     _isOnboardingCompleted = _storageService.getOnboardingStatus();
     _isPremium = _storageService.getPremiumStatus();
+
+    // Bind real-time store subscription updates
+    PurchaseService().initialize((isPremium) {
+      setPremium(isPremium);
+    });
+
+    // Bind real-time Adapty subscription entitlement updates
+    AdaptyService().initialize((isPremium) {
+      if (isPremium) {
+        setPremium(true);
+      }
+    });
     
-    _userName = _storageService.getString('user_name', defaultValue: 'Alex');
-    _userEmail = _storageService.getString('user_email', defaultValue: 'alex@email.com');
+    _userName = _storageService.getString('user_name', defaultValue: 'Friend');
+    _userEmail = _storageService.getString('user_email', defaultValue: '');
     _isCloudSyncEnabled = _storageService.getBool('cloud_sync_enabled', defaultValue: false);
 
     final modeStr = _storageService.getAppMode();
@@ -163,15 +230,43 @@ class AppProvider with ChangeNotifier {
     _favoriteAffirmations = _storageService.getFavoriteAffirmations();
     _userRecordings = _storageService.getUserRecordings();
     _activeVisionBoard = _storageService.getActiveVisionBoard();
+    final demoIds = {'gb_1', 'gb_2', 'gb_3', 'gb_4', 'gb_5', 'gb_6', 'gb_7', 'gb_8'};
+    if (_activeVisionBoard.blocks.any((b) => demoIds.contains(b.id))) {
+      _activeVisionBoard = _activeVisionBoard.copyWith(
+        blocks: _activeVisionBoard.blocks.where((b) => !demoIds.contains(b.id)).toList(),
+      );
+      _storageService.saveActiveVisionBoard(_activeVisionBoard);
+    }
     _savedBoards = _storageService.getSavedVisionBoards();
 
+    final lastSyncStr = _storageService.getString('last_sync_time');
+    if (lastSyncStr.isNotEmpty) {
+      _lastSyncTime = DateTime.tryParse(lastSyncStr);
+    }
+
+    _authSubscription ??= _authService.authStateChanges.listen((user) async {
+      if (user != null) {
+        if (user.displayName != null && user.displayName!.isNotEmpty && _userName == 'Friend') {
+          _userName = user.displayName!;
+          await _storageService.setString('user_name', _userName);
+        }
+        if (user.email != null && user.email!.isNotEmpty && _userEmail.isEmpty) {
+          _userEmail = user.email!;
+          await _storageService.setString('user_email', _userEmail);
+        }
+      }
+      notifyListeners();
+    });
+
     _isInitialized = true;
+    _invalidatePersonalizationCache();
+    syncNativeWidgets();
     notifyListeners();
   }
 
   Future<void> updateProfile({required String name, required String email}) async {
-    _userName = name.trim().isNotEmpty ? name.trim() : 'Alex';
-    _userEmail = email.trim().isNotEmpty ? email.trim() : 'alex@email.com';
+    _userName = name.trim().isNotEmpty ? name.trim() : 'Friend';
+    _userEmail = email.trim();
     await _storageService.setString('user_name', _userName);
     await _storageService.setString('user_email', _userEmail);
     notifyListeners();
@@ -181,6 +276,121 @@ class AppProvider with ChangeNotifier {
     _isCloudSyncEnabled = enabled;
     await _storageService.setBool('cloud_sync_enabled', enabled);
     notifyListeners();
+  }
+
+  // ===========================================================================
+  // GOOGLE AUTH & CLOUD VAULT SYNC
+  // ===========================================================================
+
+  /// Initiates Google Sign-In and auto-syncs local data into user's Cloud Vault.
+  Future<bool> signInWithGoogle() async {
+    try {
+      final userCred = await _authService.signInWithGoogle();
+      if (userCred == null || userCred.user == null) {
+        return false;
+      }
+      final user = userCred.user!;
+      if (user.displayName != null && user.displayName!.isNotEmpty) {
+        _userName = user.displayName!;
+        await _storageService.setString('user_name', _userName);
+      }
+      if (user.email != null && user.email!.isNotEmpty) {
+        _userEmail = user.email!;
+        await _storageService.setString('user_email', _userEmail);
+      }
+
+      _isCloudSyncEnabled = true;
+      await _storageService.setBool('cloud_sync_enabled', true);
+
+      // Identify user in Adapty with Firebase UID for cross-platform subscriber analytics
+      await AdaptyService().identifyUser(user.uid);
+
+      // Perform initial cloud backup
+      await syncToCloud();
+
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('[AppProvider] signInWithGoogle error: $e');
+      return false;
+    }
+  }
+
+  /// Signs out of Google and Firebase, returning to local guest mode.
+  Future<void> signOut() async {
+    await _authService.signOut();
+    await AdaptyService().logoutUser();
+    _isCloudSyncEnabled = false;
+    await _storageService.setBool('cloud_sync_enabled', false);
+    notifyListeners();
+  }
+
+  /// Permanently deletes user account from Firebase and wipes Cloud Vault (Google Play compliance).
+  Future<bool> deleteAccount() async {
+    try {
+      final uid = _authService.userId;
+      if (uid != null) {
+        await _cloudSyncService.deleteCloudVault(uid);
+      }
+      final success = await _authService.deleteAccount();
+      _isCloudSyncEnabled = false;
+      await _storageService.setBool('cloud_sync_enabled', false);
+      notifyListeners();
+      return success;
+    } catch (e) {
+      debugPrint('[AppProvider] deleteAccount error: $e');
+      return false;
+    }
+  }
+
+  /// Synchronizes local progress, journals, streaks, and vision boards to Cloud Firestore.
+  Future<bool> syncToCloud() async {
+    final uid = _authService.userId;
+    if (uid == null) return false;
+
+    _isSyncing = true;
+    notifyListeners();
+
+    try {
+      final success = await _cloudSyncService.uploadLocalToCloud(
+        userId: uid,
+        appProvider: this,
+      );
+
+      if (success) {
+        _lastSyncTime = DateTime.now();
+        await _storageService.setString('last_sync_time', _lastSyncTime!.toIso8601String());
+      }
+      return success;
+    } finally {
+      _isSyncing = false;
+      notifyListeners();
+    }
+  }
+
+  /// Restores progress from Cloud Firestore onto this local device.
+  Future<bool> restoreFromCloud() async {
+    final uid = _authService.userId;
+    if (uid == null) return false;
+
+    _isSyncing = true;
+    notifyListeners();
+
+    try {
+      final success = await _cloudSyncService.restoreCloudToLocal(
+        userId: uid,
+        appProvider: this,
+      );
+
+      if (success) {
+        _lastSyncTime = DateTime.now();
+        await _storageService.setString('last_sync_time', _lastSyncTime!.toIso8601String());
+      }
+      return success;
+    } finally {
+      _isSyncing = false;
+      notifyListeners();
+    }
   }
 
   void _initializeVectorFromSurvey() {
@@ -277,35 +487,56 @@ class AppProvider with ChangeNotifier {
     );
   }
 
-  /// Returns the top hero affirmation for today
+  /// Returns the top hero affirmation for today (memoized)
   Affirmation getHeroAffirmation() {
+    final key = '${_userProfileVector.hashCode}_${isGrowthMode}_${_selectedMood}_${_lastListenedTimestamps.length}';
+    if (_cachedHeroAffirmation != null && _cachedHeroAffirmationKey == key) {
+      return _cachedHeroAffirmation!;
+    }
     final pool = getAllGlobalAffirmations();
-    return PersonalizationEngine.getHeroAffirmation(
+    _cachedHeroAffirmation = PersonalizationEngine.getHeroAffirmation(
       profile: _userProfileVector,
       pool: pool,
       isGrowthMode: isGrowthMode,
       mood: _selectedMood,
+      lastListenedTimestamps: _lastListenedTimestamps,
     );
+    _cachedHeroAffirmationKey = key;
+    return _cachedHeroAffirmation!;
   }
 
-  /// Returns a situational dynamic playlist tailored to the user's primary archetype & state
+  /// Returns a situational dynamic playlist tailored to the user's primary archetype & state (memoized)
   Playlist getSituationalPlaylist() {
+    final key = '${_userProfileVector.hashCode}_${isGrowthMode}_${_selectedMood}_${_lastListenedTimestamps.length}';
+    if (_cachedSituationalPlaylist != null && _cachedSituationalPlaylistKey == key) {
+      return _cachedSituationalPlaylist!;
+    }
     final pool = getAllGlobalAffirmations();
-    return PersonalizationEngine.generateSituationalPlaylist(
+    _cachedSituationalPlaylist = PersonalizationEngine.generateSituationalPlaylist(
       profile: _userProfileVector,
       pool: pool,
       isGrowthMode: isGrowthMode,
+      mood: _selectedMood,
+      lastListenedTimestamps: _lastListenedTimestamps,
     );
+    _cachedSituationalPlaylistKey = key;
+    return _cachedSituationalPlaylist!;
   }
 
-  /// Returns the ranked list of personalized playlists for the current user vector and mode
+  /// Returns the ranked list of personalized playlists for the current user vector and mode (memoized)
   List<PlaylistMatch> getPersonalizedPlaylists() {
-    return PersonalizationEngine.rankPlaylists(
+    final key = '${_userProfileVector.hashCode}_${isGrowthMode}_$_selectedMood';
+    if (_cachedPersonalizedPlaylists != null && _cachedPersonalizedPlaylistsKey == key) {
+      return _cachedPersonalizedPlaylists!;
+    }
+    _cachedPersonalizedPlaylists = PersonalizationEngine.rankPlaylists(
       profile: _userProfileVector,
       playlists: playlists_data.allPlaylists,
       isGrowthMode: isGrowthMode,
       mood: _selectedMood,
     );
+    _cachedPersonalizedPlaylistsKey = key;
+    return _cachedPersonalizedPlaylists!;
   }
 
   /// Adapts any playlist specifically for the active user: prunes habituated quotes and sequences
@@ -316,6 +547,20 @@ class AppProvider with ChangeNotifier {
       lastListenedTimestamps: _lastListenedTimestamps,
       isGrowthMode: isGrowthMode,
     );
+  }
+
+  /// Synchronizes current hero affirmation, streak, and preferences with native OS widgets
+  Future<void> syncNativeWidgets() async {
+    try {
+      final hero = getHeroAffirmation();
+      await WidgetService.instance.updateWidgets(
+        affirmation: hero,
+        streakDays: _streakData.currentStreak,
+        mood: _selectedMood.isNotEmpty ? _selectedMood : 'Peaceful',
+      );
+    } catch (e) {
+      debugPrint('[AppProvider] syncNativeWidgets error: $e');
+    }
   }
 
   Future<void> setUserArchetypeProfile({
@@ -398,6 +643,7 @@ class AppProvider with ChangeNotifier {
         : (subLevels.isNotEmpty ? subLevels.first : primaryMeta.shortDescription);
     _selectedVision = _userTypedAspiration.isNotEmpty ? _userTypedAspiration : tone.name;
     _selectedCommitment = 'Daily Routine';
+    _invalidatePersonalizationCache();
     await _storageService.setSurveyAnswers(
         _selectedGoal, _selectedChallenge, _selectedVision, _selectedCommitment);
 
@@ -416,8 +662,10 @@ class AppProvider with ChangeNotifier {
 
   Future<void> setAppMode(AppMode mode) async {
     _appModeSetting = mode;
+    _invalidatePersonalizationCache();
     final modeStr = mode == AppMode.healing ? 'healing' : (mode == AppMode.auto ? 'auto' : 'growth');
     await _storageService.setAppMode(modeStr);
+    syncNativeWidgets();
     notifyListeners();
   }
 
@@ -427,7 +675,9 @@ class AppProvider with ChangeNotifier {
     } else {
       _selectedMood = mood;
     }
+    _invalidatePersonalizationCache();
     await _storageService.setSelectedMood(_selectedMood);
+    syncNativeWidgets();
     notifyListeners();
   }
 
@@ -464,6 +714,7 @@ class AppProvider with ChangeNotifier {
       _userProfileVector = vector;
       await _storageService.saveUserProfileVector(vector);
     }
+    _invalidatePersonalizationCache();
     await _storageService.setSurveyAnswers(goal, challenge, vision, commitment);
     notifyListeners();
   }
@@ -493,6 +744,7 @@ class AppProvider with ChangeNotifier {
   Future<void> incrementStreak() async {
     _streakData.incrementStreak(DateTime.now());
     await _storageService.saveStreakData(_streakData);
+    syncNativeWidgets();
     notifyListeners();
   }
 
@@ -518,6 +770,7 @@ class AppProvider with ChangeNotifier {
       );
       await _storageService.saveUserProfileVector(_userProfileVector);
     }
+    _invalidatePersonalizationCache();
     notifyListeners();
   }
 
@@ -537,6 +790,7 @@ class AppProvider with ChangeNotifier {
       );
       await _storageService.saveUserProfileVector(_userProfileVector);
     }
+    _invalidatePersonalizationCache();
     notifyListeners();
   }
 
@@ -565,6 +819,8 @@ class AppProvider with ChangeNotifier {
       );
     }
     await _storageService.saveUserProfileVector(_userProfileVector);
+    _invalidatePersonalizationCache();
+    syncNativeWidgets();
     notifyListeners();
   }
 
@@ -591,6 +847,7 @@ class AppProvider with ChangeNotifier {
         await _storageService.saveUserProfileVector(_userProfileVector);
       }
     }
+    _invalidatePersonalizationCache();
     await _storageService.setFavoriteAffirmations(_favoriteAffirmations);
     notifyListeners();
   }
@@ -638,6 +895,25 @@ class AppProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  int getTemplateTargetCount(String template) {
+    switch (template) {
+      case 'Single Hero':
+        return 1;
+      case '2 Blocks':
+        return 2;
+      case '4 Blocks':
+        return 4;
+      case '6 Blocks':
+        return 6;
+      case '8 Blocks':
+        return 8;
+      case 'Minimal Layout':
+        return 4;
+      default:
+        return 4;
+    }
+  }
+
   Future<void> setActiveTemplate(String template) async {
     _activeVisionBoard = _activeVisionBoard.copyWith(
       template: template,
@@ -649,7 +925,17 @@ class AppProvider with ChangeNotifier {
 
   Future<void> addGoalBlock(GoalBlock block) async {
     final updatedBlocks = List<GoalBlock>.from(_activeVisionBoard.blocks)..add(block);
+    String currentTemplate = _activeVisionBoard.template;
+    final currentCapacity = getTemplateTargetCount(currentTemplate);
+    if (updatedBlocks.length > currentCapacity) {
+      if (updatedBlocks.length <= 6) {
+        currentTemplate = '6 Blocks';
+      } else {
+        currentTemplate = '8 Blocks';
+      }
+    }
     _activeVisionBoard = _activeVisionBoard.copyWith(
+      template: currentTemplate,
       blocks: updatedBlocks,
       lastModified: DateTime.now(),
     );
@@ -719,8 +1005,78 @@ class AppProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> reorderGoalBlocks(int oldIndex, int newIndex) async {
+    if (oldIndex < 0 || oldIndex >= _activeVisionBoard.blocks.length) return;
+    if (newIndex < 0 || newIndex >= _activeVisionBoard.blocks.length) return;
+    if (oldIndex == newIndex) return;
+
+    final updatedBlocks = List<GoalBlock>.from(_activeVisionBoard.blocks);
+    final item = updatedBlocks.removeAt(oldIndex);
+    updatedBlocks.insert(newIndex, item);
+
+    _activeVisionBoard = _activeVisionBoard.copyWith(
+      blocks: updatedBlocks,
+      lastModified: DateTime.now(),
+    );
+    await _storageService.saveActiveVisionBoard(_activeVisionBoard);
+    notifyListeners();
+  }
+
+  Future<void> toggleGoalManifested(String id) async {
+    final index = _activeVisionBoard.blocks.indexWhere((b) => b.id == id);
+    if (index != -1) {
+      final updatedBlocks = List<GoalBlock>.from(_activeVisionBoard.blocks);
+      final current = updatedBlocks[index];
+      updatedBlocks[index] = current.copyWith(isManifested: !current.isManifested);
+      _activeVisionBoard = _activeVisionBoard.copyWith(
+        blocks: updatedBlocks,
+        lastModified: DateTime.now(),
+      );
+      await _storageService.saveActiveVisionBoard(_activeVisionBoard);
+      notifyListeners();
+    }
+  }
+
+  Future<String> saveCustomGoalImage(XFile file) async {
+    try {
+      if (kIsWeb) {
+        final bytes = await file.readAsBytes();
+        final base64Str = base64Encode(bytes);
+        return 'data:image/jpeg;base64,$base64Str';
+      } else {
+        final dir = await getApplicationDocumentsDirectory();
+        final visionDir = Directory('${dir.path}/vision_images');
+        if (!await visionDir.exists()) {
+          await visionDir.create(recursive: true);
+        }
+        final ext = file.name.split('.').last;
+        final targetPath = '${visionDir.path}/img_${DateTime.now().millisecondsSinceEpoch}.$ext';
+        final savedFile = await File(targetPath).writeAsBytes(await file.readAsBytes());
+        return savedFile.path;
+      }
+    } catch (e) {
+      debugPrint("Error saving custom goal image persistently: $e");
+      return file.path;
+    }
+  }
+
   Future<void> deleteSavedBoard(String id) async {
     _savedBoards.removeWhere((b) => b.id == id);
+    await _storageService.saveVisionBoards(_savedBoards);
+    notifyListeners();
+  }
+
+  Future<void> duplicateSavedBoard(String id) async {
+    final board = _savedBoards.firstWhere((b) => b.id == id, orElse: () => _activeVisionBoard);
+    final dup = VisionBoard(
+      id: 'board_${DateTime.now().millisecondsSinceEpoch}',
+      title: '${board.title} (Copy)',
+      template: board.template,
+      createdAt: DateTime.now(),
+      lastModified: DateTime.now(),
+      blocks: List<GoalBlock>.from(board.blocks),
+    );
+    _savedBoards.insert(0, dup);
     await _storageService.saveVisionBoards(_savedBoards);
     notifyListeners();
   }
@@ -741,8 +1097,8 @@ class AppProvider with ChangeNotifier {
     await _storageService.clearAll();
     _isOnboardingCompleted = false;
     _isPremium = false;
-    _userName = 'Alex';
-    _userEmail = 'alex@email.com';
+    _userName = 'Friend';
+    _userEmail = '';
     _isCloudSyncEnabled = false;
     _favoriteAffirmations = [];
     _journalEntries = [];

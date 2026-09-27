@@ -9,6 +9,7 @@ class PlatformTts {
   Timer? _resumeKeepAliveTimer;
   List<html.SpeechSynthesisVoice>? _voices;
   VoidCallback? onComplete;
+  bool _isSpeaking = false;
 
   Future<void> init() async {
     try {
@@ -63,6 +64,7 @@ class PlatformTts {
         }
       }
 
+      _isSpeaking = true;
       _currentUtterance = utterance;
 
       utterance.onStart.listen((_) {
@@ -73,12 +75,16 @@ class PlatformTts {
       utterance.onEnd.listen((_) {
         debugPrint("Web TTS finished speaking: '$text'");
         _stopKeepAlive();
-        onComplete?.call();
+        if (_isSpeaking) {
+          _isSpeaking = false;
+          onComplete?.call();
+        }
       });
 
       utterance.onError.listen((e) {
         debugPrint("Web TTS Error event: $e");
         _stopKeepAlive();
+        _isSpeaking = false;
       });
 
       synth.speak(utterance);
@@ -109,7 +115,9 @@ class PlatformTts {
 
   Future<void> pause() async {
     try {
-      html.window.speechSynthesis?.pause();
+      _isSpeaking = false;
+      _stopKeepAlive();
+      html.window.speechSynthesis?.cancel();
     } catch (_) {}
   }
 
@@ -121,6 +129,7 @@ class PlatformTts {
 
   Future<void> stop() async {
     try {
+      _isSpeaking = false;
       _stopKeepAlive();
       html.window.speechSynthesis?.cancel();
     } catch (_) {}

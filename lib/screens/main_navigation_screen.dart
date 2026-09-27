@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
@@ -25,130 +26,146 @@ class MainNavigationScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final appProvider = Provider.of<AppProvider>(context);
-    final int currentIndex =
+    final currentIndex =
         appProvider.currentNavIndex > 4 ? 0 : appProvider.currentNavIndex;
-
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final isGrowth = appProvider.isGrowthMode;
+    final accent = AppColors.accentForMode(isGrowth);
 
     return Scaffold(
-      extendBody: true,
       backgroundColor: AppColors.background,
       body: Stack(
         children: [
+          // Selected tab content
           IndexedStack(
             index: currentIndex,
             children: _tabs,
           ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 85 + bottomPadding,
-            child: const AudioPlayerBar(),
+
+          // Floating mini-player above the nav bar
+          const Positioned(
+            left: 20,
+            right: 20,
+            bottom: 96,
+            child: AudioPlayerBar(),
           ),
+
+          // Custom floating bottom nav bar
           Positioned(
             left: 0,
             right: 0,
             bottom: 0,
-            child: _buildCustomNavBar(context, currentIndex, appProvider, bottomPadding),
+            child: _buildBottomNav(context, appProvider, currentIndex, accent, isGrowth),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildCustomNavBar(
-      BuildContext context, int currentIndex, AppProvider appProvider, double bottomPadding) {
-    final isGrowth = appProvider.isGrowthMode;
-    final accent = AppColors.accentForMode(isGrowth);
+  Widget _buildBottomNav(
+    BuildContext context,
+    AppProvider appProvider,
+    int currentIndex,
+    Color accent,
+    bool isGrowth,
+  ) {
+    final bool shouldBlur = !kIsWeb && defaultTargetPlatform != TargetPlatform.android;
 
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 14),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(40),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.08),
-                blurRadius: 24,
-                spreadRadius: 0,
-                offset: const Offset(0, 8),
-              ),
-              BoxShadow(
-                color: accent.withOpacity(0.06),
-                blurRadius: 16,
-                spreadRadius: -2,
-                offset: const Offset(0, 4),
-              ),
-            ],
+    Widget barContent = Container(
+      height: 64,
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      decoration: BoxDecoration(
+        color: AppColors.surface.withOpacity(shouldBlur ? 0.94 : 0.98),
+        borderRadius: BorderRadius.circular(40),
+        border: Border.all(
+          color: AppColors.border,
+          width: 1.0,
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _buildNavItem(
+            context: context,
+            index: 0,
+            currentIndex: currentIndex,
+            appProvider: appProvider,
+            icon: Icons.home_outlined,
+            activeIcon: Icons.home_rounded,
+            isGrowth: isGrowth,
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(40),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 16.0, sigmaY: 16.0),
-              child: Container(
-                height: 64,
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                decoration: BoxDecoration(
-                  color: AppColors.surface.withOpacity(0.94),
-                  borderRadius: BorderRadius.circular(40),
-                  border: Border.all(
-                    color: AppColors.border,
-                    width: 1.0,
-                  ),
+          _buildNavItem(
+            context: context,
+            index: 1,
+            currentIndex: currentIndex,
+            appProvider: appProvider,
+            icon: Icons.mic_none_rounded,
+            activeIcon: Icons.mic_rounded,
+            isGrowth: isGrowth,
+          ),
+          _buildNavItem(
+            context: context,
+            index: 2,
+            currentIndex: currentIndex,
+            appProvider: appProvider,
+            icon: Icons.menu_book_rounded,
+            activeIcon: Icons.menu_book_rounded,
+            isGrowth: isGrowth,
+          ),
+          _buildNavItem(
+            context: context,
+            index: 3,
+            currentIndex: currentIndex,
+            appProvider: appProvider,
+            icon: Icons.dashboard_outlined,
+            activeIcon: Icons.dashboard_rounded,
+            isGrowth: isGrowth,
+          ),
+          _buildNavItem(
+            context: context,
+            index: 4,
+            currentIndex: currentIndex,
+            appProvider: appProvider,
+            icon: Icons.person_outline_rounded,
+            activeIcon: Icons.person_rounded,
+            isGrowth: isGrowth,
+          ),
+        ],
+      ),
+    );
+
+    if (shouldBlur) {
+      barContent = BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 16.0, sigmaY: 16.0),
+        child: barContent,
+      );
+    }
+
+    return RepaintBoundary(
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 14),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(40),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.08),
+                  blurRadius: 24,
+                  spreadRadius: 0,
+                  offset: const Offset(0, 8),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _buildNavItem(
-                      context: context,
-                      index: 0,
-                      currentIndex: currentIndex,
-                      appProvider: appProvider,
-                      icon: Icons.home_outlined,
-                      activeIcon: Icons.home_rounded,
-                      isGrowth: isGrowth,
-                    ),
-                    _buildNavItem(
-                      context: context,
-                      index: 1,
-                      currentIndex: currentIndex,
-                      appProvider: appProvider,
-                      icon: Icons.mic_none_rounded,
-                      activeIcon: Icons.mic_rounded,
-                      isGrowth: isGrowth,
-                    ),
-                    _buildNavItem(
-                      context: context,
-                      index: 2,
-                      currentIndex: currentIndex,
-                      appProvider: appProvider,
-                      icon: Icons.edit_note_rounded,
-                      activeIcon: Icons.edit_note_rounded,
-                      isGrowth: isGrowth,
-                    ),
-                    _buildNavItem(
-                      context: context,
-                      index: 3,
-                      currentIndex: currentIndex,
-                      appProvider: appProvider,
-                      icon: Icons.dashboard_outlined,
-                      activeIcon: Icons.dashboard_rounded,
-                      isGrowth: isGrowth,
-                    ),
-                    _buildNavItem(
-                      context: context,
-                      index: 4,
-                      currentIndex: currentIndex,
-                      appProvider: appProvider,
-                      icon: Icons.person_outline_rounded,
-                      activeIcon: Icons.person_rounded,
-                      isGrowth: isGrowth,
-                    ),
-                  ],
+                BoxShadow(
+                  color: accent.withOpacity(0.06),
+                  blurRadius: 16,
+                  spreadRadius: -2,
+                  offset: const Offset(0, 4),
                 ),
-              ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(40),
+              child: barContent,
             ),
           ),
         ),

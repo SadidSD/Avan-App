@@ -128,54 +128,22 @@ class StorageService {
         template: '4 Blocks',
         createdAt: DateTime.now(),
         lastModified: DateTime.now(),
-        blocks: [
-          GoalBlock(
-            id: 'gb_1',
-            title: 'Inner Peace & Wealth',
-            category: 'Mindset',
-            bgImageUrl: 'assets/images/onboarding_archway_sun.jpg',
-            tintValue: 0xFF8A85A0,
-            quote: 'I am a magnet for extraordinary abundance and peace.',
-            targetDate: '2026',
-          ),
-          GoalBlock(
-            id: 'gb_2',
-            title: 'Peak Energy & Vitality',
-            category: 'Health',
-            bgImageUrl: 'assets/images/featured_meditation.jpg',
-            tintValue: 0xFF2A2A3E,
-            quote: 'My mind and body vibrate with vibrant health.',
-            targetDate: 'Daily Habit',
-          ),
-          GoalBlock(
-            id: 'gb_3',
-            title: 'Financial Freedom',
-            category: 'Wealth',
-            bgImageUrl: 'assets/images/onboarding_girl_profile.jpg',
-            tintValue: 0xFFFFD700,
-            quote: 'I attract wealth and build multiple streams of prosperity.',
-            targetDate: 'Dec 2026',
-          ),
-          GoalBlock(
-            id: 'gb_4',
-            title: 'Deep Rest & Sleep',
-            category: 'Mindset',
-            bgImageUrl: 'assets/images/sleep_story_night.jpg',
-            tintValue: 0xFF060D2E,
-            quote: 'I surrender to tranquil peace and restore my mind.',
-            targetDate: 'Nightly',
-          ),
-        ],
+        blocks: [],
       );
     }
     try {
-      return VisionBoard.fromJson(jsonDecode(boardStr));
+      final board = VisionBoard.fromJson(jsonDecode(boardStr));
+      final demoIds = {'gb_1', 'gb_2', 'gb_3', 'gb_4', 'gb_5', 'gb_6', 'gb_7', 'gb_8'};
+      final cleaned = board.blocks.where((b) => !demoIds.contains(b.id)).toList();
+      return board.copyWith(blocks: cleaned);
     } catch (_) {
       return VisionBoard(
         id: 'active_default',
         title: 'My Vision Board',
+        template: '4 Blocks',
         createdAt: DateTime.now(),
         lastModified: DateTime.now(),
+        blocks: [],
       );
     }
   }

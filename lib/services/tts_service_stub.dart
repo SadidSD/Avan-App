@@ -33,7 +33,7 @@ class PlatformTts {
 
   Future<void> pause() async {
     try {
-      await _flutterTts.pause();
+      await _flutterTts.stop();
     } catch (_) {}
   }
 

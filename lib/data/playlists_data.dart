@@ -52,9 +52,14 @@ List<Playlist> get freePlaylists =>
 List<Playlist> get premiumPlaylists =>
     allPlaylists.where((playlist) => playlist.isPremium).toList();
 
+List<Affirmation>? _cachedGlobalAffirmations;
+
 /// Aggregates all affirmations from both predefined playlists and the expanded scientific library.
-/// Uses a Map to deduplicate by ID (scientific library vectors take priority).
+/// Uses a Map to deduplicate by ID (scientific library vectors take priority). Memoized for performance.
 List<Affirmation> getAllGlobalAffirmations() {
+  if (_cachedGlobalAffirmations != null) {
+    return _cachedGlobalAffirmations!;
+  }
   final Map<String, Affirmation> map = {};
   // Scientific library affirmations (with hand-tuned vectors) take priority
   for (var aff in comprehensiveAffirmationLibrary) {
@@ -66,5 +71,6 @@ List<Affirmation> getAllGlobalAffirmations() {
       map.putIfAbsent(aff.id, () => aff);
     }
   }
-  return map.values.toList();
+  _cachedGlobalAffirmations = List.unmodifiable(map.values);
+  return _cachedGlobalAffirmations!;
 }

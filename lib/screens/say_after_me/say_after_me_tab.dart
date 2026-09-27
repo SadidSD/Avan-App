@@ -9,6 +9,7 @@ import 'package:record/record.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/tts_service.dart';
 import '../../theme/app_colors.dart';
@@ -16,13 +17,21 @@ import '../../widgets/custom_card.dart';
 import '../../widgets/custom_button.dart';
 import '../../data/playlists_data.dart';
 import '../../models/affirmation.dart';
+import '../../models/playlist.dart';
 import '../../models/user_recording.dart';
 import '../../providers/app_provider.dart';
 import '../../providers/audio_provider.dart';
+import '../../widgets/paywall_modal.dart';
 
 class SayAfterMeTab extends StatefulWidget {
   final int initialModeIndex; // 0: AI Practice, 1: Voice Studio
-  const SayAfterMeTab({Key? key, this.initialModeIndex = 0}) : super(key: key);
+  final Playlist? initialPlaylist;
+
+  const SayAfterMeTab({
+    Key? key,
+    this.initialModeIndex = 0,
+    this.initialPlaylist,
+  }) : super(key: key);
 
   @override
   State<SayAfterMeTab> createState() => _SayAfterMeTabState();
@@ -32,6 +41,7 @@ enum MicState { idle, listening, processing, completed }
 
 class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateMixin {
   late int _activeModeIndex; // 0: AI Practice, 1: Voice Studio
+  Playlist? _selectedPlaylist;
 
   // --- AI Practice State ---
   final TtsService _ttsService = TtsService();
@@ -76,10 +86,15 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
     _initSpeech();
     _initVoiceStudioPlayer();
 
-    // Initial fallback affirmations from playlists
-    final fallback = allPlaylists.expand((p) => p.affirmations).toList();
-    fallback.shuffle(Random(42));
-    _affirmations = fallback.take(8).toList();
+    // Initial affirmations from passed playlist or fallback
+    _selectedPlaylist = widget.initialPlaylist;
+    if (_selectedPlaylist != null && _selectedPlaylist!.affirmations.isNotEmpty) {
+      _affirmations = _selectedPlaylist!.affirmations;
+    } else {
+      final fallback = allPlaylists.expand((p) => p.affirmations).toList();
+      fallback.shuffle(Random(42));
+      _affirmations = fallback.take(8).toList();
+    }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -99,6 +114,13 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
   }
 
   void _loadPersonalizedAffirmations() {
+    if (_selectedPlaylist != null) {
+      setState(() {
+        _affirmations = _selectedPlaylist!.affirmations;
+        _currentIndex = 0;
+      });
+      return;
+    }
     try {
       final appProvider = context.read<AppProvider>();
       final personalized = appProvider.getPersonalizedFeed(limit: 8);
@@ -738,6 +760,71 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Practicing Playlist Selector Banner
+          Container(
+            margin: const EdgeInsets.only(bottom: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceElevated,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: AppColors.goldAccent.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.playlist_play_rounded, color: AppColors.goldAccent, size: 20),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'PRACTICING PLAYLIST',
+                        style: GoogleFonts.inter(
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textMuted,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      Text(
+                        _selectedPlaylist?.title ?? 'Personalized Neuroplastic Feed',
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                TextButton(
+                  onPressed: _showPlaylistPickerModal,
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      Text('Switch', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.goldAccent)),
+                      Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: AppColors.goldAccent),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
           // Session Counter
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1246,6 +1333,158 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
           },
         );
       },
+    );
+  }
+
+  // --- Playlist Picker Modal ---
+  void _showPlaylistPickerModal() {
+    final appProvider = Provider.of<AppProvider>(context, listen: false);
+    final accent = AppColors.accentForMode(appProvider.isGrowthMode);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.75,
+        maxChildSize: 0.92,
+        minChildSize: 0.4,
+        expand: false,
+        builder: (_, scrollCtrl) => Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFF13131D),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          child: Column(
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: const [
+                  Icon(Icons.playlist_play_rounded, color: AppColors.goldAccent, size: 24),
+                  SizedBox(width: 8),
+                  Text(
+                    'Select Playlist to Practice 🎙️',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Expanded(
+                child: ListView(
+                  controller: scrollCtrl,
+                  children: [
+                    // Option 1: Personalized Arc
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      decoration: BoxDecoration(
+                        color: _selectedPlaylist == null ? accent.withOpacity(0.18) : AppColors.surfaceElevated,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: _selectedPlaylist == null ? accent : AppColors.border,
+                        ),
+                      ),
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: accent.withOpacity(0.2),
+                          child: Icon(Icons.auto_awesome_rounded, color: accent, size: 20),
+                        ),
+                        title: const Text('Personalized Neuroplastic Feed', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                        subtitle: const Text('Calibrated to your archetype & emotional baseline', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                        trailing: _selectedPlaylist == null ? Icon(Icons.check_circle_rounded, color: accent) : null,
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          if (_isSpeaking) _ttsService.stop();
+                          setState(() {
+                            _selectedPlaylist = null;
+                            _loadPersonalizedAffirmations();
+                          });
+                        },
+                      ),
+                    ),
+                    const Divider(height: 18, color: AppColors.border),
+                    // All Playlists
+                    ...allPlaylists.map((pl) {
+                      final isSelected = _selectedPlaylist?.id == pl.id;
+                      final isLocked = pl.isPremium && !appProvider.isPremium;
+
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        decoration: BoxDecoration(
+                          color: isSelected ? accent.withOpacity(0.18) : AppColors.surfaceElevated,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isSelected ? accent : AppColors.border,
+                          ),
+                        ),
+                        child: ListTile(
+                          leading: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: SizedBox(
+                              width: 42,
+                              height: 42,
+                              child: Image.asset(
+                                pl.imagePath,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => Container(
+                                  color: AppColors.surface,
+                                  child: const Icon(Icons.music_note_rounded, color: AppColors.textMuted),
+                                ),
+                              ),
+                            ),
+                          ),
+                          title: Text(
+                            pl.title,
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: Colors.white),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          subtitle: Text(
+                            '${pl.affirmations.length} tracks · ${pl.category}',
+                            style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                          ),
+                          trailing: isLocked
+                              ? const Icon(Icons.lock_rounded, color: AppColors.goldAccent, size: 18)
+                              : (isSelected ? Icon(Icons.check_circle_rounded, color: accent) : null),
+                          onTap: () {
+                            if (isLocked) {
+                              Navigator.pop(ctx);
+                              PaywallModal.show(context);
+                            } else {
+                              Navigator.pop(ctx);
+                              if (_isSpeaking) _ttsService.stop();
+                              setState(() {
+                                _selectedPlaylist = pl;
+                                _affirmations = pl.affirmations;
+                                _currentIndex = 0;
+                              });
+                            }
+                          },
+                        ),
+                      );
+                    }),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

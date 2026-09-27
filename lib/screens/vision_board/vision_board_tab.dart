@@ -1,5 +1,8 @@
+import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -12,9 +15,98 @@ import 'package:provider/provider.dart';
 import '../../data/affirmation_library.dart';
 import '../../models/vision_board.dart';
 import '../../providers/app_provider.dart';
+import '../../services/ambient_audio_synthesizer.dart';
+import '../../services/audio_engine_service.dart';
+import '../../services/wallpaper_export_service.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/custom_card.dart';
 
+// =============================================================================
+// CURATED AESTHETIC PACKS (66+ HIGH-RES ASSETS CATEGORIZED)
+// =============================================================================
+final Map<String, List<Map<String, String>>> curatedAestheticPacks = {
+  'Abundance & Wealth': [
+    {'title': 'Spring Gold', 'path': 'assets/images/abundance_spring_gold.jpg'},
+    {'title': 'Skyline Poise', 'path': 'assets/images/negotiation_skyline_poise.jpg'},
+    {'title': 'Abundance Hands', 'path': 'assets/images/scarcity_seedling_hands.jpg'},
+    {'title': 'Chess Strategy', 'path': 'assets/images/ruthless_chess_king.jpg'},
+    {'title': 'Golden Profile', 'path': 'assets/images/onboarding_girl_profile.jpg'},
+  ],
+  'Career & Ambition': [
+    {'title': 'Deep Work Flow', 'path': 'assets/images/deep_work_flow.jpg'},
+    {'title': 'Founder Resilience', 'path': 'assets/images/founder_resilience.jpg'},
+    {'title': 'Executive Presence', 'path': 'assets/images/exec_presence_clarity.jpg'},
+    {'title': 'Stage Spotlight', 'path': 'assets/images/public_stage_spotlight.jpg'},
+    {'title': 'Crossroads', 'path': 'assets/images/career_pivot_crossroads.jpg'},
+    {'title': 'Focus Desk', 'path': 'assets/images/antiprocrastination_desk.jpg'},
+  ],
+  'Peace & Mindset': [
+    {'title': 'Archway Sun', 'path': 'assets/images/onboarding_archway_sun.jpg'},
+    {'title': 'Solitude Hearth', 'path': 'assets/images/solitude_cabin_hearth.jpg'},
+    {'title': 'Mountain Lake', 'path': 'assets/images/dopamine_mountain_lake.jpg'},
+    {'title': 'Night Sky', 'path': 'assets/images/sleep_story_night.jpg'},
+    {'title': 'Treehouse Calm', 'path': 'assets/images/inner_child_treehouse.jpg'},
+    {'title': 'Candlelight Peace', 'path': 'assets/images/evening_pen_candle.jpg'},
+  ],
+  'Health & Vitality': [
+    {'title': 'Morning Activation', 'path': 'assets/images/morning_neural_activation.jpg'},
+    {'title': 'Deep Meditation', 'path': 'assets/images/featured_meditation.jpg'},
+    {'title': 'Ridge Dawn', 'path': 'assets/images/endurance_ridge_dawn.jpg'},
+    {'title': 'Body Neutrality', 'path': 'assets/images/body_neutrality_pool.jpg'},
+    {'title': 'Recovery Fern', 'path': 'assets/images/injury_recovery_fern.jpg'},
+    {'title': 'Spring Renewal', 'path': 'assets/images/chronic_pain_spring.jpg'},
+  ],
+  'Joy & Passion': [
+    {'title': 'Studio Canvas', 'path': 'assets/images/creative_studio_canvas.jpg'},
+    {'title': 'Sunrise Porch', 'path': 'assets/images/proud_sunrise_porch.jpg'},
+    {'title': 'Gratitude Glow', 'path': 'assets/images/gratitude_neuro.jpg'},
+    {'title': 'Moon & Clouds', 'path': 'assets/images/onboarding_moon_clouds.jpg'},
+    {'title': 'Dopamine Bonsai', 'path': 'assets/images/dopamine_bonsai_calm.jpg'},
+  ],
+  'Strength & Armor': [
+    {'title': 'Self Worth', 'path': 'assets/images/self_worth_found.jpg'},
+    {'title': 'Boundary Gate', 'path': 'assets/images/boundary_orchard_gate.jpg'},
+    {'title': 'Kintsugi Worth', 'path': 'assets/images/worth_rebuild_kint.jpg'},
+    {'title': 'Lighthouse Shield', 'path': 'assets/images/lighthouse_storm_shield.jpg'},
+    {'title': 'Stoic Bust', 'path': 'assets/images/stoic_marble_bust.jpg'},
+  ],
+  'Relationships & Love': [
+    {'title': 'Social Trust Mugs', 'path': 'assets/images/social_trust_mugs.jpg'},
+    {'title': 'Courtyard Roses', 'path': 'assets/images/avoidant_courtyard_roses.jpg'},
+    {'title': 'Anchor Calm', 'path': 'assets/images/anxious_attachment_anchor.jpg'},
+    {'title': 'Sunlit Room', 'path': 'assets/images/divorce_sunlit_room.jpg'},
+  ],
+};
+
+ImageProvider resolveGoalImageProvider(String path) {
+  if (path.startsWith('assets/')) {
+    return AssetImage(path);
+  } else if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('blob:')) {
+    return NetworkImage(path);
+  } else if (path.startsWith('data:image')) {
+    try {
+      final commaIndex = path.indexOf(',');
+      if (commaIndex != -1) {
+        final base64String = path.substring(commaIndex + 1);
+        final bytes = base64Decode(base64String);
+        return MemoryImage(bytes);
+      }
+    } catch (e) {
+      debugPrint("Error decoding base64 image: $e");
+    }
+    return const AssetImage('assets/images/onboarding_archway_sun.jpg');
+  } else {
+    if (!kIsWeb && path.isNotEmpty) {
+      final file = File(path);
+      if (file.existsSync()) return FileImage(file);
+    }
+    return const AssetImage('assets/images/onboarding_archway_sun.jpg');
+  }
+}
+
+// =============================================================================
+// MAIN VISION BOARD TAB
+// =============================================================================
 class VisionBoardTab extends StatefulWidget {
   const VisionBoardTab({Key? key}) : super(key: key);
 
@@ -24,7 +116,6 @@ class VisionBoardTab extends StatefulWidget {
 
 class _VisionBoardTabState extends State<VisionBoardTab> {
   bool _showSavedBoards = false;
-  final GlobalKey _gridKey = GlobalKey();
 
   final List<String> _templates = [
     '2 Blocks',
@@ -56,12 +147,19 @@ class _VisionBoardTabState extends State<VisionBoardTab> {
           ),
         ),
         centerTitle: true,
+        leading: !_showSavedBoards
+            ? IconButton(
+                icon: const Icon(Icons.auto_awesome_rounded, color: AppColors.goldAccent),
+                tooltip: 'Manifestation Meditation Mode',
+                onPressed: () => _openManifestationModal(context),
+              )
+            : null,
         actions: [
           if (!_showSavedBoards)
             IconButton(
               icon: const Icon(Icons.wallpaper_rounded, color: AppColors.textPrimary),
-              tooltip: 'Export as Lock Screen Wallpaper',
-              onPressed: () => _exportAsWallpaper(context),
+              tooltip: 'Export 9:16 Lock Screen Wallpaper',
+              onPressed: () => _openWallpaperModal(context),
             ),
         ],
         bottom: PreferredSize(
@@ -104,128 +202,96 @@ class _VisionBoardTabState extends State<VisionBoardTab> {
         child: _showSavedBoards
             ? const _SavedBoardsView()
             : _ActiveBoardView(
-                gridKey: _gridKey,
                 templates: _templates,
-                onExportWallpaper: () => _exportAsWallpaper(context),
+                onExportWallpaper: () => _openWallpaperModal(context),
+                onOpenMeditation: () => _openManifestationModal(context),
               ),
       ),
     );
   }
 
-  Future<void> _exportAsWallpaper(BuildContext context) async {
-    try {
-      Uint8List? pngBytes;
-      final boundary = _gridKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
-      if (boundary != null) {
-        final image = await boundary.toImage(pixelRatio: 3.0);
-        final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-        pngBytes = byteData?.buffer.asUint8List();
-      }
-
-      if (!context.mounted) return;
-
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: AppColors.surfaceElevated,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-          title: Row(
-            children: const [
-              Icon(Icons.wallpaper_rounded, color: AppColors.goldAccent),
-              SizedBox(width: 8),
-              Text(
-                'Lock Screen Wallpaper ✨',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-              ),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              if (pngBytes != null)
-                Container(
-                  height: 240,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.goldAccent.withOpacity(0.4), width: 1.5),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.15),
-                        blurRadius: 16,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: Image.memory(pngBytes, fit: BoxFit.cover),
-                )
-              else
-                const Text(
-                  'Your personalized vision board layout is optimized for high-resolution lock screen viewing.',
-                  style: TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4),
-                ),
-              const SizedBox(height: 14),
-              Text(
-                pngBytes != null
-                    ? 'Rendered in 3x Retina HD. Take a screenshot of this preview to set as your phone lock screen wallpaper!'
-                    : 'Tip: Take a screenshot of this layout to anchor your subconscious goals every time you unlock your phone!',
-                style: const TextStyle(fontSize: 12, color: AppColors.textMuted, fontStyle: FontStyle.italic),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                final appProvider = context.read<AppProvider>();
-                if (appProvider.activeVisionBoard.blocks.isNotEmpty) {
-                  final quote = appProvider.activeVisionBoard.blocks.first.quote;
-                  if (quote.isNotEmpty) {
-                    Clipboard.setData(ClipboardData(text: quote));
-                  }
-                }
-                Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Wallpaper preview ready! Take a screenshot to set on lock screen. 📱✨'),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              },
-              child: const Text('Done', style: TextStyle(color: AppColors.goldAccent, fontWeight: FontWeight.bold)),
-            ),
-          ],
+  void _openWallpaperModal(BuildContext context) {
+    final appProvider = context.read<AppProvider>();
+    if (appProvider.activeVisionBoard.blocks.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Add at least one vision goal first before exporting wallpaper! ✨'),
+          behavior: SnackBarBehavior.floating,
         ),
       );
-    } catch (e) {
-      debugPrint("Export wallpaper error: $e");
+      return;
     }
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) => const _WallpaperExportModal(),
+    );
+  }
+
+  void _openManifestationModal(BuildContext context) {
+    final appProvider = context.read<AppProvider>();
+    if (appProvider.activeVisionBoard.blocks.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Add some vision goals first before starting meditation! ✨'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const _ManifestationSlideshowScreen(),
+      ),
+    );
   }
 }
 
+
 // =============================================================================
-// ACTIVE BOARD CANVAS VIEW
+// ACTIVE BOARD CANVAS VIEW (WITH DRAG & DROP REORDERING)
 // =============================================================================
 class _ActiveBoardView extends StatelessWidget {
-  final GlobalKey gridKey;
   final List<String> templates;
   final VoidCallback onExportWallpaper;
+  final VoidCallback onOpenMeditation;
 
   const _ActiveBoardView({
     Key? key,
-    required this.gridKey,
     required this.templates,
     required this.onExportWallpaper,
+    required this.onOpenMeditation,
   }) : super(key: key);
 
+  int _getTargetCount(String template) {
+    switch (template) {
+      case 'Single Hero':
+        return 1;
+      case '2 Blocks':
+        return 2;
+      case '4 Blocks':
+        return 4;
+      case '6 Blocks':
+        return 6;
+      case '8 Blocks':
+        return 8;
+      case 'Minimal Layout':
+        return 4;
+      default:
+        return 4;
+    }
+  }
+
   int _getCrossAxisCount(String template) {
-    if (template == 'Single Hero') return 1;
+    if (template == 'Single Hero' || template == '2 Blocks') return 1;
     return 2;
   }
 
   double _getAspectRatio(String template) {
-    if (template == 'Single Hero') return 1.5;
+    if (template == 'Single Hero') return 1.35;
+    if (template == '2 Blocks') return 1.55;
     if (template == 'Minimal Layout') return 0.95;
     return 0.82;
   }
@@ -235,6 +301,9 @@ class _ActiveBoardView extends StatelessWidget {
     final appProvider = context.watch<AppProvider>();
     final activeBoard = appProvider.activeVisionBoard;
     final accent = AppColors.accentForMode(appProvider.isGrowthMode);
+    final targetCount = _getTargetCount(activeBoard.template);
+    final displayBlocks = activeBoard.blocks.take(targetCount).toList();
+    final totalSlots = targetCount;
 
     return Column(
       children: [
@@ -271,66 +340,96 @@ class _ActiveBoardView extends StatelessWidget {
           ),
         ),
 
-        // Grid Area
+        // Grid Area with Drag & Drop Reordering
         Expanded(
-          child: RepaintBoundary(
-            key: gridKey,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: activeBoard.blocks.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.dashboard_customize_outlined, size: 48, color: AppColors.textSecondary),
-                          const SizedBox(height: 12),
-                          Text(
-                            'Your Vision Canvas is Empty',
-                            style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.textPrimary),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: GridView.builder(
+              physics: const BouncingScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: _getCrossAxisCount(activeBoard.template),
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: _getAspectRatio(activeBoard.template),
+              ),
+              itemCount: totalSlots,
+              itemBuilder: (ctx, i) {
+                if (i < displayBlocks.length) {
+                  final block = displayBlocks[i];
+                  return DragTarget<int>(
+                    onWillAcceptWithDetails: (details) => details.data != i,
+                    onAcceptWithDetails: (details) {
+                      appProvider.reorderGoalBlocks(details.data, i);
+                    },
+                    builder: (context, candidateData, rejectedData) {
+                      final isHovered = candidateData.isNotEmpty;
+                      final card = _GoalCard(block: block, index: i);
+
+                      return LongPressDraggable<int>(
+                        data: i,
+                        delay: const Duration(milliseconds: 250),
+                        hapticFeedbackOnStart: true,
+                        feedback: Material(
+                          color: Colors.transparent,
+                          child: SizedBox(
+                            width: 170,
+                            height: 200,
+                            child: Opacity(
+                              opacity: 0.9,
+                              child: card,
+                            ),
                           ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'Add your first dream goal card or upload custom photos below!',
-                            style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
-                            textAlign: TextAlign.center,
+                        ),
+                        childWhenDragging: Opacity(
+                          opacity: 0.3,
+                          child: card,
+                        ),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(22),
+                            border: isHovered
+                                ? Border.all(color: accent, width: 2.5)
+                                : null,
                           ),
-                        ],
-                      ),
-                    )
-                  : GridView.builder(
-                      physics: const BouncingScrollPhysics(),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: _getCrossAxisCount(activeBoard.template),
-                        crossAxisSpacing: 14,
-                        mainAxisSpacing: 14,
-                        childAspectRatio: _getAspectRatio(activeBoard.template),
-                      ),
-                      itemCount: activeBoard.blocks.length,
-                      itemBuilder: (ctx, i) {
-                        final block = activeBoard.blocks[i];
-                        return _GoalCard(block: block);
-                      },
-                    ),
+                          child: card,
+                        ),
+                      );
+                    },
+                  );
+                } else {
+                  return _EmptyGoalSlot(
+                    slotNumber: i + 1,
+                    onTap: () => _addNewBlock(context, slotNumber: i + 1),
+                  );
+                }
+              },
             ),
           ),
         ),
 
         // Bottom Editor Actions Bar
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
             color: AppColors.surfaceElevated,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
             border: Border.all(color: AppColors.border),
           ),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildActionBtn(
                 icon: Icons.add_photo_alternate_rounded,
                 label: 'Add Goal',
                 color: accent,
                 onTap: () => _addNewBlock(context),
+              ),
+              _buildActionBtn(
+                icon: Icons.auto_awesome_rounded,
+                label: 'Visualize',
+                color: AppColors.goldAccent,
+                onTap: onOpenMeditation,
               ),
               _buildActionBtn(
                 icon: Icons.bookmark_add_rounded,
@@ -346,7 +445,7 @@ class _ActiveBoardView extends StatelessWidget {
               ),
               _buildActionBtn(
                 icon: Icons.delete_sweep_rounded,
-                label: 'Clear Canvas',
+                label: 'Clear',
                 color: AppColors.textSecondary,
                 onTap: () => _confirmClearAll(context),
               ),
@@ -357,18 +456,24 @@ class _ActiveBoardView extends StatelessWidget {
     );
   }
 
-  void _addNewBlock(BuildContext context) {
+  void _addNewBlock(BuildContext context, {int? slotNumber}) {
     final appProvider = context.read<AppProvider>();
     final newBlock = GoalBlock(
       id: 'gb_${DateTime.now().millisecondsSinceEpoch}',
-      title: 'New Manifestation Goal',
+      title: slotNumber != null ? 'Goal #$slotNumber' : 'My New Goal',
       category: 'Mindset',
       bgImageUrl: 'assets/images/onboarding_moon_clouds.jpg',
       tintValue: 0xFF8A85A0,
-      quote: 'I have the courage and focus to bring this vision into reality.',
-      targetDate: '2026',
+      quote: 'I have the courage, calm and focus to manifest this dream into reality.',
+      targetDate: DateFormat('MMM yyyy').format(DateTime.now().add(const Duration(days: 90))),
+      cardStyle: 'glass',
+      isManifested: false,
     );
     appProvider.addGoalBlock(newBlock);
+    showDialog(
+      context: context,
+      builder: (_) => _EditGoalModal(block: newBlock),
+    );
   }
 
   void _showSaveBoardDialog(BuildContext context) {
@@ -380,6 +485,7 @@ class _ActiveBoardView extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.background,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: const Text('Save Board Snapshot 📁', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         content: Column(
@@ -393,7 +499,7 @@ class _ActiveBoardView extends StatelessWidget {
               decoration: InputDecoration(
                 hintText: 'e.g., 2026 Career & Freedom',
                 filled: true,
-                fillColor: AppColors.background,
+                fillColor: AppColors.surfaceElevated,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
               ),
             ),
@@ -427,6 +533,7 @@ class _ActiveBoardView extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.background,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: const Text('Clear Active Canvas?'),
         content: const Text('This will remove all blocks from your current active canvas. Saved boards will remain safe.'),
@@ -454,13 +561,13 @@ class _ActiveBoardView extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, color: color, size: 22),
-            const SizedBox(height: 4),
-            Text(label, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+            const SizedBox(height: 3),
+            Text(label, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
           ],
         ),
       ),
@@ -469,117 +576,531 @@ class _ActiveBoardView extends StatelessWidget {
 }
 
 // =============================================================================
-// GOAL CARD WIDGET
+// EMPTY GOAL SLOT WIDGET
 // =============================================================================
-class _GoalCard extends StatelessWidget {
-  final GoalBlock block;
-  const _GoalCard({Key? key, required this.block}) : super(key: key);
+class _EmptyGoalSlot extends StatelessWidget {
+  final int slotNumber;
+  final VoidCallback onTap;
 
-  ImageProvider _resolveImageProvider(String path) {
-    if (path.startsWith('assets/')) {
-      return AssetImage(path);
-    } else if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('blob:')) {
-      return NetworkImage(path);
-    } else {
-      if (!kIsWeb && path.isNotEmpty) {
-        final file = File(path);
-        if (file.existsSync()) return FileImage(file);
-      }
-      return const AssetImage('assets/images/onboarding_archway_sun.jpg');
-    }
-  }
+  const _EmptyGoalSlot({
+    Key? key,
+    required this.slotNumber,
+    required this.onTap,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => _openEditModal(context),
-      onLongPress: () => _showQuickDeleteMenu(context),
+    final appProvider = context.watch<AppProvider>();
+    final accent = AppColors.accentForMode(appProvider.isGrowthMode);
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(22),
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: AppColors.border),
-          image: DecorationImage(
-            image: _resolveImageProvider(block.bgImageUrl),
-            fit: BoxFit.cover,
-            colorFilter: ColorFilter.mode(
-              block.tint.withOpacity(0.35),
-              BlendMode.darken,
-            ),
+          border: Border.all(
+            color: accent.withOpacity(0.35),
+            width: 1.5,
           ),
+          color: AppColors.surfaceElevated.withOpacity(0.55),
         ),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(22),
-            gradient: const LinearGradient(
-              colors: [Colors.black54, Colors.transparent, Colors.black87],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-          ),
-          padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(14),
+        child: Center(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Header Row: Category Badge + Target Tag
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: Colors.white24,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      block.category,
-                      style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
-                    ),
-                  ),
-                  if (block.targetDate.isNotEmpty)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: AppColors.goldAccent.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.goldAccent.withOpacity(0.6), width: 0.8),
-                      ),
-                      child: Text(
-                        block.targetDate,
-                        style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.goldAccent),
-                      ),
-                    ),
-                ],
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: accent.withOpacity(0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.add_rounded, color: accent, size: 24),
               ),
-
-              // Title & Affirmative Quote
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    block.title,
-                    style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '"${block.quote}"',
-                    style: GoogleFonts.cormorantGaramond(
-                      fontSize: 13,
-                      fontStyle: FontStyle.italic,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white.withOpacity(0.85),
-                      height: 1.25,
-                    ),
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+              const SizedBox(height: 8),
+              Text(
+                'Add Goal #$slotNumber',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                'Tap to create',
+                style: GoogleFonts.inter(
+                  fontSize: 10,
+                  color: AppColors.textSecondary,
+                ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+
+// =============================================================================
+// GOAL CARD WIDGET (4 DISTINCT AESTHETIC STYLES + MANIFESTED BADGE)
+// =============================================================================
+class _GoalCard extends StatelessWidget {
+  final GoalBlock block;
+  final int? index;
+  final bool isPreview;
+
+  const _GoalCard({
+    Key? key,
+    required this.block,
+    this.index,
+    this.isPreview = false,
+  }) : super(key: key);
+
+  String _formatMilestoneCountdown(String target) {
+    if (target.isEmpty) return '';
+    try {
+      final parsed = DateTime.tryParse(target);
+      if (parsed != null) {
+        final now = DateTime.now();
+        final today = DateTime(now.year, now.month, now.day);
+        final targetDate = DateTime(parsed.year, parsed.month, parsed.day);
+        final diff = targetDate.difference(today).inDays;
+        if (diff > 0) return '${diff}d left';
+        if (diff == 0) return 'Today!';
+        return 'Achieved';
+      }
+    } catch (_) {}
+    return target;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final appProvider = context.watch<AppProvider>();
+    final accent = AppColors.accentForMode(appProvider.isGrowthMode);
+
+    Widget cardContent;
+    switch (block.cardStyle) {
+      case 'polaroid':
+        cardContent = _buildPolaroidCard(context, accent);
+        break;
+      case 'bold':
+        cardContent = _buildBoldEditorialCard(context, accent);
+        break;
+      case 'minimal':
+        cardContent = _buildMinimalCard(context, accent);
+        break;
+      case 'glass':
+      default:
+        cardContent = _buildGlassCard(context, accent);
+        break;
+    }
+
+    if (isPreview) return cardContent;
+
+    return GestureDetector(
+      onTap: () => _openEditModal(context),
+      onLongPress: () => _showQuickMenu(context),
+      child: cardContent,
+    );
+  }
+
+  // 1. MODERN GLASS STYLE
+  Widget _buildGlassCard(BuildContext context, Color accent) {
+    final countdown = _formatMilestoneCountdown(block.targetDate);
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: block.isManifested ? AppColors.goldAccent.withOpacity(0.8) : AppColors.border,
+          width: block.isManifested ? 1.8 : 1.0,
+        ),
+        boxShadow: block.isManifested
+            ? [
+                BoxShadow(
+                  color: AppColors.goldAccent.withOpacity(0.22),
+                  blurRadius: 12,
+                  spreadRadius: 1,
+                )
+              ]
+            : null,
+        image: DecorationImage(
+          image: resolveGoalImageProvider(block.bgImageUrl),
+          fit: BoxFit.cover,
+          colorFilter: ColorFilter.mode(
+            block.tint.withOpacity(0.35),
+            BlendMode.darken,
+          ),
+        ),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(22),
+          gradient: const LinearGradient(
+            colors: [Colors.black54, Colors.transparent, Colors.black87],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        padding: const EdgeInsets.all(13),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    block.category,
+                    style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                ),
+                if (block.isManifested)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.goldAccent,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.star_rounded, size: 11, color: Colors.black),
+                        const SizedBox(width: 3),
+                        Text(
+                          'Manifested',
+                          style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w800, color: Colors.black),
+                        ),
+                      ],
+                    ),
+                  )
+                else if (countdown.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.goldAccent.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.goldAccent.withOpacity(0.6), width: 0.8),
+                    ),
+                    child: Text(
+                      countdown,
+                      style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.goldAccent),
+                    ),
+                  ),
+              ],
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  block.title,
+                  style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (block.quote.isNotEmpty) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    '"${block.quote}"',
+                    style: GoogleFonts.cormorantGaramond(
+                      fontSize: 12.5,
+                      fontStyle: FontStyle.italic,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white.withOpacity(0.9),
+                      height: 1.2,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 2. RETRO POLAROID STYLE
+  Widget _buildPolaroidCard(BuildContext context, Color accent) {
+    final countdown = _formatMilestoneCountdown(block.targetDate);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFFAF7F0),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.18),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+        border: Border.all(
+          color: block.isManifested ? AppColors.goldAccent : const Color(0xFFE4DFD5),
+          width: block.isManifested ? 2.0 : 1.0,
+        ),
+      ),
+      padding: const EdgeInsets.fromLTRB(10, 10, 10, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Inner Photo Area
+          Expanded(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image(
+                    image: resolveGoalImageProvider(block.bgImageUrl),
+                    fit: BoxFit.cover,
+                    color: block.tint.withOpacity(0.2),
+                    colorBlendMode: BlendMode.darken,
+                  ),
+                ),
+                // Tape effect or manifested seal
+                if (block.isManifested)
+                  Positioned(
+                    top: 6,
+                    right: 6,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.goldAccent,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        '✨ Done',
+                        style: GoogleFonts.inter(fontSize: 8.5, fontWeight: FontWeight.bold, color: Colors.black),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          // Bottom Polaroid Caption Chin
+          Text(
+            block.title,
+            style: GoogleFonts.inter(
+              fontSize: 12.5,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF1E1E24),
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 2),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                block.category.toUpperCase(),
+                style: GoogleFonts.inter(
+                  fontSize: 8.5,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.6,
+                  color: const Color(0xFF7A7870),
+                ),
+              ),
+              if (countdown.isNotEmpty)
+                Text(
+                  countdown,
+                  style: GoogleFonts.inter(
+                    fontSize: 8.5,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFFB57D06),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 3. BOLD EDITORIAL STYLE
+  Widget _buildBoldEditorialCard(BuildContext context, Color accent) {
+    final countdown = _formatMilestoneCountdown(block.targetDate);
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        image: DecorationImage(
+          image: resolveGoalImageProvider(block.bgImageUrl),
+          fit: BoxFit.cover,
+          colorFilter: ColorFilter.mode(
+            Colors.black.withOpacity(0.45),
+            BlendMode.darken,
+          ),
+        ),
+        border: Border.all(
+          color: block.isManifested ? AppColors.goldAccent : Colors.white24,
+          width: 1.5,
+        ),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          gradient: LinearGradient(
+            colors: [
+              Colors.black.withOpacity(0.85),
+              Colors.transparent,
+              Colors.black.withOpacity(0.92),
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: accent,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    block.category.toUpperCase(),
+                    style: GoogleFonts.inter(fontSize: 8.5, fontWeight: FontWeight.w900, letterSpacing: 0.8, color: Colors.white),
+                  ),
+                ),
+                if (block.isManifested)
+                  const Icon(Icons.verified_rounded, color: AppColors.goldAccent, size: 18)
+                else if (countdown.isNotEmpty)
+                  Text(
+                    countdown,
+                    style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w800, color: AppColors.goldAccent),
+                  ),
+              ],
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  block.title.toUpperCase(),
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.5,
+                    color: Colors.white,
+                    height: 1.15,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (block.quote.isNotEmpty) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    block.quote,
+                    style: GoogleFonts.inter(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white.withOpacity(0.8),
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 4. FINE MINIMAL STYLE
+  Widget _buildMinimalCard(BuildContext context, Color accent) {
+    final countdown = _formatMilestoneCountdown(block.targetDate);
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: block.isManifested ? AppColors.goldAccent : Colors.white12,
+          width: 0.8,
+        ),
+        image: DecorationImage(
+          image: resolveGoalImageProvider(block.bgImageUrl),
+          fit: BoxFit.cover,
+          colorFilter: ColorFilter.mode(
+            Colors.black.withOpacity(0.62),
+            BlendMode.darken,
+          ),
+        ),
+      ),
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                block.category.toLowerCase(),
+                style: GoogleFonts.inter(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w400,
+                  letterSpacing: 1.2,
+                  color: Colors.white60,
+                ),
+              ),
+              if (block.isManifested)
+                const Text('✨', style: TextStyle(fontSize: 14))
+              else if (countdown.isNotEmpty)
+                Text(
+                  countdown,
+                  style: GoogleFonts.inter(fontSize: 9, color: Colors.white70),
+                ),
+            ],
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                block.title,
+                style: GoogleFonts.cormorantGaramond(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                  fontStyle: FontStyle.italic,
+                  color: Colors.white,
+                  height: 1.15,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              if (block.quote.isNotEmpty) ...[
+                const SizedBox(height: 3),
+                Text(
+                  block.quote,
+                  style: GoogleFonts.inter(fontSize: 9.5, color: Colors.white54),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -591,7 +1112,9 @@ class _GoalCard extends StatelessWidget {
     );
   }
 
-  void _showQuickDeleteMenu(BuildContext context) {
+  void _showQuickMenu(BuildContext context) {
+    final appProvider = context.read<AppProvider>();
+
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.surfaceElevated,
@@ -610,10 +1133,21 @@ class _GoalCard extends StatelessWidget {
               },
             ),
             ListTile(
+              leading: Icon(
+                block.isManifested ? Icons.undo_rounded : Icons.auto_awesome_rounded,
+                color: AppColors.goldAccent,
+              ),
+              title: Text(block.isManifested ? 'Mark as In Progress' : 'Mark as Manifested ✨'),
+              onTap: () {
+                appProvider.toggleGoalManifested(block.id);
+                Navigator.pop(ctx);
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
               title: const Text('Delete This Block', style: TextStyle(color: Colors.redAccent)),
               onTap: () {
-                context.read<AppProvider>().deleteGoalBlock(block.id);
+                appProvider.deleteGoalBlock(block.id);
                 Navigator.pop(ctx);
               },
             ),
@@ -624,8 +1158,9 @@ class _GoalCard extends StatelessWidget {
   }
 }
 
+
 // =============================================================================
-// EDIT GOAL MODAL WITH PHOTO PICKER & AFFIRMATION LIBRARY PICKER
+// EDIT GOAL MODAL (WYSIWYG PREVIEW, STYLES, 66+ PACKS, PERSISTENT PHOTOS)
 // =============================================================================
 class _EditGoalModal extends StatefulWidget {
   final GoalBlock block;
@@ -642,6 +1177,9 @@ class _EditGoalModalState extends State<_EditGoalModal> {
   late String _category;
   late String _bgImageUrl;
   late int _tintValue;
+  late String _cardStyle;
+  late bool _isManifested;
+  String _selectedPack = 'Abundance & Wealth';
 
   final ImagePicker _picker = ImagePicker();
 
@@ -655,13 +1193,12 @@ class _EditGoalModalState extends State<_EditGoalModal> {
     'Travel',
   ];
 
-  final Map<String, String> _curatedPresets = {
-    'Archway Sun': 'assets/images/onboarding_archway_sun.jpg',
-    'Girl Profile': 'assets/images/onboarding_girl_profile.jpg',
-    'Moon & Clouds': 'assets/images/onboarding_moon_clouds.jpg',
-    'Deep Meditation': 'assets/images/featured_meditation.jpg',
-    'Night Sky': 'assets/images/sleep_story_night.jpg',
-  };
+  final List<Map<String, String>> _styleOptions = [
+    {'id': 'glass', 'label': 'Modern Glass 🪟'},
+    {'id': 'polaroid', 'label': 'Retro Polaroid 📷'},
+    {'id': 'bold', 'label': 'Bold Editorial 📰'},
+    {'id': 'minimal', 'label': 'Fine Minimal 🌿'},
+  ];
 
   @override
   void initState() {
@@ -672,9 +1209,19 @@ class _EditGoalModalState extends State<_EditGoalModal> {
     _category = widget.block.category;
     _bgImageUrl = widget.block.bgImageUrl;
     _tintValue = widget.block.tintValue;
+    _cardStyle = widget.block.cardStyle;
+    _isManifested = widget.block.isManifested;
   }
 
-  Future<void> _pickCustomImage(ImageSource source) async {
+  @override
+  void dispose() {
+    _titleCtrl.dispose();
+    _quoteCtrl.dispose();
+    _targetDateCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickCustomPhoto(ImageSource source) async {
     try {
       final XFile? file = await _picker.pickImage(
         source: source,
@@ -682,13 +1229,42 @@ class _EditGoalModalState extends State<_EditGoalModal> {
         maxHeight: 1400,
         imageQuality: 88,
       );
-      if (file != null) {
+      if (file != null && mounted) {
+        final appProvider = context.read<AppProvider>();
+        final savedPath = await appProvider.saveCustomGoalImage(file);
         setState(() {
-          _bgImageUrl = file.path;
+          _bgImageUrl = savedPath;
         });
       }
     } catch (e) {
       debugPrint("Photo picker error: $e");
+    }
+  }
+
+  Future<void> _selectDatePicker() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: now.add(const Duration(days: 90)),
+      firstDate: now.subtract(const Duration(days: 365)),
+      lastDate: now.add(const Duration(days: 3650)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.dark(
+              primary: AppColors.goldAccent,
+              surface: AppColors.surfaceElevated,
+              onSurface: AppColors.textPrimary,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() {
+        _targetDateCtrl.text = DateFormat('MMM d, yyyy').format(picked);
+      });
     }
   }
 
@@ -764,228 +1340,380 @@ class _EditGoalModalState extends State<_EditGoalModal> {
     final appProvider = context.watch<AppProvider>();
     final accent = AppColors.accentForMode(appProvider.isGrowthMode);
 
+    final previewBlock = widget.block.copyWith(
+      title: _titleCtrl.text.trim().isNotEmpty ? _titleCtrl.text.trim() : 'Goal Title',
+      quote: _quoteCtrl.text.trim(),
+      category: _category,
+      bgImageUrl: _bgImageUrl,
+      tintValue: _tintValue,
+      targetDate: _targetDateCtrl.text.trim(),
+      cardStyle: _cardStyle,
+      isManifested: _isManifested,
+    );
+
     return Dialog(
       backgroundColor: AppColors.background,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(22),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Edit Goal Block 🎯',
-                  style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 20),
-                  tooltip: 'Delete Block',
-                  onPressed: () {
-                    appProvider.deleteGoalBlock(widget.block.id);
-                    Navigator.pop(context);
-                  },
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // Goal Title
-            TextField(
-              controller: _titleCtrl,
-              decoration: InputDecoration(
-                labelText: 'Goal Title',
-                labelStyle: const TextStyle(color: AppColors.textSecondary),
-                filled: true,
-                fillColor: AppColors.surfaceElevated,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480, maxHeight: 720),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Customize Goal 🎯',
+                    style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 22),
+                    tooltip: 'Delete Block',
+                    onPressed: () {
+                      appProvider.deleteGoalBlock(widget.block.id);
+                      Navigator.pop(context);
+                    },
+                  ),
+                ],
               ),
-              style: const TextStyle(color: AppColors.textPrimary),
-            ),
-            const SizedBox(height: 14),
+              const SizedBox(height: 12),
 
-            // Affirmative Quote + Library Quick-Pick Button
-            TextField(
-              controller: _quoteCtrl,
-              maxLines: 2,
-              decoration: InputDecoration(
-                labelText: 'Affirmative Quote',
-                labelStyle: const TextStyle(color: AppColors.textSecondary),
-                filled: true,
-                fillColor: AppColors.surfaceElevated,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-              ),
-              style: const TextStyle(color: AppColors.textPrimary),
-            ),
-            const SizedBox(height: 6),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                onPressed: _openAffirmationPicker,
-                icon: const Icon(Icons.auto_awesome_rounded, size: 14, color: AppColors.goldAccent),
-                label: const Text('Pick from Affirmation Library', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.goldAccent)),
-              ),
-            ),
-
-            // Target Date Tag
-            TextField(
-              controller: _targetDateCtrl,
-              decoration: InputDecoration(
-                labelText: 'Target Date / Milestone (e.g. Dec 2026, Daily)',
-                labelStyle: const TextStyle(color: AppColors.textSecondary),
-                filled: true,
-                fillColor: AppColors.surfaceElevated,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-              ),
-              style: const TextStyle(color: AppColors.textPrimary),
-            ),
-            const SizedBox(height: 16),
-
-            // Category Chips
-            Text('Category', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary)),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: _categories.map((c) {
-                final isSel = c == _category;
-                return ChoiceChip(
-                  label: Text(c, style: TextStyle(fontSize: 11, color: isSel ? Colors.white : AppColors.textPrimary)),
-                  selected: isSel,
-                  selectedColor: accent,
-                  backgroundColor: AppColors.surfaceElevated,
-                  onSelected: (val) {
-                    if (val) setState(() => _category = c);
-                  },
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 16),
-
-            // Background Image Section (Gallery / Camera Upload + Presets)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Background Photo', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary)),
-                Row(
+              // LIVE WYSIWYG PREVIEW CARD
+              Center(
+                child: Column(
                   children: [
-                    IconButton(
-                      icon: const Icon(Icons.photo_library_rounded, color: AppColors.goldAccent, size: 20),
-                      tooltip: 'Pick from Phone Gallery',
-                      onPressed: () => _pickCustomImage(ImageSource.gallery),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.camera_alt_rounded, color: AppColors.goldAccent, size: 20),
-                      tooltip: 'Take a Photo',
-                      onPressed: () => _pickCustomImage(ImageSource.camera),
+                    Text('LIVE CARD PREVIEW', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.0, color: AppColors.textSecondary)),
+                    const SizedBox(height: 6),
+                    SizedBox(
+                      width: 175,
+                      height: 200,
+                      child: _GoalCard(block: previewBlock, isPreview: true),
                     ),
                   ],
                 ),
-              ],
-            ),
-            const SizedBox(height: 8),
+              ),
+              const SizedBox(height: 16),
 
-            // Curated Presets Scroll
-            SizedBox(
-              height: 70,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
+              // CARD STYLE SELECTOR
+              Text('Card Aesthetic Style', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary)),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _styleOptions.map((opt) {
+                  final isSel = opt['id'] == _cardStyle;
+                  return ChoiceChip(
+                    label: Text(opt['label']!, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: isSel ? Colors.white : AppColors.textPrimary)),
+                    selected: isSel,
+                    selectedColor: accent,
+                    backgroundColor: AppColors.surfaceElevated,
+                    onSelected: (val) {
+                      if (val) setState(() => _cardStyle = opt['id']!);
+                    },
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 16),
+
+              // MANIFESTED STATUS SWITCH
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceElevated,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: _isManifested ? AppColors.goldAccent.withOpacity(0.6) : AppColors.border),
+                ),
+                child: SwitchListTile(
+                  title: Row(
+                    children: [
+                      Icon(Icons.auto_awesome_rounded, color: _isManifested ? AppColors.goldAccent : AppColors.textSecondary, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Mark as Manifested ✨',
+                        style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                      ),
+                    ],
+                  ),
+                  subtitle: Text(
+                    _isManifested ? 'Goal achieved! Celebrating your manifestation.' : 'Turn on when this dream becomes your reality.',
+                    style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                  ),
+                  value: _isManifested,
+                  activeColor: AppColors.goldAccent,
+                  onChanged: (val) => setState(() => _isManifested = val),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // GOAL TITLE
+              TextField(
+                controller: _titleCtrl,
+                onChanged: (_) => setState(() {}),
+                decoration: InputDecoration(
+                  labelText: 'Goal Title',
+                  labelStyle: const TextStyle(color: AppColors.textSecondary),
+                  filled: true,
+                  fillColor: AppColors.surfaceElevated,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                ),
+                style: const TextStyle(color: AppColors.textPrimary),
+              ),
+              const SizedBox(height: 14),
+
+              // AFFIRMATIVE QUOTE
+              TextField(
+                controller: _quoteCtrl,
+                maxLines: 2,
+                onChanged: (_) => setState(() {}),
+                decoration: InputDecoration(
+                  labelText: 'Affirmative Manifestation Quote',
+                  labelStyle: const TextStyle(color: AppColors.textSecondary),
+                  filled: true,
+                  fillColor: AppColors.surfaceElevated,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                ),
+                style: const TextStyle(color: AppColors.textPrimary),
+              ),
+              const SizedBox(height: 4),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: _openAffirmationPicker,
+                  icon: const Icon(Icons.auto_awesome_rounded, size: 14, color: AppColors.goldAccent),
+                  label: const Text('Affirmation Library Quick-Pick', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.goldAccent)),
+                ),
+              ),
+
+              // TARGET DATE / MILESTONE WITH INTERACTIVE DATE PICKER
+              Row(
                 children: [
-                  // Upload custom photo card
-                  GestureDetector(
-                    onTap: () => _pickCustomImage(ImageSource.gallery),
-                    child: Container(
-                      width: 70,
-                      margin: const EdgeInsets.only(right: 10),
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceElevated,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppColors.border),
+                  Expanded(
+                    child: TextField(
+                      controller: _targetDateCtrl,
+                      onChanged: (_) => setState(() {}),
+                      decoration: InputDecoration(
+                        labelText: 'Target Date / Milestone',
+                        hintText: 'e.g., Dec 31, 2026',
+                        labelStyle: const TextStyle(color: AppColors.textSecondary),
+                        filled: true,
+                        fillColor: AppColors.surfaceElevated,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
                       ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
-                          Icon(Icons.add_a_photo_rounded, size: 20, color: AppColors.goldAccent),
-                          SizedBox(height: 4),
-                          Text('Upload', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-                        ],
-                      ),
+                      style: const TextStyle(color: AppColors.textPrimary),
                     ),
                   ),
+                  const SizedBox(width: 8),
+                  InkWell(
+                    onTap: _selectDatePicker,
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      height: 52,
+                      width: 52,
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceElevated,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: const Icon(Icons.calendar_month_rounded, color: AppColors.goldAccent),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
 
-                  // Presets
-                  ..._curatedPresets.entries.map((e) {
-                    final isSel = e.value == _bgImageUrl;
-                    return GestureDetector(
-                      onTap: () => setState(() => _bgImageUrl = e.value),
-                      child: Container(
-                        width: 70,
-                        margin: const EdgeInsets.only(right: 10),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: isSel ? AppColors.goldAccent : Colors.transparent, width: 2.5),
-                          image: DecorationImage(image: AssetImage(e.value), fit: BoxFit.cover),
-                        ),
+              // CATEGORY CHIPS
+              Text('Category', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary)),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: _categories.map((c) {
+                  final isSel = c == _category;
+                  return ChoiceChip(
+                    label: Text(c, style: TextStyle(fontSize: 11, color: isSel ? Colors.white : AppColors.textPrimary)),
+                    selected: isSel,
+                    selectedColor: accent,
+                    backgroundColor: AppColors.surfaceElevated,
+                    onSelected: (val) {
+                      if (val) setState(() => _category = c);
+                    },
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 18),
+
+              // 66+ ASSET PRESET PACK BROWSER & CUSTOM UPLOAD
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Artwork & Photo Pack', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary)),
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.photo_library_rounded, color: AppColors.goldAccent, size: 20),
+                        tooltip: 'Upload from Gallery',
+                        onPressed: () => _pickCustomPhoto(ImageSource.gallery),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.camera_alt_rounded, color: AppColors.goldAccent, size: 20),
+                        tooltip: 'Take a Photo',
+                        onPressed: () => _pickCustomPhoto(ImageSource.camera),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+
+              // Pack Theme Tabs
+              SizedBox(
+                height: 38,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: curatedAestheticPacks.keys.map((packName) {
+                    final isSel = packName == _selectedPack;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: ChoiceChip(
+                        label: Text(packName, style: TextStyle(fontSize: 10.5, fontWeight: isSel ? FontWeight.bold : FontWeight.normal, color: isSel ? Colors.white : AppColors.textPrimary)),
+                        selected: isSel,
+                        selectedColor: accent,
+                        backgroundColor: AppColors.surfaceElevated,
+                        onSelected: (val) {
+                          if (val) setState(() => _selectedPack = packName);
+                        },
                       ),
                     );
                   }).toList(),
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              // Pack Artworks Horizontal Carousel
+              SizedBox(
+                height: 80,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    // Upload Custom Button Card
+                    GestureDetector(
+                      onTap: () => _pickCustomPhoto(ImageSource.gallery),
+                      child: Container(
+                        width: 76,
+                        margin: const EdgeInsets.only(right: 10),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceElevated,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            Icon(Icons.add_a_photo_rounded, size: 20, color: AppColors.goldAccent),
+                            SizedBox(height: 4),
+                            Text('Custom', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // Pack Presets
+                    ...(curatedAestheticPacks[_selectedPack] ?? []).map((item) {
+                      final path = item['path']!;
+                      final title = item['title']!;
+                      final isSel = path == _bgImageUrl;
+
+                      return GestureDetector(
+                        onTap: () => setState(() => _bgImageUrl = path),
+                        child: Container(
+                          width: 76,
+                          margin: const EdgeInsets.only(right: 10),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: isSel ? AppColors.goldAccent : Colors.transparent, width: 2.5),
+                            image: DecorationImage(image: AssetImage(path), fit: BoxFit.cover),
+                          ),
+                          alignment: Alignment.bottomCenter,
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 3),
+                            decoration: BoxDecoration(
+                              color: Colors.black87,
+                              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(11)),
+                            ),
+                            child: Text(
+                              title,
+                              style: const TextStyle(fontSize: 8, color: Colors.white, fontWeight: FontWeight.bold),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 18),
+
+              // CARD COLOR ATMOSPHERE TINT SWATCHES
+              Text('Card Atmosphere Tint', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary)),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 10,
+                children: [
+                  _buildColorSwatch(0xFF8A85A0), // Lavender Grey
+                  _buildColorSwatch(0xFF2A2A3E), // Midnight Navy
+                  _buildColorSwatch(0xFFFFD700), // Pure Gold
+                  _buildColorSwatch(0xFF00E5CC), // Electric Teal
+                  _buildColorSwatch(0xFFFF7BAC), // Rose Quartz
+                  _buildColorSwatch(0xFF0F1B4C), // Deep Sapphire
+                  _buildColorSwatch(0xFF1B4332), // Emerald Forest
                 ],
               ),
-            ),
-            const SizedBox(height: 18),
+              const SizedBox(height: 24),
 
-            // Card Color Tint Swatches
-            Text('Card Color Atmosphere', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary)),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 10,
-              children: [
-                _buildColorSwatch(0xFF8A85A0), // Lavender Grey
-                _buildColorSwatch(0xFF2A2A3E), // Midnight Navy
-                _buildColorSwatch(0xFFFFD700), // Pure Gold
-                _buildColorSwatch(0xFF00E5CC), // Electric Teal
-                _buildColorSwatch(0xFFFF7BAC), // Rose Quartz
-                _buildColorSwatch(0xFF0F1B4C), // Deep Sapphire
-              ],
-            ),
-            const SizedBox(height: 26),
-
-            // Save & Cancel Actions
-            Row(
-              children: [
-                Expanded(
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.bold)),
-                  ),
-                ),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      final updated = widget.block.copyWith(
-                        title: _titleCtrl.text.trim().isNotEmpty ? _titleCtrl.text.trim() : 'Goal',
-                        quote: _quoteCtrl.text.trim(),
-                        category: _category,
-                        bgImageUrl: _bgImageUrl,
-                        tintValue: _tintValue,
-                        targetDate: _targetDateCtrl.text.trim(),
-                      );
-                      appProvider.updateGoalBlock(widget.block.id, updated);
-                      Navigator.pop(context);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: accent,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+              // SAVE & CANCEL ACTIONS
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.bold)),
                     ),
-                    child: const Text('Save Changes', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                   ),
-                ),
-              ],
-            ),
-          ],
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        final updated = widget.block.copyWith(
+                          title: _titleCtrl.text.trim().isNotEmpty ? _titleCtrl.text.trim() : 'Goal',
+                          quote: _quoteCtrl.text.trim(),
+                          category: _category,
+                          bgImageUrl: _bgImageUrl,
+                          tintValue: _tintValue,
+                          targetDate: _targetDateCtrl.text.trim(),
+                          cardStyle: _cardStyle,
+                          isManifested: _isManifested,
+                        );
+                        appProvider.updateGoalBlock(widget.block.id, updated);
+                        Navigator.pop(context);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: accent,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      child: const Text('Save Changes', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1008,11 +1736,502 @@ class _EditGoalModalState extends State<_EditGoalModal> {
   }
 }
 
+
 // =============================================================================
-// SAVED BOARDS GALLERY VIEW
+// WALLPAPER EXPORT MODAL (UNCLIPPED 9:16 HIGH-RES EXPORT & LIVE PREVIEW)
+// =============================================================================
+class _WallpaperExportModal extends StatefulWidget {
+  const _WallpaperExportModal({Key? key}) : super(key: key);
+
+  @override
+  State<_WallpaperExportModal> createState() => _WallpaperExportModalState();
+}
+
+class _WallpaperExportModalState extends State<_WallpaperExportModal> {
+  final GlobalKey _boundaryKey = GlobalKey();
+  bool _isExporting = false;
+
+  Future<void> _exportWallpaper(VisionBoard board) async {
+    setState(() => _isExporting = true);
+    try {
+      // Small delay to allow boundary rendering if needed
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      final boundary = _boundaryKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary == null) {
+        throw Exception('Canvas render boundary not found');
+      }
+
+      final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+      final ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) throw Exception('Failed to convert canvas to PNG');
+
+      final Uint8List pngBytes = byteData.buffer.asUint8List();
+      final filename = 'avan_vision_wallpaper_${DateTime.now().millisecondsSinceEpoch}.png';
+
+      final result = await exportWallpaperImage(pngBytes, filename);
+
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              result != null
+                  ? 'Wallpaper ready! $result ✨ Set as your lock screen.'
+                  : 'Wallpaper generated successfully! ✨',
+            ),
+            backgroundColor: AppColors.surfaceElevated,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint("Wallpaper export error: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Export failed: $e'), backgroundColor: Colors.redAccent),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
+    }
+  }
+
+  void _copyBoardAffirmations(VisionBoard board) {
+    final text = StringBuffer();
+    text.writeln('✨ ${board.title.toUpperCase()} ✨');
+    text.writeln('----------------------------------------');
+    for (final b in board.blocks) {
+      text.writeln('• ${b.title} [${b.category}]');
+      if (b.quote.isNotEmpty) text.writeln('  "${b.quote}"');
+      if (b.targetDate.isNotEmpty) text.writeln('  Target: ${b.targetDate}');
+      text.writeln();
+    }
+    Clipboard.setData(ClipboardData(text: text.toString()));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Affirmation goals copied to clipboard! ✨'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  Widget _buildWallpaperCanvas(VisionBoard board, {required bool isHighRes}) {
+    final blocks = board.blocks;
+
+    return Container(
+      width: isHighRes ? 1080 : 320,
+      height: isHighRes ? 1920 : (320 * 16 / 9),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF0A0A14), Color(0xFF14142B), Color(0xFF0B0B12)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+      ),
+      padding: EdgeInsets.symmetric(
+        horizontal: isHighRes ? 48 : 14,
+        vertical: isHighRes ? 72 : 20,
+      ),
+      child: Column(
+        children: [
+          // Top Header
+          Text(
+            'AVAN MANIFESTATION STUDIO',
+            style: GoogleFonts.inter(
+              fontSize: isHighRes ? 22 : 8,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 2.5,
+              color: AppColors.goldAccent,
+            ),
+          ),
+          SizedBox(height: isHighRes ? 12 : 4),
+          Text(
+            board.title.toUpperCase(),
+            style: GoogleFonts.cormorantGaramond(
+              fontSize: isHighRes ? 34 : 12,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.2,
+              color: Colors.white,
+            ),
+          ),
+          SizedBox(height: isHighRes ? 16 : 6),
+          Container(
+            width: isHighRes ? 120 : 36,
+            height: isHighRes ? 2 : 1,
+            color: AppColors.goldAccent.withOpacity(0.6),
+          ),
+          SizedBox(height: isHighRes ? 32 : 12),
+
+          // Cards Grid (Unclipped)
+          Expanded(
+            child: blocks.isEmpty
+                ? Center(
+                    child: Text(
+                      'No goals added yet',
+                      style: TextStyle(color: Colors.white54, fontSize: isHighRes ? 24 : 11),
+                    ),
+                  )
+                : GridView.builder(
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: isHighRes ? 24 : 8,
+                      mainAxisSpacing: isHighRes ? 24 : 8,
+                      childAspectRatio: 0.82,
+                    ),
+                    itemCount: blocks.length.clamp(0, 8),
+                    itemBuilder: (ctx, i) {
+                      final b = blocks[i];
+                      return Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(isHighRes ? 24 : 10),
+                          border: Border.all(color: Colors.white24, width: isHighRes ? 1.5 : 0.8),
+                          image: DecorationImage(
+                            image: resolveGoalImageProvider(b.bgImageUrl),
+                            fit: BoxFit.cover,
+                            colorFilter: ColorFilter.mode(
+                              b.tint.withOpacity(0.35),
+                              BlendMode.darken,
+                            ),
+                          ),
+                        ),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(isHighRes ? 24 : 10),
+                            gradient: const LinearGradient(
+                              colors: [Colors.black54, Colors.transparent, Colors.black87],
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                            ),
+                          ),
+                          padding: EdgeInsets.all(isHighRes ? 18 : 6),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Container(
+                                    padding: EdgeInsets.symmetric(horizontal: isHighRes ? 10 : 4, vertical: isHighRes ? 4 : 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white24,
+                                      borderRadius: BorderRadius.circular(isHighRes ? 10 : 4),
+                                    ),
+                                    child: Text(
+                                      b.category.toUpperCase(),
+                                      style: TextStyle(
+                                        fontSize: isHighRes ? 12 : 6,
+                                        fontWeight: FontWeight.w800,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                  if (b.isManifested)
+                                    Icon(Icons.star_rounded, color: AppColors.goldAccent, size: isHighRes ? 22 : 9),
+                                ],
+                              ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    b.title,
+                                    style: TextStyle(
+                                      fontSize: isHighRes ? 18 : 7.5,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                      height: 1.15,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  if (b.quote.isNotEmpty) ...[
+                                    SizedBox(height: isHighRes ? 6 : 2),
+                                    Text(
+                                      '"${b.quote}"',
+                                      style: GoogleFonts.cormorantGaramond(
+                                        fontSize: isHighRes ? 15 : 6.5,
+                                        fontStyle: FontStyle.italic,
+                                        color: Colors.white.withOpacity(0.85),
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+
+          // Bottom Watermark & Manifestation Seal
+          SizedBox(height: isHighRes ? 24 : 10),
+          Text(
+            '✨ What you hold in your mind consistently becomes your reality.',
+            style: GoogleFonts.cormorantGaramond(
+              fontSize: isHighRes ? 20 : 8,
+              fontStyle: FontStyle.italic,
+              color: Colors.white70,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: isHighRes ? 8 : 4),
+          Text(
+            'AVAN • LIVING WITH INTENT',
+            style: GoogleFonts.inter(
+              fontSize: isHighRes ? 13 : 6,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 2.0,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final appProvider = context.watch<AppProvider>();
+    final activeBoard = appProvider.activeVisionBoard;
+    final accent = AppColors.accentForMode(appProvider.isGrowthMode);
+
+    return Dialog(
+      backgroundColor: AppColors.background,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 440, maxHeight: 680),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Offscreen render canvas for full 3x crisp 9:16 export
+              Offstage(
+                offstage: true,
+                child: RepaintBoundary(
+                  key: _boundaryKey,
+                  child: _buildWallpaperCanvas(activeBoard, isHighRes: true),
+                ),
+              ),
+
+              // Modal Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Lock Screen Wallpaper 📱',
+                    style: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, color: AppColors.textSecondary),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Full 9:16 unclipped HD wallpaper tailored for phone lock screens.',
+                style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+
+              // On-Screen Scaled 9:16 Preview
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.border),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 16,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: FittedBox(
+                      fit: BoxFit.contain,
+                      child: _buildWallpaperCanvas(activeBoard, isHighRes: false),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Export Buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _copyBoardAffirmations(activeBoard),
+                      icon: const Icon(Icons.copy_rounded, size: 16, color: AppColors.textPrimary),
+                      label: const Text('Copy Text', style: TextStyle(color: AppColors.textPrimary, fontSize: 12)),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: AppColors.border),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton.icon(
+                      onPressed: _isExporting ? null : () => _exportWallpaper(activeBoard),
+                      icon: _isExporting
+                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : const Icon(Icons.download_rounded, size: 18, color: Colors.white),
+                      label: Text(
+                        _isExporting ? 'Exporting...' : 'Export Wallpaper',
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: accent,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        padding: const EdgeInsets.symmetric(vertical: 13),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+// =============================================================================
+// SAVED BOARDS GALLERY VIEW (MOSAIC THUMBNAILS, LOAD CONFIRMATION & DUPLICATE)
 // =============================================================================
 class _SavedBoardsView extends StatelessWidget {
   const _SavedBoardsView({Key? key}) : super(key: key);
+
+  Widget _buildMosaicThumbnail(VisionBoard board) {
+    final blocks = board.blocks.take(4).toList();
+
+    if (blocks.isEmpty) {
+      return Container(
+        width: 52,
+        height: 52,
+        decoration: BoxDecoration(
+          color: AppColors.surfaceElevated,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: const Icon(Icons.dashboard_rounded, color: AppColors.goldAccent, size: 24),
+      );
+    }
+
+    return Container(
+      width: 52,
+      height: 52,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(13),
+        child: GridView.builder(
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 1.5,
+            mainAxisSpacing: 1.5,
+          ),
+          itemCount: 4,
+          itemBuilder: (ctx, i) {
+            if (i < blocks.length) {
+              return Image(
+                image: resolveGoalImageProvider(blocks[i].bgImageUrl),
+                fit: BoxFit.cover,
+              );
+            }
+            return Container(color: AppColors.surfaceElevated);
+          },
+        ),
+      ),
+    );
+  }
+
+  void _confirmLoadBoard(BuildContext context, VisionBoard board) {
+    final appProvider = context.read<AppProvider>();
+    final hasActiveGoals = appProvider.activeVisionBoard.blocks.isNotEmpty;
+
+    if (!hasActiveGoals) {
+      appProvider.loadSavedBoard(board.id);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Loaded "${board.title}" into active canvas! ✨'), behavior: SnackBarBehavior.floating),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.background,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Text('Load Saved Board?'),
+        content: Text(
+          'Loading "${board.title}" will replace your current active canvas blocks. Make sure you have saved any changes you wish to keep.',
+          style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              appProvider.loadSavedBoard(board.id);
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Loaded "${board.title}" into active canvas! ✨'), behavior: SnackBarBehavior.floating),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.buttonDark,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            ),
+            child: const Text('Load Canvas', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDeleteBoard(BuildContext context, VisionBoard board) {
+    final appProvider = context.read<AppProvider>();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.background,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Text('Delete Board Snapshot?'),
+        content: Text('Are you sure you want to delete "${board.title}"? This cannot be undone.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () {
+              appProvider.deleteSavedBoard(board.id);
+              Navigator.pop(ctx);
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.redAccent)),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1042,17 +2261,10 @@ class _SavedBoardsView extends StatelessWidget {
         return Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: CustomCard(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(14),
             child: Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceElevated,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Icon(Icons.dashboard_rounded, color: AppColors.goldAccent),
-                ),
+                _buildMosaicThumbnail(b),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(
@@ -1060,30 +2272,384 @@ class _SavedBoardsView extends StatelessWidget {
                     children: [
                       Text(b.title, style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary)),
                       const SizedBox(height: 3),
-                      Text('${b.blocks.length} Goals • ${b.template} • ${DateFormat('MMM d, yyyy').format(b.lastModified)}', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                      Text(
+                        '${b.blocks.length} Goals • ${b.template} • ${DateFormat('MMM d, yyyy').format(b.lastModified)}',
+                        style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                      ),
                     ],
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.open_in_browser_rounded, color: AppColors.goldAccent, size: 22),
-                  tooltip: 'Load into Canvas',
+                  icon: const Icon(Icons.copy_all_rounded, color: AppColors.textSecondary, size: 20),
+                  tooltip: 'Duplicate Board',
                   onPressed: () {
-                    appProvider.loadSavedBoard(b.id);
+                    appProvider.duplicateSavedBoard(b.id);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Loaded "${b.title}" into active canvas! ✨'), behavior: SnackBarBehavior.floating),
+                      SnackBar(content: Text('Duplicated "${b.title}"! ✨'), behavior: SnackBarBehavior.floating),
                     );
                   },
                 ),
                 IconButton(
+                  icon: const Icon(Icons.open_in_browser_rounded, color: AppColors.goldAccent, size: 22),
+                  tooltip: 'Load into Canvas',
+                  onPressed: () => _confirmLoadBoard(context, b),
+                ),
+                IconButton(
                   icon: const Icon(Icons.delete_outline_rounded, color: AppColors.textSecondary, size: 20),
                   tooltip: 'Delete Board',
-                  onPressed: () => appProvider.deleteSavedBoard(b.id),
+                  onPressed: () => _confirmDeleteBoard(context, b),
                 ),
               ],
             ),
           ),
         );
       },
+    );
+  }
+}
+
+// =============================================================================
+// MANIFESTATION MEDITATION SLIDESHOW SCREEN (FULLSCREEN IMMERSION + 528HZ AUDIO)
+// =============================================================================
+class _ManifestationSlideshowScreen extends StatefulWidget {
+  const _ManifestationSlideshowScreen({Key? key}) : super(key: key);
+
+  @override
+  State<_ManifestationSlideshowScreen> createState() => _ManifestationSlideshowScreenState();
+}
+
+class _ManifestationSlideshowScreenState extends State<_ManifestationSlideshowScreen>
+    with SingleTickerProviderStateMixin {
+  late PageController _pageController;
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
+
+  final AudioPlayer _ambientAudioPlayer = AudioPlayer();
+  bool _isAudioPlaying = false;
+  bool _isAutoPlaying = true;
+  Timer? _autoAdvanceTimer;
+  int _currentPage = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+
+    // Subtle 4-second breathing oscillation: expands 1.0 -> 1.06 smoothly
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 4),
+    )..repeat(reverse: true);
+
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.06).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOutSine),
+    );
+
+    _startAutoAdvance();
+    _startAmbientAudio();
+  }
+
+  void _startAutoAdvance() {
+    _autoAdvanceTimer?.cancel();
+    _autoAdvanceTimer = Timer.periodic(const Duration(seconds: 7), (_) {
+      if (!mounted || !_isAutoPlaying) return;
+      final appProvider = context.read<AppProvider>();
+      final total = appProvider.activeVisionBoard.blocks.length;
+      if (total <= 1) return;
+
+      final nextPage = (_currentPage + 1) % total;
+      _pageController.animateToPage(
+        nextPage,
+        duration: const Duration(milliseconds: 750),
+        curve: Curves.easeInOutCubic,
+      );
+    });
+  }
+
+  Future<void> _startAmbientAudio() async {
+    try {
+      final wavBytes = AmbientAudioSynthesizer.getWavBytesForSound(AmbientSound.solfeggio528);
+      await _ambientAudioPlayer.setReleaseMode(ReleaseMode.loop);
+      await _ambientAudioPlayer.setVolume(0.35);
+      await _ambientAudioPlayer.play(BytesSource(wavBytes));
+      if (mounted) setState(() => _isAudioPlaying = true);
+    } catch (e) {
+      debugPrint("Meditation ambient audio note: $e");
+    }
+  }
+
+  Future<void> _toggleAudio() async {
+    if (_isAudioPlaying) {
+      await _ambientAudioPlayer.pause();
+      if (mounted) setState(() => _isAudioPlaying = false);
+    } else {
+      await _startAmbientAudio();
+    }
+  }
+
+  void _toggleAutoPlay() {
+    setState(() {
+      _isAutoPlaying = !_isAutoPlaying;
+      if (_isAutoPlaying) {
+        _startAutoAdvance();
+      } else {
+        _autoAdvanceTimer?.cancel();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _autoAdvanceTimer?.cancel();
+    _pulseController.dispose();
+    _pageController.dispose();
+    _ambientAudioPlayer.stop();
+    _ambientAudioPlayer.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final appProvider = context.watch<AppProvider>();
+    final blocks = appProvider.activeVisionBoard.blocks;
+
+    if (blocks.isEmpty) {
+      return Scaffold(
+        backgroundColor: const Color(0xFF07070D),
+        body: Center(
+          child: TextButton.icon(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+            label: const Text('No goals to visualize. Tap to return.', style: TextStyle(color: Colors.white)),
+          ),
+        ),
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF07070D),
+      body: SafeArea(
+        child: Stack(
+          children: [
+            // Slide Page View
+            PageView.builder(
+              controller: _pageController,
+              itemCount: blocks.length,
+              onPageChanged: (idx) => setState(() => _currentPage = idx),
+              itemBuilder: (ctx, idx) {
+                final block = blocks[idx];
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 60),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Breathing Hero Image Container
+                      Expanded(
+                        child: AnimatedBuilder(
+                          animation: _pulseAnimation,
+                          builder: (context, child) {
+                            return Transform.scale(
+                              scale: _pulseAnimation.value,
+                              child: child,
+                            );
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(28),
+                              border: Border.all(
+                                color: block.isManifested ? AppColors.goldAccent : Colors.white24,
+                                width: block.isManifested ? 2 : 1,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: (block.isManifested ? AppColors.goldAccent : block.tint).withOpacity(0.3),
+                                  blurRadius: 28,
+                                  spreadRadius: 2,
+                                ),
+                              ],
+                              image: DecorationImage(
+                                image: resolveGoalImageProvider(block.bgImageUrl),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+
+                      // Category & Manifested Tag
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.white12,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              block.category.toUpperCase(),
+                              style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.2, color: Colors.white70),
+                            ),
+                          ),
+                          if (block.isManifested) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppColors.goldAccent,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: const [
+                                  Icon(Icons.auto_awesome_rounded, size: 12, color: Colors.black),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'MANIFESTED',
+                                    style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Colors.black),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Goal Title
+                      Text(
+                        block.title,
+                        style: GoogleFonts.inter(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 10),
+
+                      // Affirmative Quote
+                      if (block.quote.isNotEmpty)
+                        Text(
+                          '"${block.quote}"',
+                          style: GoogleFonts.cormorantGaramond(
+                            fontSize: 19,
+                            fontStyle: FontStyle.italic,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white.withOpacity(0.9),
+                            height: 1.3,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      const SizedBox(height: 14),
+
+                      // Meditative Breathing Guidance Prompt
+                      Text(
+                        'Inhale slowly... Feel the gratitude of this reality as already yours.',
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          color: AppColors.goldAccent.withOpacity(0.85),
+                          fontStyle: FontStyle.italic,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+
+            // Top Control Bar
+            Positioned(
+              top: 14,
+              left: 16,
+              right: 16,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, color: Colors.white70, size: 26),
+                    tooltip: 'Exit Meditation',
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.black45,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.white12),
+                    ),
+                    child: Text(
+                      '${_currentPage + 1} of ${blocks.length}',
+                      style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white70),
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: Icon(
+                          _isAudioPlaying ? Icons.volume_up_rounded : Icons.volume_off_rounded,
+                          color: _isAudioPlaying ? AppColors.goldAccent : Colors.white60,
+                        ),
+                        tooltip: '528Hz Solfeggio Healing Sound',
+                        onPressed: _toggleAudio,
+                      ),
+                      IconButton(
+                        icon: Icon(
+                          _isAutoPlaying ? Icons.pause_circle_filled_rounded : Icons.play_circle_fill_rounded,
+                          color: Colors.white,
+                        ),
+                        tooltip: _isAutoPlaying ? 'Pause Slideshow' : 'Resume Auto-Play',
+                        onPressed: _toggleAutoPlay,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // Bottom Navigation Arrows & Progress Dots
+            Positioned(
+              bottom: 16,
+              left: 20,
+              right: 20,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.chevron_left_rounded, color: Colors.white70, size: 30),
+                    onPressed: _currentPage > 0
+                        ? () => _pageController.previousPage(duration: const Duration(milliseconds: 400), curve: Curves.easeInOut)
+                        : null,
+                  ),
+                  Row(
+                    children: List.generate(blocks.length, (i) {
+                      final isSel = i == _currentPage;
+                      return AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        margin: const EdgeInsets.symmetric(horizontal: 3),
+                        width: isSel ? 18 : 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: isSel ? AppColors.goldAccent : Colors.white24,
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                      );
+                    }),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.chevron_right_rounded, color: Colors.white70, size: 30),
+                    onPressed: _currentPage < blocks.length - 1
+                        ? () => _pageController.nextPage(duration: const Duration(milliseconds: 400), curve: Curves.easeInOut)
+                        : null,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

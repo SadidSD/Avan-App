@@ -148,7 +148,7 @@ class _EmotionalOnboardingScreenState extends State<EmotionalOnboardingScreen> w
       subLevels: [selectedSubLevel],
       tone: selectedTone,
       believabilityPreference: _state.believabilityPreference,
-      userName: _state.displayName == 'friend' ? 'Alex' : _state.displayName,
+      userName: _state.userName.trim().isNotEmpty ? _state.userName.trim() : 'Friend',
       typedChallenge: _state.twoAmThought,
       typedAspiration: _state.morningVision,
       lifeStageIndex: _state.lifeStageIndex,

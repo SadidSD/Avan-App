@@ -1,0 +1,14 @@
+﻿import 'dart:typed_data';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
+
+Future<String?> exportWallpaperImage(Uint8List bytes, String filename) async {
+  try {
+    final dir = await getApplicationDocumentsDirectory();
+    final file = File('${dir.path}/$filename');
+    await file.writeAsBytes(bytes);
+    return file.path;
+  } catch (e) {
+    return null;
+  }
+}

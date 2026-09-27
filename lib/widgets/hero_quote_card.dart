@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
@@ -34,8 +35,8 @@ class _HeroQuoteCardState extends State<HeroQuoteCard>
     super.initState();
     _shimmerController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 3),
-    )..repeat();
+      duration: const Duration(seconds: 4),
+    )..repeat(reverse: true);
   }
 
   @override
@@ -46,144 +47,128 @@ class _HeroQuoteCardState extends State<HeroQuoteCard>
 
   @override
   Widget build(BuildContext context) {
-    final accent = widget.isGrowth
-        ? AppColors.growthAccent
-        : AppColors.healingAccent;
-    final gradient = widget.isGrowth
-        ? AppColors.growthCardGradient
-        : AppColors.healingCardGradient;
+    final accent = AppColors.accentForMode(widget.isGrowth);
+    final gradient = AppColors.cardGradientForMode(widget.isGrowth);
 
-    return AnimatedBuilder(
-      animation: _shimmerController,
-      builder: (context, child) {
-        return Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0x0C4A3E37),
-                blurRadius: 24,
-                spreadRadius: 0,
-                offset: const Offset(0, 8),
-              ),
-              BoxShadow(
-                color: accent.withOpacity(0.12),
-                blurRadius: 32,
-                spreadRadius: -4,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(24),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-              child: Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  gradient: gradient,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: accent.withOpacity(
-                      0.2 + 0.15 * _shimmerController.value,
-                    ),
-                    width: 1.0,
-                  ),
+    final bool shouldBlur = !kIsWeb && defaultTargetPlatform != TargetPlatform.android;
+
+    return RepaintBoundary(
+      child: AnimatedBuilder(
+        animation: _shimmerController,
+        builder: (context, child) {
+          Widget card = Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              gradient: gradient,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: accent.withOpacity(
+                  0.2 + 0.15 * _shimmerController.value,
                 ),
-                child: child,
+                width: 1.0,
               ),
             ),
-          ),
-        );
-      },
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Quote mark
-          Text(
-            '\u201C',
-            style: GoogleFonts.cormorantGaramond(
-              fontSize: 60,
-              color: widget.isGrowth
-                  ? AppColors.growthAccent.withOpacity(0.6)
-                  : AppColors.healingAccent.withOpacity(0.6),
-              height: 0.5,
-            ),
-          ),
-          const SizedBox(height: 12),
-          // Quote text
-          Text(
-            widget.quote,
-            style: GoogleFonts.cormorantGaramond(
-              fontSize: 23,
-              fontWeight: FontWeight.w600,
-              fontStyle: FontStyle.italic,
-              color: AppColors.textPrimary,
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 20),
-          // Action row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              _actionButton(
-                icon: Icons.favorite_outline_rounded,
-                label: 'Save',
-                onTap: widget.onFavorite,
+            child: child,
+          );
+
+          if (shouldBlur) {
+            card = ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                child: card,
               ),
-              const SizedBox(width: 4),
-              _actionButton(
-                icon: Icons.share_outlined,
-                label: 'Share',
-                onTap: widget.onShare,
+            );
+          }
+
+          return card;
+        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Decorative quotation mark
+            Text(
+              '“',
+              style: GoogleFonts.cormorantGaramond(
+                fontSize: 60,
+                color: accent.withOpacity(0.6),
+                height: 0.5,
               ),
-              const SizedBox(width: 8),
-              // Listen button
-              GestureDetector(
-                onTap: widget.onListen,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: widget.isGrowth
-                        ? AppColors.growthAccent
-                        : AppColors.healingAccent,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: accent.withOpacity(0.3),
-                        blurRadius: 10,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.play_arrow_rounded,
-                        size: 16,
-                        color: Colors.white,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Listen',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
+            ),
+            const SizedBox(height: 12),
+            // Quote text
+            Text(
+              widget.quote,
+              style: GoogleFonts.cormorantGaramond(
+                fontSize: 23,
+                fontWeight: FontWeight.w600,
+                fontStyle: FontStyle.italic,
+                color: AppColors.textPrimary,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 20),
+            // Action row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                _actionButton(
+                  icon: Icons.favorite_outline_rounded,
+                  label: 'Save',
+                  onTap: widget.onFavorite,
+                ),
+                const SizedBox(width: 4),
+                _actionButton(
+                  icon: Icons.share_outlined,
+                  label: 'Share',
+                  onTap: widget.onShare,
+                ),
+                const SizedBox(width: 8),
+                // Listen button
+                GestureDetector(
+                  onTap: widget.onListen,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: accent,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: accent.withOpacity(0.3),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.play_arrow_rounded,
+                          size: 16,
                           color: Colors.white,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 4),
+                        Text(
+                          'Listen',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

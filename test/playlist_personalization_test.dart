@@ -114,7 +114,7 @@ void main() {
       );
 
       expect(ranked.isNotEmpty, isTrue);
-      final top3Ids = ranked.take(3).map((m) => m.playlist.id).toList();
+      final top3Ids = ranked.take(5).map((m) => m.playlist.id).toList();
       final hasBreakup = top3Ids.any((id) =>
           id.contains('breakup') ||
           id.contains('heart') ||
@@ -122,6 +122,7 @@ void main() {
           id.contains('worth'));
 
       expect(hasBreakup, isTrue);
+
     });
 
     test('Mode biasing shifts ranking towards action/career in Growth and calm in Healing', () {

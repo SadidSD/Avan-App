@@ -9,6 +9,8 @@ class GoalBlock {
   final String quote;
   final String targetDate;
   final String milestone;
+  final String cardStyle; // 'glass', 'polaroid', 'minimal', 'bold'
+  final bool isManifested;
 
   GoalBlock({
     required this.id,
@@ -19,6 +21,8 @@ class GoalBlock {
     required this.quote,
     this.targetDate = '',
     this.milestone = '',
+    this.cardStyle = 'glass',
+    this.isManifested = false,
   });
 
   Color get tint => Color(tintValue);
@@ -33,6 +37,8 @@ class GoalBlock {
       'quote': quote,
       'targetDate': targetDate,
       'milestone': milestone,
+      'cardStyle': cardStyle,
+      'isManifested': isManifested,
     };
   }
 
@@ -46,6 +52,8 @@ class GoalBlock {
       quote: json['quote'] as String? ?? '',
       targetDate: json['targetDate'] as String? ?? '',
       milestone: json['milestone'] as String? ?? '',
+      cardStyle: json['cardStyle'] as String? ?? 'glass',
+      isManifested: json['isManifested'] as bool? ?? false,
     );
   }
 
@@ -58,6 +66,8 @@ class GoalBlock {
     String? quote,
     String? targetDate,
     String? milestone,
+    String? cardStyle,
+    bool? isManifested,
   }) {
     return GoalBlock(
       id: id ?? this.id,
@@ -68,6 +78,8 @@ class GoalBlock {
       quote: quote ?? this.quote,
       targetDate: targetDate ?? this.targetDate,
       milestone: milestone ?? this.milestone,
+      cardStyle: cardStyle ?? this.cardStyle,
+      isManifested: isManifested ?? this.isManifested,
     );
   }
 }

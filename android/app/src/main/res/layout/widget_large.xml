@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:padding="20dp">
+
+    <!-- Header: App Name, Category, Streak -->
+    <LinearLayout
+        android:id="@+id/widget_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/widget_category"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="AVAN • DAILY PRIME"
+            android:textColor="#8B7355"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.1" />
+
+        <TextView
+            android:id="@+id/widget_streak"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🔥 12 Days"
+            android:textColor="#C4956A"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- Center: Large Quote -->
+    <TextView
+        android:id="@+id/widget_quote"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/widget_header"
+        android:layout_marginTop="16dp"
+        android:ellipsize="end"
+        android:maxLines="5"
+        android:text="&quot;I release the need to control every outcome. I control my effort, my integrity, and my response.&quot;"
+        android:textColor="#3D2C1E"
+        android:textSize="17sp"
+        android:lineSpacingMultiplier="1.25"
+        android:textStyle="italic" />
+
+    <!-- Bottom footer row: Author & Tap to open / play indicator -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/widget_author"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Tap to open affirmation session"
+            android:textColor="#B5A08A"
+            android:textSize="11sp" />
+
+        <TextView
+            android:id="@+id/widget_action"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Open AVAN →"
+            android:textColor="#52B788"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+</RelativeLayout>

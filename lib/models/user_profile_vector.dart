@@ -57,7 +57,7 @@ class UserProfileVector {
   }
 
   UserProfileVector({
-    this.userName = 'Alex',
+    this.userName = 'Friend',
     this.userTypedChallenge = '',
     this.userTypedAspiration = '',
     this.primaryArchetypes = const [UserArchetype.careerProfessional],
@@ -101,7 +101,7 @@ class UserProfileVector {
 
   factory UserProfileVector.fromJson(Map<String, dynamic> json) {
     return UserProfileVector(
-      userName: json['userName'] as String? ?? 'Alex',
+      userName: json['userName'] as String? ?? 'Friend',
       userTypedChallenge: json['userTypedChallenge'] as String? ?? '',
       userTypedAspiration: json['userTypedAspiration'] as String? ?? '',
       primaryArchetypes: (json['primaryArchetypes'] as List<dynamic>?)
