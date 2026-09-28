@@ -85,7 +85,7 @@ class PurchaseService {
       logDiagnostic("Querying products: ${_productIds.join(', ')}");
       final ProductDetailsResponse response = await _iap.queryProductDetails(_productIds);
       if (response.error == null) {
-        _products = response.productDetails;
+        _products = List<ProductDetails>.from(response.productDetails);
         logDiagnostic("Loaded ${_products.length} subscriptions from store: ${_products.map((p) => p.id).join(', ')}");
       } else {
         lastError = "Product query error: ${response.error?.message}";
@@ -168,10 +168,7 @@ class PurchaseService {
       return true;
     }
 
-    final product = _products.firstWhere(
-      (p) => p.id == productId,
-      orElse: () => _fallbackProduct(productId),
-    );
+    final product = getProductById(productId);
 
     // If Google Play has not yet registered or propagated this subscription,
     // calling launchBillingFlow causes Android ProxyBillingActivity to hang on a blank white screen.
@@ -238,26 +235,17 @@ class PurchaseService {
   // PRICING & LOCALIZATION HELPERS
   // ===========================================================================
 
-  ProductDetails get weeklyProduct {
-    return _products.firstWhere(
-      (p) => p.id == weeklySubscriptionId,
-      orElse: () => _fallbackProduct(weeklySubscriptionId),
-    );
+  /// Safely retrieves a store product or fallback without Dart runtime generic variance issues.
+  ProductDetails getProductById(String id) {
+    for (final p in _products) {
+      if (p.id == id) return p;
+    }
+    return _fallbackProduct(id);
   }
 
-  ProductDetails get monthlyProduct {
-    return _products.firstWhere(
-      (p) => p.id == monthlySubscriptionId,
-      orElse: () => _fallbackProduct(monthlySubscriptionId),
-    );
-  }
-
-  ProductDetails get annualProduct {
-    return _products.firstWhere(
-      (p) => p.id == annualSubscriptionId,
-      orElse: () => _fallbackProduct(annualSubscriptionId),
-    );
-  }
+  ProductDetails get weeklyProduct => getProductById(weeklySubscriptionId);
+  ProductDetails get monthlyProduct => getProductById(monthlySubscriptionId);
+  ProductDetails get annualProduct => getProductById(annualSubscriptionId);
 
   String get weeklyPrice => (weeklyProduct.price.isNotEmpty) ? weeklyProduct.price : '\$3.99/wk';
   String get monthlyPrice => (monthlyProduct.price.isNotEmpty) ? monthlyProduct.price : '\$14.99/mo';

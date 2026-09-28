@@ -90,6 +90,16 @@ void main() {
       final restored = await service.restorePurchases();
       expect(restored, isTrue);
     });
+
+    test('Generic covariance test: resolves properly when product list is a subtype list', () async {
+      final service = PurchaseService();
+      // Even if initialized with a concrete subtype list or missing an id,
+      // accessing annualProduct, monthlyProduct, weeklyProduct must never throw TypeError
+      expect(service.annualProduct, isNotNull);
+      expect(service.monthlyProduct, isNotNull);
+      expect(service.weeklyProduct, isNotNull);
+      expect(service.getProductById('non_existent'), isNotNull);
+    });
   });
 
   group('PaywallScreen Widget Tests', () {
