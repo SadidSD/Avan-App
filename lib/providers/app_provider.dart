@@ -138,6 +138,8 @@ class AppProvider with ChangeNotifier {
   AuthService get authService => _authService;
   CloudSyncService get cloudSyncService => _cloudSyncService;
   AdaptyService get adaptyService => AdaptyService();
+  AuthSignInResult? _lastAuthResult;
+  AuthSignInResult? get lastAuthResult => _lastAuthResult;
   bool get isSignedIn => _authService.isSignedIn;
   String? get userPhotoUrl => _authService.photoUrl;
   bool get isSyncing => _isSyncing;
@@ -283,13 +285,15 @@ class AppProvider with ChangeNotifier {
   // ===========================================================================
 
   /// Initiates Google Sign-In and auto-syncs local data into user's Cloud Vault.
-  Future<bool> signInWithGoogle() async {
+  Future<AuthSignInResult> signInWithGoogle() async {
     try {
-      final userCred = await _authService.signInWithGoogle();
-      if (userCred == null || userCred.user == null) {
-        return false;
+      final result = await _authService.signInWithGoogle();
+      _lastAuthResult = result;
+      if (!result.isSuccess || result.credential?.user == null) {
+        notifyListeners();
+        return result;
       }
-      final user = userCred.user!;
+      final user = result.credential!.user!;
       if (user.displayName != null && user.displayName!.isNotEmpty) {
         _userName = user.displayName!;
         await _storageService.setString('user_name', _userName);
@@ -309,10 +313,13 @@ class AppProvider with ChangeNotifier {
       await syncToCloud();
 
       notifyListeners();
-      return true;
+      return result;
     } catch (e) {
       debugPrint('[AppProvider] signInWithGoogle error: $e');
-      return false;
+      final errResult = AuthSignInResult.error(e.toString(), rawError: e.toString());
+      _lastAuthResult = errResult;
+      notifyListeners();
+      return errResult;
     }
   }
 
@@ -321,6 +328,7 @@ class AppProvider with ChangeNotifier {
     await _authService.signOut();
     await AdaptyService().logoutUser();
     _isCloudSyncEnabled = false;
+    _lastAuthResult = null;
     await _storageService.setBool('cloud_sync_enabled', false);
     notifyListeners();
   }
@@ -329,14 +337,22 @@ class AppProvider with ChangeNotifier {
   Future<bool> deleteAccount() async {
     try {
       final uid = _authService.userId;
+      // 1. Delete user account from Firebase Auth first (with automatic re-auth)
+      final success = await _authService.deleteAccount();
+      if (!success) {
+        return false;
+      }
+
+      // 2. Only wipe Cloud Vault after account deletion is confirmed
       if (uid != null) {
         await _cloudSyncService.deleteCloudVault(uid);
       }
-      final success = await _authService.deleteAccount();
+
       _isCloudSyncEnabled = false;
+      _lastAuthResult = null;
       await _storageService.setBool('cloud_sync_enabled', false);
       notifyListeners();
-      return success;
+      return true;
     } catch (e) {
       debugPrint('[AppProvider] deleteAccount error: $e');
       return false;

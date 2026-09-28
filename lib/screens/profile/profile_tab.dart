@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/user_archetype.dart';
 import '../../providers/app_provider.dart';
 import '../../providers/audio_provider.dart';
+import '../../services/auth_service.dart';
 import '../../services/notification_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
@@ -407,21 +409,7 @@ class _ProfileTabState extends State<ProfileTab> {
                 child: ElevatedButton.icon(
                   onPressed: appProvider.isSyncing
                       ? null
-                      : () async {
-                          final ok = await appProvider.signInWithGoogle();
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  ok
-                                      ? 'Connected with Google! Cloud Vault is active ☁️✨'
-                                      : 'Google Sign-In cancelled or failed.',
-                                ),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                          }
-                        },
+                      : () => _handleGoogleSignIn(context, appProvider),
                   icon: appProvider.isSyncing
                       ? const SizedBox(
                           width: 14,
@@ -457,6 +445,147 @@ class _ProfileTabState extends State<ProfileTab> {
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handleGoogleSignIn(BuildContext context, AppProvider appProvider) async {
+    final result = await appProvider.signInWithGoogle();
+    if (!context.mounted) return;
+
+    if (result.isSuccess) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Connected with Google! Cloud Vault is active ☁️✨'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } else if (result.isCancelled) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Google Sign-In cancelled.'),
+          behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } else {
+      _showAuthDiagnosticsDialog(context, result);
+    }
+  }
+
+  void _showAuthDiagnosticsDialog(BuildContext context, AuthSignInResult result) {
+    showDialog(
+      context: context,
+      builder: (diagCtx) => AlertDialog(
+        backgroundColor: const Color(0xFF161622),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: const [
+            Icon(Icons.shield_outlined, color: Colors.amberAccent, size: 22),
+            SizedBox(width: 8),
+            Text('Sign-In Diagnostics', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                result.errorMessage ?? 'Google Sign-In was unable to complete.',
+                style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.4),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Firebase Project SHA-1 Fingerprints:',
+                style: TextStyle(color: AppColors.goldAccent, fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              _buildShaCopyRow(diagCtx, 'Release SHA-1', AuthService.releaseSha1),
+              const SizedBox(height: 6),
+              _buildShaCopyRow(diagCtx, 'Debug SHA-1', AuthService.debugSha1),
+              if (result.rawError != null) ...[
+                const SizedBox(height: 14),
+                const Text('Raw Exception Details:', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                const SizedBox(height: 4),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.black45,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.white10),
+                  ),
+                  child: Text(
+                    result.rawError!,
+                    style: const TextStyle(color: Colors.amberAccent, fontSize: 10, fontFamily: 'monospace'),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Clipboard.setData(ClipboardData(
+                text: 'AVAN Auth Diagnostics:\nError: ${result.errorMessage}\nRaw: ${result.rawError}\nRelease SHA-1: ${AuthService.releaseSha1}\nDebug SHA-1: ${AuthService.debugSha1}',
+              ));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Diagnostics copied to clipboard!'),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+            child: const Text('Copy Info', style: TextStyle(color: AppColors.goldAccent)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.buttonDark,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () => Navigator.pop(diagCtx),
+            child: const Text('Dismiss', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShaCopyRow(BuildContext context, String label, String sha1) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold)),
+                Text(sha1, style: const TextStyle(color: Colors.white54, fontSize: 9, fontFamily: 'monospace')),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.copy_rounded, size: 14, color: AppColors.goldAccent),
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: sha1));
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('$label copied to clipboard!'),
+                  behavior: SnackBarBehavior.floating,
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            },
+            tooltip: 'Copy $label',
           ),
         ],
       ),
@@ -1220,21 +1349,8 @@ class _ProfileTabState extends State<ProfileTab> {
                         onPressed: isSyncing
                             ? null
                             : () async {
-                                setModalState(() {});
-                                final ok = await appProvider.signInWithGoogle();
-                                if (context.mounted) {
-                                  Navigator.pop(ctx);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        ok
-                                            ? 'Connected with Google! Cloud Vault is active ☁️✨'
-                                            : 'Google Sign-In cancelled or failed.',
-                                      ),
-                                      behavior: SnackBarBehavior.floating,
-                                    ),
-                                  );
-                                }
+                                Navigator.pop(ctx);
+                                await _handleGoogleSignIn(context, appProvider);
                               },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,

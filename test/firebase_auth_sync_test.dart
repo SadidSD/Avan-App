@@ -29,6 +29,38 @@ void main() {
       expect(auth.userEmail, isNull);
     });
 
+    test('AuthService.parseErrorMessage translates Developer Error 10 into actionable diagnostic', () {
+      final msg = AuthService.parseErrorMessage('PlatformException(sign_in_failed, com.google.android.gms.common.api.ApiException: 10: , null, null)');
+      expect(msg, contains('Developer Error (10)'));
+      expect(msg, contains('SHA-1'));
+
+      final disabled = AuthService.parseErrorMessage('[firebase_auth/operation-not-allowed] provider disabled');
+      expect(disabled, contains('disabled in Firebase Console'));
+
+      final net = AuthService.parseErrorMessage('SocketException: Network unavailable');
+      expect(net, contains('Network connection error'));
+    });
+
+    test('AuthSignInResult statuses resolve correctly', () {
+      const cancelled = AuthSignInResult.cancelled();
+      expect(cancelled.isCancelled, isTrue);
+      expect(cancelled.isSuccess, isFalse);
+      expect(cancelled.isError, isFalse);
+
+      const err = AuthSignInResult.error('Some error', errorCode: 'err_code');
+      expect(err.isError, isTrue);
+      expect(err.isSuccess, isFalse);
+      expect(err.errorMessage, 'Some error');
+      expect(err.errorCode, 'err_code');
+    });
+
+    test('AuthService holds valid SHA-1 certificate fingerprints', () {
+      expect(AuthService.releaseSha1, isNotEmpty);
+      expect(AuthService.releaseSha1, startsWith('14:D9:AD:4E'));
+      expect(AuthService.debugSha1, isNotEmpty);
+      expect(AuthService.debugSha1, startsWith('D5:00:47:B3'));
+    });
+
     test('CloudSyncService initializes cleanly as singleton', () {
       final sync1 = CloudSyncService();
       final sync2 = CloudSyncService();
