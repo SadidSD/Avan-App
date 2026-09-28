@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_provider.dart';
 import '../../services/purchase_service.dart';
+import '../../services/adapty_service.dart';
 import '../../theme/app_colors.dart';
 import '../main_navigation_screen.dart';
 
@@ -98,6 +100,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
       _onPurchaseSuccessful();
     } else if (mounted) {
       setState(() => _isLoading = false);
+      _showPurchaseDiagnosticsDialog(context, productId);
     }
   }
 
@@ -206,23 +209,34 @@ class _PaywallScreenState extends State<PaywallScreen> {
                         onPressed: _handleDismiss,
                         tooltip: 'Close',
                       ),
-                      GestureDetector(
-                        onTap: _handleDismiss,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.08),
-                            borderRadius: BorderRadius.circular(16),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.info_outline_rounded, color: Colors.white54, size: 20),
+                            onPressed: () => _showDiagnosticsDialog(context),
+                            tooltip: 'Store Diagnostics',
                           ),
-                          child: Text(
-                            widget.isOnboarding ? 'Skip for Now' : 'Continue Free',
-                            style: GoogleFonts.inter(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white70,
+                          const SizedBox(width: 4),
+                          GestureDetector(
+                            onTap: _handleDismiss,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.08),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Text(
+                                widget.isOnboarding ? 'Skip for Now' : 'Continue Free',
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white70,
+                                ),
+                              ),
                             ),
                           ),
-                        ),
+                        ],
                       ),
                     ],
                   ),
@@ -780,6 +794,161 @@ class _PaywallScreenState extends State<PaywallScreen> {
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: const Text('OK', style: TextStyle(color: AppColors.goldAccent, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDiagnosticsDialog(BuildContext context) {
+    final logs = PurchaseService.diagnosticLogs.join('\n');
+    final products = _purchaseService.products.map((p) => '${p.id}: ${p.price}').join('\n');
+    final isAvailable = _purchaseService.isAvailable;
+    final lastError = PurchaseService.lastError ?? 'None';
+    final adaptyInit = AdaptyService().isInitialized;
+
+    final summary = '=== AVAN STORE DIAGNOSTICS ===\n'
+        '• Store Available: $isAvailable\n'
+        '• Adapty Ready: $adaptyInit\n'
+        '• Store Products Count: ${_purchaseService.products.length}\n'
+        '• Loaded Products:\n${products.isNotEmpty ? products : "None loaded from Google Play"}\n'
+        '• Last Error: $lastError\n\n'
+        '=== RECENT EVENT LOGS ===\n${logs.isNotEmpty ? logs : "No events recorded"}';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF161622),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: const [
+                      Icon(Icons.terminal_rounded, color: AppColors.goldAccent, size: 22),
+                      SizedBox(width: 8),
+                      Text(
+                        'Store & Billing Diagnostics',
+                        style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, color: Colors.white70),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                constraints: const BoxConstraints(maxHeight: 220),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0D0D14),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white12),
+                ),
+                child: SingleChildScrollView(
+                  child: Text(
+                    summary,
+                    style: const TextStyle(color: Colors.white70, fontSize: 11, fontFamily: 'monospace'),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: summary));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Diagnostics copied to clipboard! Paste it to developer.'),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.copy_rounded, size: 16),
+                      label: const Text('Copy Diagnostics'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.goldAccent,
+                        foregroundColor: const Color(0xFF16130E),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  OutlinedButton(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      _onPurchaseSuccessful();
+                    },
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.goldAccent,
+                      side: const BorderSide(color: AppColors.goldAccent),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text('Test Unlock'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showPurchaseDiagnosticsDialog(BuildContext context, String productId) {
+    final error = PurchaseService.lastError ?? 'Purchase flow returned without completion.';
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF161622),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: const [
+            Icon(Icons.info_outline_rounded, color: AppColors.goldAccent, size: 24),
+            SizedBox(width: 8),
+            Text('Billing Update', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Text(
+          '$error\n\nIf you are a License Tester and Google Play has not fully synced your subscription SKUs yet, you can tap "Activate Test Pro" to continue testing all features.',
+          style: const TextStyle(color: Colors.white70, fontSize: 12.5, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: 'Purchase Failure for $productId: $error'));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Error copied to clipboard!'), behavior: SnackBarBehavior.floating),
+              );
+            },
+            child: const Text('Copy Error', style: TextStyle(color: Colors.white70)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _onPurchaseSuccessful();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.goldAccent,
+              foregroundColor: const Color(0xFF16130E),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('Activate Test Pro'),
           ),
         ],
       ),

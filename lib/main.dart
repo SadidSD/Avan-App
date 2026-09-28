@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'providers/app_provider.dart';
 import 'providers/audio_provider.dart';
@@ -12,6 +13,97 @@ import 'services/adapty_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Prevent blank grey/white screens in release mode by displaying a rich interactive diagnostic view
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    debugPrint('[FlutterError] ${details.exception}');
+  };
+  ErrorWidget.builder = (FlutterErrorDetails details) {
+    return Material(
+      color: const Color(0xFF0D0D14),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: Colors.redAccent.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.redAccent.withOpacity(0.4)),
+                ),
+                child: const Icon(Icons.bug_report_rounded, color: Colors.redAccent, size: 32),
+              ),
+              const SizedBox(height: 18),
+              const Text(
+                'View Render Issue Detected',
+                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'A component failed to render. The error details below can be copied directly to resolve it:',
+                style: TextStyle(color: Colors.white70, fontSize: 12.5),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              Container(
+                width: double.infinity,
+                constraints: const BoxConstraints(maxHeight: 180),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E1E2C),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white12),
+                ),
+                child: SingleChildScrollView(
+                  child: Text(
+                    '${details.exception}\n\nStack:\n${details.stack}',
+                    style: const TextStyle(color: Colors.amberAccent, fontSize: 11, fontFamily: 'monospace'),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Builder(
+                    builder: (btnContext) => ElevatedButton.icon(
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(
+                          text: 'AVAN Crash Report:\n${details.exception}\n\nStack:\n${details.stack}',
+                        ));
+                        ScaffoldMessenger.of(btnContext).showSnackBar(
+                          const SnackBar(
+                            content: Text('Error copied to clipboard! Paste it to developer.'),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.copy_rounded, size: 16),
+                      label: const Text('Copy Error Details'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.goldAccent,
+                        foregroundColor: const Color(0xFF16130E),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  };
+
   try {
     await Firebase.initializeApp();
   } catch (e) {

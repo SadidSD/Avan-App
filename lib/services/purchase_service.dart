@@ -20,6 +20,16 @@ class PurchaseService {
   static const String monthlySubscriptionId = 'avan_premium_monthly';
   static const String annualSubscriptionId = 'avan_premium_annual';
 
+  static String? lastError;
+  static final List<String> diagnosticLogs = [];
+
+  static void logDiagnostic(String message) {
+    final timestamp = DateTime.now().toIso8601String().substring(11, 19);
+    diagnosticLogs.add('[$timestamp] $message');
+    if (diagnosticLogs.length > 30) diagnosticLogs.removeAt(0);
+    debugPrint('[PurchaseService] $message');
+  }
+
   static final Set<String> _productIds = {
     googlePlaySubscriptionId,
     weeklySubscriptionId,
@@ -51,9 +61,11 @@ class PurchaseService {
     if (_isInitialized) return;
 
     try {
+      logDiagnostic("Checking store availability...");
       _isAvailable = await _iap.isAvailable();
+      logDiagnostic("Store available: $_isAvailable");
       if (!_isAvailable) {
-        debugPrint("[PurchaseService] IAP unavailable in this runtime (e.g. Web/Simulator/Desktop). Sandbox simulation active.");
+        logDiagnostic("IAP unavailable in this runtime. Sandbox active.");
         _isInitialized = true;
         return;
       }
@@ -64,21 +76,25 @@ class PurchaseService {
         _onPurchaseUpdate,
         onDone: () => _subscription?.cancel(),
         onError: (error) {
-          debugPrint("[PurchaseService] Purchase stream error: $error");
+          lastError = "Purchase stream error: $error";
+          logDiagnostic(lastError!);
         },
       );
 
       // Query store products
+      logDiagnostic("Querying products: ${_productIds.join(', ')}");
       final ProductDetailsResponse response = await _iap.queryProductDetails(_productIds);
       if (response.error == null) {
         _products = response.productDetails;
-        debugPrint("[PurchaseService] Loaded ${_products.length} subscriptions from store.");
+        logDiagnostic("Loaded ${_products.length} subscriptions from store: ${_products.map((p) => p.id).join(', ')}");
       } else {
-        debugPrint("[PurchaseService] Product query error: ${response.error?.message}");
+        lastError = "Product query error: ${response.error?.message}";
+        logDiagnostic(lastError!);
       }
       _isInitialized = true;
     } catch (e) {
-      debugPrint("[PurchaseService] Initialization exception: $e");
+      lastError = "Init exception: $e";
+      logDiagnostic(lastError!);
       _isInitialized = true;
     }
   }
@@ -110,9 +126,11 @@ class PurchaseService {
 
   /// Initiates subscription purchase via Adapty or Google Play Billing.
   Future<bool> buyProduct(String productId) async {
+    logDiagnostic("Initiating purchase for '$productId'...");
     // 1. Try purchasing through Adapty first
     try {
       final adaptyProducts = await AdaptyService().getPaywallProducts();
+      logDiagnostic("Adapty returned ${adaptyProducts.length} paywall products");
       final matchingAdapty = adaptyProducts.where((p) {
         final id = p.vendorProductId.toLowerCase();
         final target = productId.toLowerCase();
@@ -124,21 +142,25 @@ class PurchaseService {
       }).firstOrNull ?? (adaptyProducts.isNotEmpty ? adaptyProducts.first : null);
 
       if (matchingAdapty != null) {
-        debugPrint("[PurchaseService] Purchasing '${matchingAdapty.vendorProductId}' via Adapty...");
+        logDiagnostic("Purchasing '${matchingAdapty.vendorProductId}' via Adapty SDK...");
         final success = await AdaptyService().makePurchase(matchingAdapty);
         if (success) {
+          logDiagnostic("Adapty purchase succeeded!");
           if (_onPremiumChanged != null) {
             _onPremiumChanged!(true);
           }
           return true;
+        } else {
+          logDiagnostic("Adapty purchase did not complete.");
         }
       }
     } catch (e) {
-      debugPrint("[PurchaseService] Adapty purchase error (falling back to store): $e");
+      lastError = "Adapty error: $e";
+      logDiagnostic("Adapty purchase error (falling back to store): $e");
     }
 
     if (!_isAvailable) {
-      debugPrint("[PurchaseService] Store unavailable, executing sandbox subscription simulation.");
+      logDiagnostic("Store unavailable, executing sandbox subscription simulation.");
       await Future.delayed(const Duration(milliseconds: 600));
       if (_onPremiumChanged != null) {
         _onPremiumChanged!(true);
@@ -156,7 +178,7 @@ class PurchaseService {
     // Gracefully simulate test purchase so testers and reviewers are never blocked.
     final bool isRealStoreProduct = _products.any((p) => p.id == productId);
     if (!isRealStoreProduct) {
-      debugPrint("[PurchaseService] Subscription '$productId' not yet active on Google Play Store. Executing sandbox subscription simulation.");
+      logDiagnostic("Subscription '$productId' not yet active on Google Play Store. Executing sandbox simulation.");
       await Future.delayed(const Duration(milliseconds: 600));
       if (_onPremiumChanged != null) {
         _onPremiumChanged!(true);
@@ -166,9 +188,11 @@ class PurchaseService {
 
     final PurchaseParam purchaseParam = PurchaseParam(productDetails: product);
     try {
+      logDiagnostic("Calling Google Play Billing for '$productId'...");
       return await _iap.buyNonConsumable(purchaseParam: purchaseParam);
     } catch (e) {
-      debugPrint("[PurchaseService] buyNonConsumable exception: $e. Falling back to sandbox.");
+      lastError = "Google Play Billing error: $e";
+      logDiagnostic("buyNonConsumable exception: $e. Falling back to sandbox.");
       await Future.delayed(const Duration(milliseconds: 600));
       if (_onPremiumChanged != null) {
         _onPremiumChanged!(true);
