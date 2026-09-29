@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../models/user_archetype.dart';
 import '../../providers/app_provider.dart';
 import '../../providers/audio_provider.dart';
+import '../../services/adapty_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/notification_service.dart';
 import '../../theme/app_colors.dart';
@@ -1042,8 +1043,40 @@ class _ProfileTabState extends State<ProfileTab> {
           title: appProvider.isPremium
               ? 'AVAN Unlimited Status: Active ✨'
               : 'Unlock AVAN Unlimited (7-Day Trial) 💎',
+          subtitle: appProvider.isPremium
+              ? 'All 63 playlists and vision boards unlocked • Tap to manage'
+              : 'Tap to view membership plans and trial options',
           onTap: () => PaywallScreen.open(context),
         ),
+        if (appProvider.isPremium)
+          _buildSettingTile(
+            icon: Icons.sync_rounded,
+            title: 'Sync Subscription with Google Play 🔄',
+            subtitle: 'Verify active entitlement or revert to free tier if expired',
+            onTap: () async {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Checking store subscription status...'),
+                  behavior: SnackBarBehavior.floating,
+                  duration: Duration(seconds: 2),
+                ),
+              );
+              final isSubscribed = await AdaptyService().restorePurchases();
+              if (!isSubscribed) {
+                await appProvider.setPremium(false);
+              }
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(isSubscribed
+                        ? 'Google Play subscription confirmed active! ✨'
+                        : 'No active subscription found. Switched back to Free tier.'),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+            },
+          ),
         _buildSettingTile(
           icon: Icons.notifications_none_rounded,
           title: 'Daily Reminders & Notifications ⏰',

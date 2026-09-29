@@ -225,5 +225,42 @@ void main() {
       expect(find.text('Weekly Membership'), findsOneWidget);
       expect(find.text('See full feature breakdown & trial timeline →'), findsOneWidget);
     });
+
+    testWidgets('Dismissing PaywallScreen keeps user on Free tier', (tester) async {
+      final appProvider = AppProvider();
+      await appProvider.loadState();
+      expect(appProvider.isPremium, isFalse);
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<AppProvider>.value(
+          value: appProvider,
+          child: const MaterialApp(
+            home: PaywallScreen(isOnboarding: false),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final closeButton = find.byIcon(Icons.close_rounded);
+      expect(closeButton, findsOneWidget);
+      await tester.tap(closeButton);
+      await tester.pumpAndSettle();
+
+      expect(appProvider.isPremium, isFalse);
+    });
+
+    test('buyProduct does not grant isPremium when store is unavailable without test mock', () async {
+      PurchaseService.customIapInstance = null;
+      final service = PurchaseService();
+      bool premiumNotified = false;
+
+      await service.initialize((isPremium) {
+        premiumNotified = isPremium;
+      });
+
+      final bought = await service.buyProduct(PurchaseService.annualSubscriptionId);
+      expect(bought, isFalse);
+      expect(premiumNotified, isFalse);
+    });
   });
 }

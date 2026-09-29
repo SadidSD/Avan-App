@@ -33,23 +33,33 @@ class _PaywallModalState extends State<PaywallModal> {
   String _selectedPlan = 'annual'; // 'annual' or 'monthly'
   bool _isLoading = false;
 
+  void _onPremiumCallback(bool isPremium) {
+    if (isPremium && mounted) {
+      final appProvider = Provider.of<AppProvider>(context, listen: false);
+      appProvider.setPremium(true);
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✨ Welcome to AVAN Unlimited! All features unlocked.'),
+          duration: Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    final appProvider = Provider.of<AppProvider>(context, listen: false);
-    _purchaseService.initialize((isPremium) {
-      if (isPremium && mounted) {
-        appProvider.setPremium(true);
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✨ Welcome to AVAN Unlimited! All features unlocked.'),
-            duration: Duration(seconds: 2),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    });
+    _purchaseService.addPremiumListener(_onPremiumCallback);
+  }
+
+  @override
+  void dispose() {
+    _purchaseService.removePremiumListener(_onPremiumCallback);
+    super.dispose();
   }
 
   Future<void> _handlePurchase(AppProvider appProvider) async {
@@ -64,18 +74,18 @@ class _PaywallModalState extends State<PaywallModal> {
     }
 
     final success = await _purchaseService.buyProduct(productId);
-    if (success && mounted) {
-      appProvider.setPremium(true);
-      Navigator.pop(context);
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (!success && PurchaseService.lastError != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('✨ Welcome to AVAN Unlimited! All features unlocked.'),
-          duration: Duration(seconds: 2),
+        SnackBar(
+          content: Text('Purchase could not be started: ${PurchaseService.lastError}'),
+          backgroundColor: Colors.redAccent,
           behavior: SnackBarBehavior.floating,
         ),
       );
     }
-    if (mounted) setState(() => _isLoading = false);
   }
 
   Future<void> _handleRestore(AppProvider appProvider) async {

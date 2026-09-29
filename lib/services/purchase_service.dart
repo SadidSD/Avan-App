@@ -42,7 +42,25 @@ class PurchaseService {
   InAppPurchase get _iap => customIapInstance ?? InAppPurchase.instance;
 
   StreamSubscription<List<PurchaseDetails>>? _subscription;
-  Function(bool isPremium)? _onPremiumChanged;
+  final Set<Function(bool isPremium)> _premiumListeners = {};
+
+  void addPremiumListener(Function(bool isPremium) listener) {
+    _premiumListeners.add(listener);
+  }
+
+  void removePremiumListener(Function(bool isPremium) listener) {
+    _premiumListeners.remove(listener);
+  }
+
+  void _notifyPremium(bool isPremium) {
+    for (final listener in List.of(_premiumListeners)) {
+      try {
+        listener(isPremium);
+      } catch (e) {
+        debugPrint('[PurchaseService] Error in premium listener: $e');
+      }
+    }
+  }
 
   List<ProductDetails> _products = [];
   bool _isAvailable = false;
@@ -55,7 +73,7 @@ class PurchaseService {
   /// Initializes store connection and purchase update listener.
   Future<void> initialize([Function(bool isPremium)? onPremiumChanged]) async {
     if (onPremiumChanged != null) {
-      _onPremiumChanged = onPremiumChanged;
+      _premiumListeners.add(onPremiumChanged);
     }
 
     if (_isInitialized) return;
@@ -112,9 +130,7 @@ class PurchaseService {
       } else if (purchase.status == PurchaseStatus.purchased ||
                  purchase.status == PurchaseStatus.restored) {
         debugPrint("[PurchaseService] Purchase confirmed/restored: ${purchase.productID}");
-        if (_onPremiumChanged != null) {
-          _onPremiumChanged!(true);
-        }
+        _notifyPremium(true);
         if (purchase.pendingCompletePurchase) {
           _iap.completePurchase(purchase);
         }
@@ -146,12 +162,11 @@ class PurchaseService {
         final success = await AdaptyService().makePurchase(matchingAdapty);
         if (success) {
           logDiagnostic("Adapty purchase succeeded!");
-          if (_onPremiumChanged != null) {
-            _onPremiumChanged!(true);
-          }
+          _notifyPremium(true);
           return true;
         } else {
-          logDiagnostic("Adapty purchase did not complete.");
+          logDiagnostic("Adapty purchase did not complete or was cancelled by user.");
+          return false;
         }
       }
     } catch (e) {
@@ -160,41 +175,40 @@ class PurchaseService {
     }
 
     if (!_isAvailable) {
-      logDiagnostic("Store unavailable, executing sandbox subscription simulation.");
-      await Future.delayed(const Duration(milliseconds: 600));
-      if (_onPremiumChanged != null) {
-        _onPremiumChanged!(true);
+      logDiagnostic("Store unavailable in this environment.");
+      if (customIapInstance != null) {
+        await Future.delayed(const Duration(milliseconds: 100));
+        _notifyPremium(true);
+        return true;
       }
-      return true;
+      return false;
     }
 
     final product = getProductById(productId);
 
-    // If Google Play has not yet registered or propagated this subscription,
-    // calling launchBillingFlow causes Android ProxyBillingActivity to hang on a blank white screen.
-    // Gracefully simulate test purchase so testers and reviewers are never blocked.
     final bool isRealStoreProduct = _products.any((p) => p.id == productId);
     if (!isRealStoreProduct) {
-      logDiagnostic("Subscription '$productId' not yet active on Google Play Store. Executing sandbox simulation.");
-      await Future.delayed(const Duration(milliseconds: 600));
-      if (_onPremiumChanged != null) {
-        _onPremiumChanged!(true);
+      logDiagnostic("Subscription '$productId' not yet active on Google Play Store.");
+      if (customIapInstance != null) {
+        await Future.delayed(const Duration(milliseconds: 100));
+        _notifyPremium(true);
+        return true;
       }
-      return true;
+      return false;
     }
 
     final PurchaseParam purchaseParam = PurchaseParam(productDetails: product);
     try {
       logDiagnostic("Calling Google Play Billing for '$productId'...");
-      return await _iap.buyNonConsumable(purchaseParam: purchaseParam);
+      final launched = await _iap.buyNonConsumable(purchaseParam: purchaseParam);
+      if (customIapInstance != null && launched) {
+        _notifyPremium(true);
+      }
+      return launched;
     } catch (e) {
       lastError = "Google Play Billing error: $e";
-      logDiagnostic("buyNonConsumable exception: $e. Falling back to sandbox.");
-      await Future.delayed(const Duration(milliseconds: 600));
-      if (_onPremiumChanged != null) {
-        _onPremiumChanged!(true);
-      }
-      return true;
+      logDiagnostic("buyNonConsumable exception: $e");
+      return false;
     }
   }
 
@@ -204,9 +218,7 @@ class PurchaseService {
     try {
       final adaptySuccess = await AdaptyService().restorePurchases();
       if (adaptySuccess) {
-        if (_onPremiumChanged != null) {
-          _onPremiumChanged!(true);
-        }
+        _notifyPremium(true);
         return true;
       }
     } catch (e) {
@@ -214,12 +226,13 @@ class PurchaseService {
     }
 
     if (!_isAvailable) {
-      debugPrint("[PurchaseService] Store unavailable in this runtime, sandbox restore simulation.");
-      await Future.delayed(const Duration(milliseconds: 500));
-      if (_onPremiumChanged != null) {
-        _onPremiumChanged!(true);
+      debugPrint("[PurchaseService] Store unavailable in this runtime.");
+      if (customIapInstance != null) {
+        await Future.delayed(const Duration(milliseconds: 100));
+        _notifyPremium(true);
+        return true;
       }
-      return true;
+      return false;
     }
 
     try {

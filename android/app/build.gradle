@@ -28,8 +28,8 @@ android {
         applicationId "com.avanapp.avan_app"
         minSdkVersion flutter.minSdkVersion
         targetSdkVersion 36
-        versionCode 16
-        versionName "1.0.15"
+        versionCode 17
+        versionName "1.0.16"
     }
 
     signingConfigs {

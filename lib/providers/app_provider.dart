@@ -178,9 +178,7 @@ class AppProvider with ChangeNotifier {
 
     // Bind real-time Adapty subscription entitlement updates
     AdaptyService().initialize((isPremium) {
-      if (isPremium) {
-        setPremium(true);
-      }
+      setPremium(isPremium);
     });
     
     _userName = _storageService.getString('user_name', defaultValue: 'Friend');

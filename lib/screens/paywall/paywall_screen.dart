@@ -36,14 +36,16 @@ class _PaywallScreenState extends State<PaywallScreen> {
   String _selectedPlan = 'annual'; // 'annual' or 'monthly'
   bool _isLoading = false;
 
+  void _onPremiumCallback(bool isPremium) {
+    if (isPremium && mounted) {
+      _onPurchaseSuccessful();
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    _purchaseService.initialize((isPremium) {
-      if (isPremium && mounted) {
-        _onPurchaseSuccessful();
-      }
-    });
+    _purchaseService.addPremiumListener(_onPremiumCallback);
   }
 
   void _onPurchaseSuccessful() {
@@ -96,12 +98,18 @@ class _PaywallScreenState extends State<PaywallScreen> {
     }
 
     final success = await _purchaseService.buyProduct(productId);
-    if (success && mounted) {
-      _onPurchaseSuccessful();
-    } else if (mounted) {
-      setState(() => _isLoading = false);
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (!success && PurchaseService.lastError != null) {
       _showPurchaseDiagnosticsDialog(context, productId);
     }
+  }
+
+  @override
+  void dispose() {
+    _purchaseService.removePremiumListener(_onPremiumCallback);
+    super.dispose();
   }
 
   Future<void> _handleRestore() async {
