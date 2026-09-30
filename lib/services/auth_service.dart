@@ -51,6 +51,7 @@ class AuthService {
 
   // Exact SHA-1 fingerprints generated for AVAN
   static const String releaseSha1 = '14:D9:AD:4E:98:69:0D:15:E2:EC:9A:CD:C5:7E:B4:6B:C3:0C:3C:27';
+  static const String uploadSha1 = '7C:13:70:38:09:EB:C8:82:6E:16:C6:DF:3D:A3:40:31:D4:CA:2E:22';
   static const String debugSha1 = 'D5:00:47:B3:45:F5:1B:D3:0D:09:57:FE:07:02:8C:AE:DE:E1:E2:EB';
 
   static String? lastError;
@@ -78,7 +79,7 @@ class AuthService {
   static String parseErrorMessage(dynamic error) {
     final errStr = error.toString().toLowerCase();
     if (errStr.contains('10') || errStr.contains('developer_error')) {
-      return 'Developer Error (10): App SHA-1 fingerprint is missing in Firebase Console, or Google Sign-In is not enabled.';
+      return 'Developer Error (10): App SHA-1 (especially Google Play App Signing SHA-1 for Play Store builds) is missing in Firebase Console, or Google Sign-In is disabled.';
     } else if (errStr.contains('12500') || errStr.contains('sign_in_failed')) {
       return 'Sign-In Failed (12500): Google Play Services was unable to authenticate. Verify device network and Play Services.';
     } else if (errStr.contains('operation-not-allowed')) {

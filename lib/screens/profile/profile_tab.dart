@@ -503,7 +503,14 @@ class _ProfileTabState extends State<ProfileTab> {
                 'Firebase Project SHA-1 Fingerprints:',
                 style: TextStyle(color: AppColors.goldAccent, fontSize: 12, fontWeight: FontWeight.bold),
               ),
+              const SizedBox(height: 4),
+              const Text(
+                'Note: For builds downloaded from Play Store, add the SHA-1 from Google Play Console → Release → App Integrity → App Signing into Firebase Console.',
+                style: TextStyle(color: Colors.white70, fontSize: 11),
+              ),
               const SizedBox(height: 8),
+              _buildShaCopyRow(diagCtx, 'Upload SHA-1', AuthService.uploadSha1),
+              const SizedBox(height: 6),
               _buildShaCopyRow(diagCtx, 'Release SHA-1', AuthService.releaseSha1),
               const SizedBox(height: 6),
               _buildShaCopyRow(diagCtx, 'Debug SHA-1', AuthService.debugSha1),
@@ -532,7 +539,7 @@ class _ProfileTabState extends State<ProfileTab> {
           TextButton(
             onPressed: () {
               Clipboard.setData(ClipboardData(
-                text: 'AVAN Auth Diagnostics:\nError: ${result.errorMessage}\nRaw: ${result.rawError}\nRelease SHA-1: ${AuthService.releaseSha1}\nDebug SHA-1: ${AuthService.debugSha1}',
+                text: 'AVAN Auth Diagnostics:\nError: ${result.errorMessage}\nRaw: ${result.rawError}\nUpload SHA-1: ${AuthService.uploadSha1}\nRelease SHA-1: ${AuthService.releaseSha1}\nDebug SHA-1: ${AuthService.debugSha1}\nPlay Store Note: Add App Signing SHA-1 from Play Console > App Integrity',
               ));
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
