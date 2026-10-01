@@ -49,9 +49,11 @@ class AuthService {
   @visibleForTesting
   static GoogleSignIn? customGoogleSignInInstance;
 
-  // Exact SHA-1 fingerprints generated for AVAN
-  static const String releaseSha1 = '14:D9:AD:4E:98:69:0D:15:E2:EC:9A:CD:C5:7E:B4:6B:C3:0C:3C:27';
+  // Exact SHA-1 & SHA-256 fingerprints for AVAN
+  static const String playStoreSha1 = '56:8B:98:6A:2A:1C:4F:90:9D:1C:A3:A3:35:A0:25:88:0E:05:8E:FA';
+  static const String playStoreSha256 = '77:E0:D5:73:FE:84:67:9E:CD:78:CA:C1:7B:0D:84:6C:C8:28:42:79:E1:B1:8F:B1:18:94:57:F1:ED:B1:FA:86';
   static const String uploadSha1 = '7C:13:70:38:09:EB:C8:82:6E:16:C6:DF:3D:A3:40:31:D4:CA:2E:22';
+  static const String releaseSha1 = '14:D9:AD:4E:98:69:0D:15:E2:EC:9A:CD:C5:7E:B4:6B:C3:0C:3C:27';
   static const String debugSha1 = 'D5:00:47:B3:45:F5:1B:D3:0D:09:57:FE:07:02:8C:AE:DE:E1:E2:EB';
 
   static String? lastError;

@@ -503,17 +503,14 @@ class _ProfileTabState extends State<ProfileTab> {
                 'Firebase Project SHA-1 Fingerprints:',
                 style: TextStyle(color: AppColors.goldAccent, fontSize: 12, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 4),
-              const Text(
-                'Note: For builds downloaded from Play Store, add the SHA-1 from Google Play Console → Release → App Integrity → App Signing into Firebase Console.',
-                style: TextStyle(color: Colors.white70, fontSize: 11),
-              ),
               const SizedBox(height: 8),
-              _buildShaCopyRow(diagCtx, 'Upload SHA-1', AuthService.uploadSha1),
+              _buildShaCopyRow(diagCtx, 'Play Store SHA-1 (Active)', AuthService.playStoreSha1),
               const SizedBox(height: 6),
-              _buildShaCopyRow(diagCtx, 'Release SHA-1', AuthService.releaseSha1),
+              _buildShaCopyRow(diagCtx, 'Upload Key SHA-1', AuthService.uploadSha1),
               const SizedBox(height: 6),
-              _buildShaCopyRow(diagCtx, 'Debug SHA-1', AuthService.debugSha1),
+              _buildShaCopyRow(diagCtx, 'Release Key SHA-1', AuthService.releaseSha1),
+              const SizedBox(height: 6),
+              _buildShaCopyRow(diagCtx, 'Debug Key SHA-1', AuthService.debugSha1),
               if (result.rawError != null) ...[
                 const SizedBox(height: 14),
                 const Text('Raw Exception Details:', style: TextStyle(color: Colors.white54, fontSize: 11)),
@@ -539,7 +536,7 @@ class _ProfileTabState extends State<ProfileTab> {
           TextButton(
             onPressed: () {
               Clipboard.setData(ClipboardData(
-                text: 'AVAN Auth Diagnostics:\nError: ${result.errorMessage}\nRaw: ${result.rawError}\nUpload SHA-1: ${AuthService.uploadSha1}\nRelease SHA-1: ${AuthService.releaseSha1}\nDebug SHA-1: ${AuthService.debugSha1}\nPlay Store Note: Add App Signing SHA-1 from Play Console > App Integrity',
+                text: 'AVAN Auth Diagnostics:\nError: ${result.errorMessage}\nPlay Store SHA-1: ${AuthService.playStoreSha1}\nPlay Store SHA-256: ${AuthService.playStoreSha256}\nUpload SHA-1: ${AuthService.uploadSha1}\nRelease SHA-1: ${AuthService.releaseSha1}\nDebug SHA-1: ${AuthService.debugSha1}',
               ));
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
