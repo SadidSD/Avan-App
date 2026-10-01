@@ -21,12 +21,19 @@ class _WidgetsTabState extends State<WidgetsTab> {
   String _selectedTheme = 'Dark Espresso'; // Dark Espresso, Soft Beige, Warm Gradient, Minimal White
   String _selectedRefreshFreq = 'Every 6 Hours'; // Every 2 Hours, Every 6 Hours, Daily
   String _selectedFont = 'Elegant Serif'; // Clean Sans, Elegant Serif, Bold Rounded
+  final TextEditingController _customAffirmationController = TextEditingController();
   bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
     _loadSavedWidgetSettings();
+  }
+
+  @override
+  void dispose() {
+    _customAffirmationController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadSavedWidgetSettings() async {
@@ -43,6 +50,7 @@ class _WidgetsTabState extends State<WidgetsTab> {
         _selectedTheme = prefs.getString('pref_widget_theme') ?? _selectedTheme;
         _selectedRefreshFreq = prefs.getString('pref_widget_refresh') ?? _selectedRefreshFreq;
         _selectedFont = prefs.getString('pref_widget_font') ?? _selectedFont;
+        _customAffirmationController.text = prefs.getString('pref_widget_custom_quote') ?? '';
       });
     } catch (_) {}
   }
@@ -73,6 +81,7 @@ class _WidgetsTabState extends State<WidgetsTab> {
       await prefs.setString('pref_widget_theme', _selectedTheme);
       await prefs.setString('pref_widget_refresh', _selectedRefreshFreq);
       await prefs.setString('pref_widget_font', _selectedFont);
+      await prefs.setString('pref_widget_custom_quote', _customAffirmationController.text.trim());
 
       // Push updated content to native Home Screen & Lock Screen widget storage
       await WidgetService.instance.updateWidgets(
@@ -81,6 +90,10 @@ class _WidgetsTabState extends State<WidgetsTab> {
         theme: _selectedTheme,
         font: _selectedFont,
         refreshFreq: _selectedRefreshFreq,
+        customQuote: _selectedContentType == 'Custom Affirmation'
+            ? _customAffirmationController.text.trim()
+            : null,
+        category: _selectedContentType == 'Custom Affirmation' ? 'My Mantra' : null,
         mood: appProvider.selectedMood.isNotEmpty ? appProvider.selectedMood : 'Peaceful',
       );
     } catch (e) {
@@ -290,9 +303,13 @@ class _WidgetsTabState extends State<WidgetsTab> {
               _buildOptionDropdown(
                 label: 'Widget Content',
                 value: _selectedContentType,
-                options: ['Daily Affirmation', 'Streak Tracker', 'Quick Player'],
+                options: ['Daily Affirmation', 'Custom Affirmation', 'Streak Tracker', 'Quick Player'],
                 onChanged: (val) => setState(() => _selectedContentType = val!),
               ),
+              if (_selectedContentType == 'Custom Affirmation') ...[
+                const SizedBox(height: 12),
+                _buildCustomAffirmationEditor(accent),
+              ],
               const SizedBox(height: 12),
 
               // Theme Selector
@@ -550,8 +567,14 @@ class _WidgetsTabState extends State<WidgetsTab> {
       );
     }
 
-    // Default: Daily Affirmation on Lock Screen
+    // Default: Daily Affirmation or Custom Affirmation on Lock Screen
     final hero = appProvider.getHeroAffirmation();
+    final bool isCustom = _selectedContentType == 'Custom Affirmation';
+    final String quote = (isCustom && _customAffirmationController.text.trim().isNotEmpty)
+        ? _customAffirmationController.text.trim()
+        : hero.quote;
+    final String category = isCustom ? 'MY MANTRA' : hero.category.toUpperCase();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -561,7 +584,7 @@ class _WidgetsTabState extends State<WidgetsTab> {
             const Icon(Icons.auto_awesome_rounded, size: 11, color: Colors.white),
             const SizedBox(width: 5),
             Text(
-              '${hero.category.toUpperCase()} • AVAN',
+              '$category • AVAN',
               style: GoogleFonts.inter(
                 fontSize: 9.5,
                 fontWeight: FontWeight.w700,
@@ -573,7 +596,7 @@ class _WidgetsTabState extends State<WidgetsTab> {
         ),
         const SizedBox(height: 3),
         Text(
-          '"${hero.quote}"',
+          '"$quote"',
           style: _getPreviewFontStyle(
             fontSize: 11.5,
             fontWeight: FontWeight.w600,
@@ -880,10 +903,14 @@ class _WidgetsTabState extends State<WidgetsTab> {
       );
     }
 
-    // Default: Daily Affirmation
+    // Default: Daily Affirmation or Custom Affirmation
     final hero = appProvider.getHeroAffirmation();
-    final quote = hero.quote;
-    final category = hero.category.toUpperCase();
+    final bool isCustom = _selectedContentType == 'Custom Affirmation';
+    final String quote = (isCustom && _customAffirmationController.text.trim().isNotEmpty)
+        ? _customAffirmationController.text.trim()
+        : hero.quote;
+    final String category = isCustom ? 'MY MANTRA' : hero.category.toUpperCase();
+    final String authorName = isCustom ? 'Personal Mantra' : (hero.author.isNotEmpty ? hero.author : 'AVAN');
 
     if (isSmall) {
       return Column(
@@ -1012,7 +1039,7 @@ class _WidgetsTabState extends State<WidgetsTab> {
             children: [
               Expanded(
                 child: Text(
-                  '— ${hero.author.isNotEmpty ? hero.author : "AVAN Affirmations"}',
+                  '— $authorName',
                   style: GoogleFonts.inter(
                     fontSize: 10.5,
                     fontWeight: FontWeight.w500,
@@ -1088,7 +1115,7 @@ class _WidgetsTabState extends State<WidgetsTab> {
           ),
         ),
         Text(
-          '— ${hero.author.isNotEmpty ? hero.author : "AVAN"}',
+          '— $authorName',
           style: GoogleFonts.inter(
             fontSize: 10,
             fontWeight: FontWeight.w500,
@@ -1098,6 +1125,117 @@ class _WidgetsTabState extends State<WidgetsTab> {
           overflow: TextOverflow.ellipsis,
         ),
       ],
+    );
+  }
+
+  Widget _buildCustomAffirmationEditor(Color accent) {
+    final suggestions = [
+      'I am worthy of peace, happiness, and clarity.',
+      'Today I choose calm over worry and strength over doubt.',
+      'I am capable of achieving anything I set my mind to.',
+      'I trust the timing of my life and embrace growth.',
+      'I attract positivity, abundance, and focus every day.',
+      'I am proud of who I am becoming and my daily progress.',
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceElevated,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: accent.withOpacity(0.35), width: 1.2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.edit_note_rounded, color: accent, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Write Your Custom Affirmation ✍️',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Type your personal mantra below to display on your lock screen & home widget.',
+            style: GoogleFonts.inter(
+              fontSize: 11.5,
+              color: AppColors.textSecondary,
+              height: 1.3,
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _customAffirmationController,
+            maxLines: 3,
+            minLines: 2,
+            maxLength: 120,
+            onChanged: (text) => setState(() {}),
+            style: GoogleFonts.inter(fontSize: 13.5, color: Colors.white, height: 1.35),
+            decoration: InputDecoration(
+              hintText: 'e.g. I am calm, confident, and grounded in this moment.',
+              hintStyle: GoogleFonts.inter(fontSize: 13, color: AppColors.textMuted),
+              filled: true,
+              fillColor: const Color(0xFF13111C),
+              counterStyle: GoogleFonts.inter(fontSize: 10, color: AppColors.textMuted),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: AppColors.border),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: accent, width: 1.5),
+              ),
+              contentPadding: const EdgeInsets.all(12),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Quick Suggestions (Tap to apply):',
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: suggestions.map((s) {
+              return GestureDetector(
+                onTap: () {
+                  _customAffirmationController.text = s;
+                  setState(() {});
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.06),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white.withOpacity(0.12)),
+                  ),
+                  child: Text(
+                    s,
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
     );
   }
 

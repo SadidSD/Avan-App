@@ -78,6 +78,7 @@ class WidgetService {
     String? theme,
     String? font,
     String? refreshFreq,
+    String? customQuote,
   }) async {
     await init();
 
@@ -86,10 +87,16 @@ class WidgetService {
     final savedFont = font ?? prefs.getString('pref_widget_font') ?? 'Elegant Serif';
     final savedFreq = refreshFreq ?? prefs.getString('pref_widget_refresh') ?? 'Every 6 Hours';
     final savedMood = mood ?? prefs.getString('selected_mood') ?? 'Peaceful';
+    final savedCustom = customQuote ?? prefs.getString('pref_widget_custom_quote');
 
-    final quote = affirmation?.quote ?? 'I am securely rooted in this exact moment, completely safe and capable.';
+    final String quote;
+    if (savedCustom != null && savedCustom.trim().isNotEmpty) {
+      quote = savedCustom.trim();
+    } else {
+      quote = affirmation?.quote ?? 'I am securely rooted in this exact moment, completely safe and capable.';
+    }
     final author = affirmation?.author ?? 'AVAN';
-    final cat = category ?? affirmation?.category ?? 'Daily Mindset';
+    final cat = category ?? (savedCustom != null && savedCustom.trim().isNotEmpty ? 'My Mantra' : (affirmation?.category ?? 'Daily Mindset'));
 
     try {
       if (!kIsWeb) {

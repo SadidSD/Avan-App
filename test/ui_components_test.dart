@@ -144,6 +144,36 @@ void main() {
       expect(find.text('Save & Add Widget to Screen ✨'), findsOneWidget);
     });
 
+    testWidgets('WidgetsTab allows writing and previewing custom affirmations', (tester) async {
+      final appProvider = AppProvider();
+      await appProvider.loadState();
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<AppProvider>.value(
+          value: appProvider,
+          child: const MaterialApp(
+            home: WidgetsTab(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Open dropdown and select Custom Affirmation
+      await tester.tap(find.text('Daily Affirmation'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Custom Affirmation').last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Write Your Custom Affirmation ✍️'), findsOneWidget);
+      expect(find.byType(TextField), findsOneWidget);
+
+      // Type a custom mantra
+      await tester.enterText(find.byType(TextField), 'I am unstoppable and filled with peace.');
+      await tester.pumpAndSettle();
+
+      expect(find.text('"I am unstoppable and filled with peace."'), findsOneWidget);
+    });
+
     testWidgets('ProfileTab renders Account & Cloud Backup and Google Sign-In card', (tester) async {
       final appProvider = AppProvider();
       await appProvider.loadState();
