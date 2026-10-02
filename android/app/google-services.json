@@ -12,7 +12,12 @@
           "package_name": "com.avanapp.avan_app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "659993815762-7rocmta0r18956jg4605l4riam24g3s7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDDt-V-0QJ_Z_Z79SNkS-1w9AmwL00Cz_A"

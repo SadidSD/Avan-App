@@ -56,6 +56,9 @@ class AuthService {
   static const String releaseSha1 = '14:D9:AD:4E:98:69:0D:15:E2:EC:9A:CD:C5:7E:B4:6B:C3:0C:3C:27';
   static const String debugSha1 = 'D5:00:47:B3:45:F5:1B:D3:0D:09:57:FE:07:02:8C:AE:DE:E1:E2:EB';
 
+  // Official Web Client ID from Firebase Authentication
+  static const String webClientId = '659993815762-7rocmta0r18956jg4605l4riam24g3s7.apps.googleusercontent.com';
+
   static String? lastError;
   static String? lastErrorCode;
   static final List<String> diagnosticLogs = [];
@@ -74,7 +77,9 @@ class AuthService {
 
   GoogleSignIn get _googleSignIn {
     if (customGoogleSignInInstance != null) return customGoogleSignInInstance!;
-    return GoogleSignIn();
+    return GoogleSignIn(
+      serverClientId: webClientId,
+    );
   }
 
   /// Parses raw platform or Firebase exceptions into human-readable diagnostic messages.
