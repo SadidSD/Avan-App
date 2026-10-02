@@ -1393,19 +1393,30 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
                     Container(
                       margin: const EdgeInsets.only(bottom: 8),
                       decoration: BoxDecoration(
-                        color: _selectedPlaylist == null ? accent.withOpacity(0.18) : AppColors.surfaceElevated,
+                        color: _selectedPlaylist == null ? accent.withOpacity(0.18) : const Color(0xFF1D1D2C),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: _selectedPlaylist == null ? accent : AppColors.border,
+                          color: _selectedPlaylist == null ? accent : Colors.white.withOpacity(0.08),
+                          width: _selectedPlaylist == null ? 1.5 : 1.0,
                         ),
                       ),
                       child: ListTile(
                         leading: CircleAvatar(
-                          backgroundColor: accent.withOpacity(0.2),
-                          child: Icon(Icons.auto_awesome_rounded, color: accent, size: 20),
+                          backgroundColor: _selectedPlaylist == null ? accent.withOpacity(0.2) : Colors.white.withOpacity(0.08),
+                          child: Icon(
+                            Icons.auto_awesome_rounded,
+                            color: _selectedPlaylist == null ? accent : Colors.white70,
+                            size: 20,
+                          ),
                         ),
-                        title: const Text('Personalized Neuroplastic Feed', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-                        subtitle: const Text('Calibrated to your archetype & emotional baseline', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                        title: const Text(
+                          'Personalized Neuroplastic Feed',
+                          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                        ),
+                        subtitle: Text(
+                          'Calibrated to your archetype & emotional baseline',
+                          style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.65)),
+                        ),
                         trailing: _selectedPlaylist == null ? Icon(Icons.check_circle_rounded, color: accent) : null,
                         onTap: () {
                           Navigator.pop(ctx);
@@ -1417,7 +1428,7 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
                         },
                       ),
                     ),
-                    const Divider(height: 18, color: AppColors.border),
+                    Divider(height: 18, color: Colors.white.withOpacity(0.1)),
                     // All Playlists
                     ...allPlaylists.map((pl) {
                       final isSelected = _selectedPlaylist?.id == pl.id;
@@ -1426,10 +1437,11 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
                       return Container(
                         margin: const EdgeInsets.only(bottom: 8),
                         decoration: BoxDecoration(
-                          color: isSelected ? accent.withOpacity(0.18) : AppColors.surfaceElevated,
+                          color: isSelected ? accent.withOpacity(0.18) : const Color(0xFF1D1D2C),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: isSelected ? accent : AppColors.border,
+                            color: isSelected ? accent : Colors.white.withOpacity(0.08),
+                            width: isSelected ? 1.5 : 1.0,
                           ),
                         ),
                         child: ListTile(
@@ -1442,8 +1454,8 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
                                 pl.imagePath,
                                 fit: BoxFit.cover,
                                 errorBuilder: (_, __, ___) => Container(
-                                  color: AppColors.surface,
-                                  child: const Icon(Icons.music_note_rounded, color: AppColors.textMuted),
+                                  color: const Color(0xFF252538),
+                                  child: const Icon(Icons.music_note_rounded, color: Colors.white54),
                                 ),
                               ),
                             ),
@@ -1456,7 +1468,7 @@ class _SayAfterMeTabState extends State<SayAfterMeTab> with TickerProviderStateM
                           ),
                           subtitle: Text(
                             '${pl.affirmations.length} tracks · ${pl.category}',
-                            style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                            style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.65)),
                           ),
                           trailing: isLocked
                               ? const Icon(Icons.lock_rounded, color: AppColors.goldAccent, size: 18)
