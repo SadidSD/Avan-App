@@ -6,6 +6,7 @@ import 'providers/app_provider.dart';
 import 'providers/audio_provider.dart';
 import 'screens/onboarding/emotional_onboarding_screen.dart';
 import 'screens/main_navigation_screen.dart';
+import 'screens/splash/splash_screen.dart';
 import 'theme/app_theme.dart';
 import 'theme/app_colors.dart';
 
@@ -158,18 +159,7 @@ class AvanApp extends StatelessWidget {
             builder: (context, child) {
               return MobileFrameWrapper(child: child ?? const SizedBox());
             },
-            home: !appProvider.isInitialized
-                ? const Scaffold(
-                    backgroundColor: AppColors.background,
-                    body: Center(
-                      child: CircularProgressIndicator(
-                        color: AppColors.goldAccent,
-                      ),
-                    ),
-                  )
-                : (appProvider.isOnboardingCompleted
-                    ? MainNavigationScreen()
-                    : const EmotionalOnboardingScreen()),
+            home: const AppStartupGate(),
           );
         },
       ),
