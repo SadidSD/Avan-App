@@ -26,7 +26,7 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
-  static const String _brandWord = 'avan';
+  static const String _brandWord = 'AVAN';
 
   late AnimationController _typeController;
   late Animation<double> _typeCurved;
@@ -46,12 +46,12 @@ class _SplashScreenState extends State<SplashScreen>
   void initState() {
     super.initState();
 
-    // Match status bar and nav bar to obsidian dark background during splash
+    // Match status bar and nav bar to warm espresso brown background during splash
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: Brightness.light,
-        systemNavigationBarColor: Color(0xFF0A0A12),
+        systemNavigationBarColor: Color(0xFF1D1410),
         systemNavigationBarIconBrightness: Brightness.light,
       ),
     );
@@ -176,11 +176,23 @@ class _SplashScreenState extends State<SplashScreen>
     final visibleText = _brandWord.substring(0, _visibleChars);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A12),
+      backgroundColor: const Color(0xFF1D1410), // Deep espresso brown
       body: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: _skip,
-        child: SizedBox.expand(
+        child: Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: const BoxDecoration(
+            gradient: RadialGradient(
+              center: Alignment(0, -0.05),
+              radius: 1.15,
+              colors: [
+                Color(0xFF2E2019), // Warm mocha coffee center
+                Color(0xFF1D1410), // Deep rich espresso cocoa edges
+              ],
+            ),
+          ),
           child: AnimatedBuilder(
             animation: _fadeOutController,
             builder: (context, child) {
@@ -201,10 +213,17 @@ class _SplashScreenState extends State<SplashScreen>
                   Text(
                     visibleText,
                     style: GoogleFonts.cormorantGaramond(
-                      fontSize: 48,
-                      fontWeight: FontWeight.w400,
-                      letterSpacing: 10.0,
-                      color: const Color(0xFFF7EFE6), // Warm serene ivory
+                      fontSize: 52,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 12.0,
+                      color: const Color(0xFFFFF7ED), // Luminous serene warm ivory / cream
+                      shadows: const [
+                        Shadow(
+                          color: Color(0x66D4A373), // Subtle warm golden halo
+                          blurRadius: 18,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
                     ),
                   ),
                   if (!_isTypingComplete)
@@ -212,15 +231,15 @@ class _SplashScreenState extends State<SplashScreen>
                       opacity: _cursorBlinkController,
                       child: Container(
                         width: 2.5,
-                        height: 34,
+                        height: 36,
                         margin: const EdgeInsets.only(left: 4),
                         decoration: BoxDecoration(
-                          color: AppColors.goldAccent,
+                          color: const Color(0xFFD4A373),
                           borderRadius: BorderRadius.circular(1.5),
-                          boxShadow: [
+                          boxShadow: const [
                             BoxShadow(
-                              color: AppColors.goldAccent.withOpacity(0.5),
-                              blurRadius: 6,
+                              color: Color(0x80D4A373),
+                              blurRadius: 8,
                               spreadRadius: 1,
                             ),
                           ],
@@ -240,14 +259,21 @@ class _SplashScreenState extends State<SplashScreen>
 /// Root startup gate that manages the transition from [SplashScreen] to
 /// either [MainNavigationScreen] or [EmotionalOnboardingScreen].
 class AppStartupGate extends StatefulWidget {
-  const AppStartupGate({super.key});
+  final bool showSplash;
+  const AppStartupGate({super.key, this.showSplash = true});
 
   @override
   State<AppStartupGate> createState() => _AppStartupGateState();
 }
 
 class _AppStartupGateState extends State<AppStartupGate> {
-  bool _showSplash = true;
+  late bool _showSplash;
+
+  @override
+  void initState() {
+    super.initState();
+    _showSplash = widget.showSplash;
+  }
 
   @override
   Widget build(BuildContext context) {

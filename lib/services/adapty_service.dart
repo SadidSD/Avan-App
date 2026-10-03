@@ -118,8 +118,6 @@ class AdaptyService {
         case AdaptyPurchaseResultUserCancelled():
           debugPrint('[AdaptyService] User cancelled purchase.');
           return false;
-        case null:
-          return false;
       }
     } catch (e) {
       debugPrint('[AdaptyService] makePurchase error: $e');

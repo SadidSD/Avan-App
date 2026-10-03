@@ -476,7 +476,10 @@ class _ProfileTabState extends State<ProfileTab> {
     }
   }
 
-  void _showAuthDiagnosticsDialog(BuildContext context, AuthSignInResult result) {
+  Future<void> _showAuthDiagnosticsDialog(BuildContext context, AuthSignInResult result) async {
+    final runningSha1 = await AuthService.getRunningAppSha1();
+    if (!context.mounted) return;
+
     showDialog(
       context: context,
       builder: (diagCtx) => AlertDialog(
@@ -499,8 +502,17 @@ class _ProfileTabState extends State<ProfileTab> {
                 style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.4),
               ),
               const SizedBox(height: 16),
+              if (runningSha1 != null) ...[
+                const Text(
+                  'Running APK Certificate (Active on Device):',
+                  style: TextStyle(color: Colors.greenAccent, fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 6),
+                _buildShaCopyRow(diagCtx, 'This App\'s Exact Key', runningSha1),
+                const SizedBox(height: 14),
+              ],
               const Text(
-                'Firebase Project SHA-1 Fingerprints:',
+                'Known Keystore SHA-1 Fingerprints:',
                 style: TextStyle(color: AppColors.goldAccent, fontSize: 12, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),

@@ -14,6 +14,30 @@
       },
       "oauth_client": [
         {
+          "client_id": "659993815762-4c9a28ne3i42beq6rlgftdunc6pm4p15.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.avanapp.avan_app",
+            "certificate_hash": "14d9ad4e98690d15e2ec9acdc57eb46bc30c3c27"
+          }
+        },
+        {
+          "client_id": "659993815762-n8c4enlajhf953th56a9dssloju3qklu.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.avanapp.avan_app",
+            "certificate_hash": "7c13703809ebc8826e16c6df3da34031d4ca2e22"
+          }
+        },
+        {
+          "client_id": "659993815762-p1nhhmaje1b79n2itc8ucdmfs0cl148r.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.avanapp.avan_app",
+            "certificate_hash": "568b986a2a1c4f909d1ca3a335a025880e058efa"
+          }
+        },
+        {
           "client_id": "659993815762-7rocmta0r18956jg4605l4riam24g3s7.apps.googleusercontent.com",
           "client_type": 3
         }
@@ -25,7 +49,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "659993815762-7rocmta0r18956jg4605l4riam24g3s7.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

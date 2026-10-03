@@ -19,8 +19,9 @@ class AudioProvider with ChangeNotifier {
   bool _isPlayerOpen = false;
 
   // Pacing: exactly 2 seconds of silence gap between affirmations
-  int _gapBetweenAffirmations = 2; 
-  int _intervalPerAffirmation = 6; 
+  static const int defaultGapSeconds = 2;
+  int _gapBetweenAffirmations = defaultGapSeconds; 
+  int _intervalPerAffirmation = 4 + defaultGapSeconds; 
   int _sessionDurationSeconds = 56;
   int _sessionPositionSeconds = 0;
   bool _isLoopEnabled = false;
@@ -173,9 +174,12 @@ class AudioProvider with ChangeNotifier {
     final bool isDifferent = _currentPlaylist?.id != playlist.id;
 
     _currentPlaylist = playlist;
-    _recalculateSessionTimeline();
-
     if (isDifferent) {
+      // Every playlist always enforces the standard 2-second default gap
+      _gapBetweenAffirmations = defaultGapSeconds;
+      _intervalPerAffirmation = 4 + defaultGapSeconds;
+      _recalculateSessionTimeline();
+
       // Reset position to 0 and cancel all prior playlist session timers
       _gapTimer?.cancel();
       _watchdogTimer?.cancel();
@@ -188,6 +192,7 @@ class AudioProvider with ChangeNotifier {
           ? _affirmationStartOffsets[_currentAffirmationIndex]
           : 0;
     } else {
+      _recalculateSessionTimeline();
       if (initialIndex != _currentAffirmationIndex) {
         _gapTimer?.cancel();
         _watchdogTimer?.cancel();
@@ -226,6 +231,8 @@ class AudioProvider with ChangeNotifier {
     String duration = '1 min',
     bool speakTts = true,
   }) {
+    _gapBetweenAffirmations = defaultGapSeconds;
+    _intervalPerAffirmation = 4 + defaultGapSeconds;
     final customAffirmation = Affirmation(
       id: 'custom_${DateTime.now().millisecondsSinceEpoch}',
       quote: quote,
@@ -466,6 +473,8 @@ class AudioProvider with ChangeNotifier {
     _currentPlaylist = null;
     _currentAffirmationIndex = 0;
     _sessionPositionSeconds = 0;
+    _gapBetweenAffirmations = defaultGapSeconds;
+    _intervalPerAffirmation = 4 + defaultGapSeconds;
     _gapTimer?.cancel();
     _watchdogTimer?.cancel();
     _sessionTicker?.cancel();

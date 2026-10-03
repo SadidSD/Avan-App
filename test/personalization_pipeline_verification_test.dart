@@ -1,11 +1,7 @@
-﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:avan_app/providers/app_provider.dart';
-import 'package:avan_app/models/user_archetype.dart';
-import 'package:avan_app/models/affirmation.dart';
-import 'package:avan_app/models/playlist.dart';
 import 'package:avan_app/data/playlists_data.dart';
 import 'package:avan_app/data/playlist_groups.dart';
-import 'package:avan_app/services/personalization_engine.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -63,6 +59,7 @@ void main() {
 
       final anxiousHero = appProvider.getSituationalPlaylist();
       final anxiousHeroAff = appProvider.getHeroAffirmation();
+      expect(anxiousHeroAff.quote.isNotEmpty, isTrue);
       final ranked = appProvider.getPersonalizedPlaylists();
 
       // Hero title, category, and ambient sound adapt to anxiety

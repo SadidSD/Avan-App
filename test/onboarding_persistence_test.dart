@@ -61,7 +61,7 @@ void main() {
       final appProvider = AppProvider();
       await appProvider.loadState();
 
-      await tester.pumpWidget(AvanApp(appProvider: appProvider));
+      await tester.pumpWidget(AvanApp(appProvider: appProvider, showSplash: false));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
 
@@ -78,7 +78,7 @@ void main() {
       final appProvider = AppProvider();
       await appProvider.loadState();
 
-      await tester.pumpWidget(AvanApp(appProvider: appProvider));
+      await tester.pumpWidget(AvanApp(appProvider: appProvider, showSplash: false));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
 

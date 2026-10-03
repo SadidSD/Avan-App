@@ -4,8 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'providers/app_provider.dart';
 import 'providers/audio_provider.dart';
-import 'screens/onboarding/emotional_onboarding_screen.dart';
-import 'screens/main_navigation_screen.dart';
 import 'screens/splash/splash_screen.dart';
 import 'theme/app_theme.dart';
 import 'theme/app_colors.dart';
@@ -122,8 +120,9 @@ void main() async {
 
 class AvanApp extends StatelessWidget {
   final AppProvider? appProvider;
+  final bool showSplash;
 
-  const AvanApp({Key? key, this.appProvider}) : super(key: key);
+  const AvanApp({Key? key, this.appProvider, this.showSplash = true}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -159,7 +158,7 @@ class AvanApp extends StatelessWidget {
             builder: (context, child) {
               return MobileFrameWrapper(child: child ?? const SizedBox());
             },
-            home: const AppStartupGate(),
+            home: AppStartupGate(showSplash: showSplash),
           );
         },
       ),

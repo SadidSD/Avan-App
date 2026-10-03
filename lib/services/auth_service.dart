@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
@@ -59,6 +60,19 @@ class AuthService {
   // Official Web Client ID from Firebase Authentication
   static const String webClientId = '659993815762-7rocmta0r18956jg4605l4riam24g3s7.apps.googleusercontent.com';
 
+  static const MethodChannel _appInfoChannel = MethodChannel('com.avanapp.avan_app/app_info');
+
+  /// Reads the exact SHA-1 fingerprint of the signing certificate used by the running APK.
+  static Future<String?> getRunningAppSha1() async {
+    try {
+      final sha1 = await _appInfoChannel.invokeMethod<String>('getAppSigningSha1');
+      return sha1;
+    } catch (e) {
+      debugPrint('[AuthService] Could not retrieve running app SHA-1: $e');
+      return null;
+    }
+  }
+
   static String? lastError;
   static String? lastErrorCode;
   static final List<String> diagnosticLogs = [];
@@ -75,10 +89,12 @@ class AuthService {
     return FirebaseAuth.instance;
   }
 
+  static GoogleSignIn? _cachedGoogleSignIn;
   GoogleSignIn get _googleSignIn {
     if (customGoogleSignInInstance != null) return customGoogleSignInInstance!;
-    return GoogleSignIn(
+    return _cachedGoogleSignIn ??= GoogleSignIn(
       serverClientId: webClientId,
+      scopes: const ['email', 'profile'],
     );
   }
 

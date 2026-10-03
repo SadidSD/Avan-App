@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:avan_app/providers/app_provider.dart';
 import 'package:avan_app/widgets/mode_toggle_pill.dart';
-import 'package:avan_app/theme/app_colors.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

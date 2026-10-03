@@ -28,8 +28,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pump(const Duration(milliseconds: 300));
 
-      // After 800ms, typing is complete and 'avan' is fully rendered
-      expect(find.text('avan'), findsOneWidget);
+      // After 800ms, typing is complete and 'AVAN' is fully rendered
+      expect(find.text('AVAN'), findsOneWidget);
 
       // Advance through linger (450ms) and fade-out (550ms)
       await tester.pump(const Duration(milliseconds: 500));
@@ -58,7 +58,7 @@ void main() {
       await tester.pump();
 
       // Typing is immediately revealed
-      expect(find.text('avan'), findsOneWidget);
+      expect(find.text('AVAN'), findsOneWidget);
 
       // Advance through fade-out (550ms)
       await tester.pump(const Duration(milliseconds: 600));

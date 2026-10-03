@@ -69,6 +69,7 @@ void main() {
       // Change mode
       appProvider.setAppMode(AppMode.healing);
       final heroHealing = appProvider.getHeroAffirmation();
+      expect(heroHealing, isNotNull);
       final situationalHealing = appProvider.getSituationalPlaylist();
 
       expect(identical(situational1, situationalHealing), isFalse, reason: 'Situational playlist must regenerate on mode switch');

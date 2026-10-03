@@ -3,8 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:avan_app/providers/app_provider.dart';
 import 'package:avan_app/data/playlist_groups.dart';
-import 'package:avan_app/data/playlists_data.dart';
-import 'package:avan_app/services/personalization_engine.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

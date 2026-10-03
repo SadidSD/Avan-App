@@ -289,13 +289,45 @@ class _WidgetsTabState extends State<WidgetsTab> {
               const SizedBox(height: 28),
 
               // Customization Controls
-              Text(
-                'Widget Options',
-                style: GoogleFonts.inter(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Widget Options',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  if (_selectedContentType != 'Custom Affirmation')
+                    GestureDetector(
+                      onTap: () => setState(() => _selectedContentType = 'Custom Affirmation'),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: accent.withOpacity(0.14),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: accent.withOpacity(0.35)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.edit_note_rounded, size: 16, color: accent),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Write Custom',
+                              style: GoogleFonts.inter(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                                color: accent,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
               ),
               const SizedBox(height: 14),
 
@@ -309,6 +341,49 @@ class _WidgetsTabState extends State<WidgetsTab> {
               if (_selectedContentType == 'Custom Affirmation') ...[
                 const SizedBox(height: 12),
                 _buildCustomAffirmationEditor(accent),
+              ] else ...[
+                const SizedBox(height: 8),
+                GestureDetector(
+                  onTap: () => setState(() => _selectedContentType = 'Custom Affirmation'),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: accent.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: accent.withOpacity(0.25), width: 1),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.edit_note_rounded, color: accent, size: 20),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Want to write your own words? ✍️',
+                                style: GoogleFonts.inter(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 1),
+                              Text(
+                                'Tap here to type a custom mantra for your widgets.',
+                                style: GoogleFonts.inter(
+                                  fontSize: 11,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(Icons.arrow_forward_ios_rounded, color: accent, size: 12),
+                      ],
+                    ),
+                  ),
+                ),
               ],
               const SizedBox(height: 12),
 
