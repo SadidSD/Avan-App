@@ -18,8 +18,12 @@ class AmbientAudioSynthesizer {
   }
 
   static Uint8List _generateWavBytes(AmbientSound sound) {
-    const int durationSeconds = 6;
+    const int durationSeconds = 30;
     const int totalSamples = sampleRate * durationSeconds;
+    // Overlap region for equal-power seamless wrap-around crossfade
+    const int crossfadeSamples = sampleRate * 2; // 2 seconds overlap
+    const int totalRawSamples = totalSamples + crossfadeSamples;
+
     final int numChannels = (sound == AmbientSound.solfeggio528 ||
         sound == AmbientSound.solfeggio432 ||
         sound == AmbientSound.solfeggio639 ||
@@ -30,15 +34,15 @@ class AmbientAudioSynthesizer {
         ? 2
         : 1;
 
-    final Float32List leftChannel = Float32List(totalSamples);
-    final Float32List rightChannel = Float32List(totalSamples);
+    final Float32List leftChannel = Float32List(totalRawSamples);
+    final Float32List rightChannel = Float32List(totalRawSamples);
 
     final random = math.Random(42);
 
     switch (sound) {
       case AmbientSound.solfeggio528:
         // Soft, peaceful 528Hz healing singing bowl chord with 4Hz binaural pulse
-        for (int i = 0; i < totalSamples; i++) {
+        for (int i = 0; i < totalRawSamples; i++) {
           final t = i / sampleRate;
           final envelope = 0.5 + 0.5 * math.sin(2 * math.pi * 0.25 * t);
           leftChannel[i] = (0.22 * math.sin(2 * math.pi * 528.0 * t) +
@@ -52,7 +56,7 @@ class AmbientAudioSynthesizer {
 
       case AmbientSound.solfeggio432:
         // Warm 432Hz deep meditative drone
-        for (int i = 0; i < totalSamples; i++) {
+        for (int i = 0; i < totalRawSamples; i++) {
           final t = i / sampleRate;
           final envelope = 0.5 + 0.5 * math.sin(2 * math.pi * 0.2 * t);
           leftChannel[i] = (0.25 * math.sin(2 * math.pi * 432.0 * t) +
@@ -64,7 +68,7 @@ class AmbientAudioSynthesizer {
 
       case AmbientSound.solfeggio639:
         // Harmonic 639Hz Heart Chakra resonance (Love, Compassion & Abundance)
-        for (int i = 0; i < totalSamples; i++) {
+        for (int i = 0; i < totalRawSamples; i++) {
           final t = i / sampleRate;
           final envelope = 0.5 + 0.5 * math.sin(2 * math.pi * 0.22 * t);
           leftChannel[i] = (0.22 * math.sin(2 * math.pi * 639.0 * t) +
@@ -78,19 +82,19 @@ class AmbientAudioSynthesizer {
 
       case AmbientSound.solfeggio852:
         // Pure 852Hz Intuition & Awakening crystal tone
-        for (int i = 0; i < totalSamples; i++) {
+        for (int i = 0; i < totalRawSamples; i++) {
           final t = i / sampleRate;
           final envelope = 0.55 + 0.45 * math.sin(2 * math.pi * 0.16 * t);
           leftChannel[i] = (0.20 * math.sin(2 * math.pi * 852.0 * t) +
                             0.08 * math.sin(2 * math.pi * 426.0 * t)) * envelope;
           rightChannel[i] = (0.20 * math.sin(2 * math.pi * 856.0 * t) +
-                             0.08 * math.sin(2 * math.pi * 428.0 * t)) * envelope;
+                            0.08 * math.sin(2 * math.pi * 428.0 * t)) * envelope;
         }
         break;
 
       case AmbientSound.binauralTheta:
         // 6Hz Theta Waves (Left 216Hz, Right 222Hz) for Deep Focus & Flow State
-        for (int i = 0; i < totalSamples; i++) {
+        for (int i = 0; i < totalRawSamples; i++) {
           final t = i / sampleRate;
           final sub = 0.08 * math.sin(2 * math.pi * 108.0 * t);
           leftChannel[i] = (0.22 * math.sin(2 * math.pi * 216.0 * t) + sub).clamp(-1.0, 1.0);
@@ -101,7 +105,7 @@ class AmbientAudioSynthesizer {
       case AmbientSound.fireplace:
         // Warm crackling hearth with low flame rumble and spark snaps
         double rumble = 0.0;
-        for (int i = 0; i < totalSamples; i++) {
+        for (int i = 0; i < totalRawSamples; i++) {
           final white = random.nextDouble() * 2.0 - 1.0;
           rumble = 0.98 * rumble + white * 0.04;
           final isCrackle = random.nextDouble() > 0.9985;
@@ -115,7 +119,7 @@ class AmbientAudioSynthesizer {
       case AmbientSound.windChimes:
         // Gentle pentatonic singing chimes drifting in soft breeze
         final List<double> chimeFreqs = [528.0, 660.0, 792.0, 990.0, 1188.0];
-        for (int i = 0; i < totalSamples; i++) {
+        for (int i = 0; i < totalRawSamples; i++) {
           final t = i / sampleRate;
           final breeze = 0.4 + 0.6 * math.sin(2 * math.pi * 0.2 * t);
           double chimeSum = 0.0;
@@ -132,7 +136,7 @@ class AmbientAudioSynthesizer {
 
       case AmbientSound.nightCrickets:
         // Tranquil night atmosphere with gentle rhythmic crickets
-        for (int i = 0; i < totalSamples; i++) {
+        for (int i = 0; i < totalRawSamples; i++) {
           final t = i / sampleRate;
           final chirpPulse = math.pow(math.max(0.0, math.sin(2 * math.pi * 4.5 * t)), 8.0).toDouble();
           final cricketWave = math.sin(2 * math.pi * 4500.0 * t) * chirpPulse * 0.16;
@@ -146,7 +150,7 @@ class AmbientAudioSynthesizer {
       case AmbientSound.ocean:
         // Soft soothing ocean surf
         double lastSample = 0.0;
-        for (int i = 0; i < totalSamples; i++) {
+        for (int i = 0; i < totalRawSamples; i++) {
           final t = i / sampleRate;
           final swell = 0.4 + 0.6 * math.sin(2 * math.pi * 0.18 * t);
           final white = (random.nextDouble() * 2.0 - 1.0);
@@ -160,7 +164,7 @@ class AmbientAudioSynthesizer {
       case AmbientSound.rain:
         // Gentle soothing rain shower
         double b0 = 0, b1 = 0, b2 = 0;
-        for (int i = 0; i < totalSamples; i++) {
+        for (int i = 0; i < totalRawSamples; i++) {
           final white = random.nextDouble() * 2.0 - 1.0;
           b0 = 0.99886 * b0 + white * 0.0555179;
           b1 = 0.99332 * b1 + white * 0.0750759;
@@ -176,7 +180,7 @@ class AmbientAudioSynthesizer {
       case AmbientSound.forest:
         // Calming woodland breeze
         double lastSample = 0.0;
-        for (int i = 0; i < totalSamples; i++) {
+        for (int i = 0; i < totalRawSamples; i++) {
           final t = i / sampleRate;
           final white = (random.nextDouble() * 2.0 - 1.0);
           lastSample = lastSample + 0.06 * (white - lastSample);
@@ -190,7 +194,7 @@ class AmbientAudioSynthesizer {
       case AmbientSound.whiteNoise:
       case AmbientSound.none:
         double b0 = 0, b1 = 0;
-        for (int i = 0; i < totalSamples; i++) {
+        for (int i = 0; i < totalRawSamples; i++) {
           final white = random.nextDouble() * 2.0 - 1.0;
           b0 = 0.997 * b0 + white * 0.04;
           b1 = 0.985 * b1 + white * 0.08;
@@ -201,15 +205,19 @@ class AmbientAudioSynthesizer {
         break;
     }
 
-    // Seamless loop windowing (smooth 50ms cosine fade at start/end)
-    const int fadeSamples = 1102;
-    for (int i = 0; i < fadeSamples; i++) {
-      final fade = 0.5 - 0.5 * math.cos(math.pi * i / fadeSamples);
-      leftChannel[i] *= fade;
-      leftChannel[totalSamples - 1 - i] *= fade;
+    // Equal-Power Seamless Loop Wrap-Around:
+    // Blend the extra tail (samples totalSamples .. totalSamples + crossfadeSamples - 1)
+    // into the start of the buffer (samples 0 .. crossfadeSamples - 1).
+    // Because sin^2(x) + cos^2(x) == 1.0, acoustic power is perfectly preserved (no volume drop / dip).
+    // The wrap from sample totalSamples - 1 back to sample 0 is continuous with zero click or pop!
+    for (int i = 0; i < crossfadeSamples; i++) {
+      final double progress = i / crossfadeSamples;
+      final double fadeIn = math.sin(progress * (math.pi / 2));
+      final double fadeOut = math.cos(progress * (math.pi / 2));
+
+      leftChannel[i] = (leftChannel[i] * fadeIn + leftChannel[totalSamples + i] * fadeOut);
       if (numChannels == 2) {
-        rightChannel[i] *= fade;
-        rightChannel[totalSamples - 1 - i] *= fade;
+        rightChannel[i] = (rightChannel[i] * fadeIn + rightChannel[totalSamples + i] * fadeOut);
       }
     }
 

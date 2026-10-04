@@ -54,8 +54,8 @@ class AudioEngineService {
   Future<void> speakAffirmation(String text) async {
     _isPlaying = true;
 
-    // 1. Play background ambient if active (steady volume, no surging or ducking)
-    if (_currentSound != AmbientSound.none) {
+    // 1. Play background ambient if active and not already playing (uninterrupted continuous playback)
+    if (_currentSound != AmbientSound.none && _ambientPlayer.state != PlayerState.playing) {
       _playAmbientInternal();
     }
 
@@ -69,6 +69,7 @@ class AudioEngineService {
 
   void _playAmbientInternal() async {
     if (_currentSound != AmbientSound.none) {
+      if (_ambientPlayer.state == PlayerState.playing) return;
       try {
         final wavBytes = AmbientAudioSynthesizer.getWavBytesForSound(_currentSound);
         await _ambientPlayer.setVolume(_ambientVolume);
@@ -92,7 +93,11 @@ class AudioEngineService {
     try {
       await _ttsService.resume();
       if (_currentSound != AmbientSound.none) {
-        await _ambientPlayer.resume();
+        if (_ambientPlayer.state == PlayerState.paused) {
+          await _ambientPlayer.resume();
+        } else if (_ambientPlayer.state != PlayerState.playing) {
+          _playAmbientInternal();
+        }
       }
     } catch (_) {}
   }
@@ -114,6 +119,9 @@ class AudioEngineService {
   }
 
   void setAmbientSound(AmbientSound sound) async {
+    if (_currentSound == sound && _ambientPlayer.state == PlayerState.playing) {
+      return;
+    }
     _currentSound = sound;
     if (_currentSound == AmbientSound.none) {
       await _ambientPlayer.stop();

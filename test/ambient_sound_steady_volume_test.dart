@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:avan_app/services/audio_engine_service.dart';
+import 'package:avan_app/services/ambient_audio_synthesizer.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -50,6 +51,20 @@ void main() {
       expect(engine.ambientVolume, 0.40);
 
       engine.dispose();
+    });
+
+    test('AmbientAudioSynthesizer generates continuous 30s buffers without 6s partition', () {
+      final wavRain = AmbientAudioSynthesizer.getWavBytesForSound(AmbientSound.rain);
+      // 30 seconds at 22050Hz, 1 channel, 16-bit: 44 header + 1323000 bytes
+      expect(wavRain.length, equals(44 + 22050 * 30 * 1 * 2));
+
+      final wavSolfeggio = AmbientAudioSynthesizer.getWavBytesForSound(AmbientSound.solfeggio528);
+      // 30 seconds at 22050Hz, 2 channels, 16-bit: 44 header + 2646000 bytes
+      expect(wavSolfeggio.length, equals(44 + 22050 * 30 * 2 * 2));
+
+      // Verify valid WAV headers
+      expect(String.fromCharCodes(wavSolfeggio.sublist(0, 4)), 'RIFF');
+      expect(String.fromCharCodes(wavSolfeggio.sublist(8, 12)), 'WAVE');
     });
   });
 }
