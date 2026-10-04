@@ -12,8 +12,9 @@ class AuthSignInResult {
   final String? errorMessage;
   final String? rawError;
   final String? errorCode;
+  final bool hasActiveSession;
 
-  const AuthSignInResult.success(this.user)
+  const AuthSignInResult.success(this.user, {this.hasActiveSession = true})
       : status = AuthSignInStatus.success,
         errorMessage = null,
         rawError = null,
@@ -24,11 +25,13 @@ class AuthSignInResult {
         user = null,
         errorMessage = 'Sign-in cancelled by user.',
         rawError = null,
-        errorCode = 'cancelled';
+        errorCode = 'cancelled',
+        hasActiveSession = false;
 
   const AuthSignInResult.error(this.errorMessage, {this.rawError, this.errorCode})
       : status = AuthSignInStatus.error,
-        user = null;
+        user = null,
+        hasActiveSession = false;
 
   bool get isSuccess => status == AuthSignInStatus.success;
   bool get isCancelled => status == AuthSignInStatus.cancelled;
@@ -216,10 +219,11 @@ class AuthService {
         return const AuthSignInResult.error(err);
       }
 
-      logDiagnostic("Successfully registered user: ${user.email} (${user.id})");
+      final hasSession = response.session != null;
+      logDiagnostic("Successfully registered user: ${user.email} (${user.id}), sessionActive=$hasSession");
       lastError = null;
       lastErrorCode = null;
-      return AuthSignInResult.success(user);
+      return AuthSignInResult.success(user, hasActiveSession: hasSession);
     } catch (e) {
       final userFriendly = parseErrorMessage(e);
       lastError = userFriendly;
@@ -260,10 +264,18 @@ class AuthService {
     }
   }
 
-  /// Terminates user session on this device.
+  /// Terminates user session on this device and executes Supabase account deletion if configured.
   Future<bool> deleteAccount() async {
     logDiagnostic("Initiating user account deletion / sign-out...");
     try {
+      // 1. Attempt Supabase delete_user RPC if present in Postgres
+      try {
+        await _client?.rpc('delete_user');
+        logDiagnostic("Supabase auth user deleted via RPC.");
+      } catch (e) {
+        logDiagnostic("Supabase delete_user RPC note (handled): $e");
+      }
+
       await signOut();
       logDiagnostic("User session wiped successfully.");
       return true;

@@ -88,7 +88,7 @@ class _ProfileTabState extends State<ProfileTab> {
               _buildIdentityCard(context, appProvider, accent, archetypeLabel, archetypeSubLabel),
               if (!appProvider.isSignedIn) ...[
                 const SizedBox(height: 14),
-                _buildGoogleSignInCard(context, appProvider, accent),
+                _buildSupabaseAuthCard(context, appProvider, accent),
               ],
               const SizedBox(height: 20),
 
@@ -355,7 +355,7 @@ class _ProfileTabState extends State<ProfileTab> {
   // ===========================================================================
   // SUPABASE AUTH & CLOUD BACKUP CARD
   // ===========================================================================
-  Widget _buildGoogleSignInCard(BuildContext context, AppProvider appProvider, Color accent) {
+  Widget _buildSupabaseAuthCard(BuildContext context, AppProvider appProvider, Color accent) {
     const supabaseGreen = Color(0xFF3ECF8E);
     return CustomCard(
       padding: const EdgeInsets.all(16),
@@ -1132,7 +1132,7 @@ class _ProfileTabState extends State<ProfileTab> {
           _buildSettingTile(
             icon: Icons.delete_forever_rounded,
             title: 'Delete Account & Wipe Cloud Vault ⚠️',
-            subtitle: 'Permanently remove cloud vault and linked Google account',
+            subtitle: 'Permanently remove cloud vault and linked Supabase account',
             isDestructive: true,
             onTap: () => _showDeleteAccountDialog(context, appProvider),
           ),
@@ -1674,7 +1674,7 @@ class _ProfileTabState extends State<ProfileTab> {
           ],
         ),
         content: const Text(
-          'This will permanently delete your AVAN account and wipe all cloud-saved records (streaks, journals, vision boards) from Firestore.\n\nThis action is irreversible and compliant with Google Play data safety regulations.',
+          'This will permanently delete your AVAN account and wipe all cloud-saved records (streaks, journals, vision boards) from your Supabase Vault.\n\nThis action is irreversible and compliant with Google Play data safety regulations.',
           style: TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.45),
         ),
         actions: [
@@ -2153,14 +2153,45 @@ class _SupabaseAuthSheetState extends State<_SupabaseAuthSheet> {
 
       if (result.isSuccess) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(_isSignUp
-                ? 'Welcome to AVAN! Your Supabase Vault is connected ☁️✨'
-                : 'Welcome back! Signed in with Supabase ☁️✨'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        if (_isSignUp && !result.hasActiveSession) {
+          showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: Row(
+                children: const [
+                  Icon(Icons.mark_email_read_rounded, color: Color(0xFF3ECF8E)),
+                  SizedBox(width: 8),
+                  Text('Check Your Email ✉️', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                ],
+              ),
+              content: Text(
+                'A confirmation email has been sent to $email.\n\nPlease click the confirmation link in your inbox to activate your account and start syncing your vault.',
+                style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4),
+              ),
+              actions: [
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF3ECF8E),
+                    foregroundColor: const Color(0xFF121212),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Got it', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(_isSignUp
+                  ? 'Welcome to AVAN! Your Supabase Vault is connected ☁️✨'
+                  : 'Welcome back! Signed in with Supabase ☁️✨'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
       } else {
         setState(() {
           _isLoading = false;
