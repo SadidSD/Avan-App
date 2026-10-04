@@ -93,7 +93,8 @@ class AuthService {
   GoogleSignIn get _googleSignIn {
     if (customGoogleSignInInstance != null) return customGoogleSignInInstance!;
     return _cachedGoogleSignIn ??= GoogleSignIn(
-      serverClientId: webClientId,
+      clientId: kIsWeb ? webClientId : null,
+      serverClientId: kIsWeb ? null : webClientId,
       scopes: const ['email', 'profile'],
     );
   }

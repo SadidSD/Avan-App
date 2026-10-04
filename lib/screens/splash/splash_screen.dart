@@ -30,7 +30,6 @@ class _SplashScreenState extends State<SplashScreen>
 
   late AnimationController _typeController;
   late Animation<double> _typeCurved;
-  late AnimationController _cursorBlinkController;
   late AnimationController _fadeOutController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
@@ -83,13 +82,7 @@ class _SplashScreenState extends State<SplashScreen>
       }
     });
 
-    // 2. Cursor subtle pulse / blink
-    _cursorBlinkController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 500),
-    )..repeat(reverse: true);
-
-    // 3. Fade Out Animation
+    // 2. Fade Out Animation
     _fadeOutController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 550),
@@ -130,9 +123,7 @@ class _SplashScreenState extends State<SplashScreen>
       _visibleChars = _brandWord.length;
     });
 
-    // Stop cursor blinking and let the pristine word linger
-    _cursorBlinkController.stop();
-
+    // Let the pristine word linger
     _lingerTimer = Timer(const Duration(milliseconds: 450), () {
       if (mounted && !_isFadingOut) {
         _startFadeOut();
@@ -166,7 +157,6 @@ class _SplashScreenState extends State<SplashScreen>
     _initialDelayTimer?.cancel();
     _lingerTimer?.cancel();
     _typeController.dispose();
-    _cursorBlinkController.dispose();
     _fadeOutController.dispose();
     super.dispose();
   }
@@ -205,48 +195,24 @@ class _SplashScreenState extends State<SplashScreen>
               );
             },
             child: Center(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: [
-                  Text(
-                    visibleText,
-                    style: GoogleFonts.cormorantGaramond(
-                      fontSize: 52,
-                      fontWeight: FontWeight.w500,
-                      letterSpacing: 12.0,
-                      color: const Color(0xFFFFF7ED), // Luminous serene warm ivory / cream
-                      shadows: const [
-                        Shadow(
-                          color: Color(0x66D4A373), // Subtle warm golden halo
-                          blurRadius: 18,
-                          offset: Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (!_isTypingComplete)
-                    FadeTransition(
-                      opacity: _cursorBlinkController,
-                      child: Container(
-                        width: 2.5,
-                        height: 36,
-                        margin: const EdgeInsets.only(left: 4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFD4A373),
-                          borderRadius: BorderRadius.circular(1.5),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x80D4A373),
-                              blurRadius: 8,
-                              spreadRadius: 1,
-                            ),
-                          ],
-                        ),
+              child: Padding(
+                padding: const EdgeInsets.only(left: 12.0),
+                child: Text(
+                  visibleText,
+                  style: GoogleFonts.cormorantGaramond(
+                    fontSize: 52,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 12.0,
+                    color: const Color(0xFFFFF7ED), // Luminous serene warm ivory / cream
+                    shadows: const [
+                      Shadow(
+                        color: Color(0x66D4A373), // Subtle warm golden halo
+                        blurRadius: 18,
+                        offset: Offset(0, 2),
                       ),
-                    ),
-                ],
+                    ],
+                  ),
+                ),
               ),
             ),
           ),

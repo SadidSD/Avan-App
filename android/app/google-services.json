@@ -30,6 +30,14 @@
           }
         },
         {
+          "client_id": "659993815762-ojhuu31f1qdt2pvjpsg5h7uuqtj7i6qe.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.avanapp.avan_app",
+            "certificate_hash": "d50047b345f51bd30d0957fe07028caedee1e2eb"
+          }
+        },
+        {
           "client_id": "659993815762-p1nhhmaje1b79n2itc8ucdmfs0cl148r.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
