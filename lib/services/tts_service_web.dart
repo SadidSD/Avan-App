@@ -33,7 +33,10 @@ class PlatformTts {
         return;
       }
 
-      // 1. Chrome Unstick Fix: Always cancel any hung speech and force resume
+      // 1. Chrome Unstick Fix: Reset state, cancel any hung speech, and force resume
+      _isSpeaking = false;
+      _currentUtterance = null;
+      _stopKeepAlive();
       synth.cancel();
       synth.resume();
 
@@ -68,23 +71,28 @@ class PlatformTts {
       _currentUtterance = utterance;
 
       utterance.onStart.listen((_) {
+        if (!identical(_currentUtterance, utterance)) return;
         debugPrint("Web TTS started speaking: '$text'");
         _startKeepAlive();
       });
 
       utterance.onEnd.listen((_) {
+        if (!identical(_currentUtterance, utterance)) return;
         debugPrint("Web TTS finished speaking: '$text'");
         _stopKeepAlive();
         if (_isSpeaking) {
           _isSpeaking = false;
+          _currentUtterance = null;
           onComplete?.call();
         }
       });
 
       utterance.onError.listen((e) {
+        if (!identical(_currentUtterance, utterance)) return;
         debugPrint("Web TTS Error event: $e");
         _stopKeepAlive();
         _isSpeaking = false;
+        _currentUtterance = null;
       });
 
       synth.speak(utterance);
@@ -116,6 +124,7 @@ class PlatformTts {
   Future<void> pause() async {
     try {
       _isSpeaking = false;
+      _currentUtterance = null;
       _stopKeepAlive();
       html.window.speechSynthesis?.cancel();
     } catch (_) {}
@@ -130,6 +139,7 @@ class PlatformTts {
   Future<void> stop() async {
     try {
       _isSpeaking = false;
+      _currentUtterance = null;
       _stopKeepAlive();
       html.window.speechSynthesis?.cancel();
     } catch (_) {}

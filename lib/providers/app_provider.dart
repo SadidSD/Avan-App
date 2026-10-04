@@ -4,7 +4,6 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../models/affirmation.dart';
 import '../models/journal_entry.dart';
 import '../models/playlist.dart';
@@ -29,7 +28,7 @@ class AppProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
   final CloudSyncService _cloudSyncService = CloudSyncService();
 
-  StreamSubscription<User?>? _authSubscription;
+  StreamSubscription<dynamic>? _authSubscription;
   bool _isSyncing = false;
   DateTime? _lastSyncTime;
 
@@ -246,8 +245,9 @@ class AppProvider with ChangeNotifier {
 
     _authSubscription ??= _authService.authStateChanges.listen((user) async {
       if (user != null) {
-        if (user.displayName != null && user.displayName!.isNotEmpty && _userName == 'Friend') {
-          _userName = user.displayName!;
+        final displayName = _authService.displayName;
+        if (displayName != null && displayName.isNotEmpty && _userName == 'Friend') {
+          _userName = displayName;
           await _storageService.setString('user_name', _userName);
         }
         if (user.email != null && user.email!.isNotEmpty && _userEmail.isEmpty) {
@@ -279,21 +279,25 @@ class AppProvider with ChangeNotifier {
   }
 
   // ===========================================================================
-  // GOOGLE AUTH & CLOUD VAULT SYNC
+  // SUPABASE NATIVE AUTH & CLOUD VAULT SYNC
   // ===========================================================================
 
-  /// Initiates Google Sign-In and auto-syncs local data into user's Cloud Vault.
-  Future<AuthSignInResult> signInWithGoogle() async {
+  /// Signs in user with Supabase Native Email & Password and syncs Cloud Vault.
+  Future<AuthSignInResult> signInWithPassword({
+    required String email,
+    required String password,
+  }) async {
     try {
-      final result = await _authService.signInWithGoogle();
+      final result = await _authService.signInWithPassword(email: email, password: password);
       _lastAuthResult = result;
-      if (!result.isSuccess || result.credential?.user == null) {
+      if (!result.isSuccess || result.user == null) {
         notifyListeners();
         return result;
       }
-      final user = result.credential!.user!;
-      if (user.displayName != null && user.displayName!.isNotEmpty) {
-        _userName = user.displayName!;
+      final user = result.user!;
+      final displayName = _authService.displayName;
+      if (displayName != null && displayName.isNotEmpty) {
+        _userName = displayName;
         await _storageService.setString('user_name', _userName);
       }
       if (user.email != null && user.email!.isNotEmpty) {
@@ -304,21 +308,72 @@ class AppProvider with ChangeNotifier {
       _isCloudSyncEnabled = true;
       await _storageService.setBool('cloud_sync_enabled', true);
 
-      // Identify user in Adapty with Firebase UID for cross-platform subscriber analytics
-      await AdaptyService().identifyUser(user.uid);
-
-      // Perform initial cloud backup
+      await AdaptyService().identifyUser(user.id);
       await syncToCloud();
 
       notifyListeners();
       return result;
     } catch (e) {
-      debugPrint('[AppProvider] signInWithGoogle error: $e');
+      debugPrint('[AppProvider] signInWithPassword error: $e');
       final errResult = AuthSignInResult.error(e.toString(), rawError: e.toString());
       _lastAuthResult = errResult;
       notifyListeners();
       return errResult;
     }
+  }
+
+  /// Registers a new user with Supabase Native Email & Password.
+  Future<AuthSignInResult> signUpWithPassword({
+    required String email,
+    required String password,
+    String? displayName,
+  }) async {
+    try {
+      final result = await _authService.signUpWithPassword(
+        email: email,
+        password: password,
+        displayName: displayName,
+      );
+      _lastAuthResult = result;
+      if (!result.isSuccess || result.user == null) {
+        notifyListeners();
+        return result;
+      }
+      final user = result.user!;
+      if (displayName != null && displayName.isNotEmpty) {
+        _userName = displayName;
+        await _storageService.setString('user_name', _userName);
+      }
+      if (user.email != null && user.email!.isNotEmpty) {
+        _userEmail = user.email!;
+        await _storageService.setString('user_email', _userEmail);
+      }
+
+      _isCloudSyncEnabled = true;
+      await _storageService.setBool('cloud_sync_enabled', true);
+
+      await AdaptyService().identifyUser(user.id);
+      await syncToCloud();
+
+      notifyListeners();
+      return result;
+    } catch (e) {
+      debugPrint('[AppProvider] signUpWithPassword error: $e');
+      final errResult = AuthSignInResult.error(e.toString(), rawError: e.toString());
+      _lastAuthResult = errResult;
+      notifyListeners();
+      return errResult;
+    }
+  }
+
+  /// Sends a password reset email using Supabase.
+  Future<AuthSignInResult> resetPasswordForEmail(String email) async {
+    return _authService.resetPasswordForEmail(email);
+  }
+
+  /// Legacy compatibility wrapper
+  Future<AuthSignInResult> signInWithGoogle() async {
+    return _authService.signInWithGoogle();
   }
 
   /// Signs out of Google and Firebase, returning to local guest mode.

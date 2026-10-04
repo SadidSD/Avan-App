@@ -174,7 +174,7 @@ void main() {
       expect(find.text('"I am unstoppable and filled with peace."'), findsOneWidget);
     });
 
-    testWidgets('ProfileTab renders Account & Cloud Backup and Google Sign-In card', (tester) async {
+    testWidgets('ProfileTab renders Account & Cloud Backup and Supabase Sign-In card', (tester) async {
       final appProvider = AppProvider();
       await appProvider.loadState();
 
@@ -188,10 +188,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Check Google Sign-In prompt when user is not signed in
+      // Check Supabase Sign-In prompt when user is not signed in
       expect(find.text('Account & Cloud Backup'), findsOneWidget);
-      expect(find.text('Sign in with Google'), findsOneWidget);
-      expect(find.text('Sign in with Google / Cloud Sync ☁️'), findsOneWidget);
+      expect(find.text('Sign In / Register'), findsOneWidget);
+      expect(find.text('Supabase Cloud Vault / Sync ☁️'), findsOneWidget);
     });
   });
 }

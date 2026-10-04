@@ -76,7 +76,7 @@ class AudioProvider with ChangeNotifier {
     final words = aff.quote.trim().split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
     final double speed = _audioService.voiceSpeed > 0 ? _audioService.voiceSpeed : 1.0;
     // Calibrated natural speech rate: ~2.1 words per second at speed 1.0 (calm pacing)
-    final double speechSeconds = (words / (2.1 * speed)).clamp(3.0, 18.0);
+    final double speechSeconds = (words / (2.1 * speed)).clamp(3.0, 45.0);
     final double totalSeconds = speechSeconds + _gapBetweenAffirmations;
     return totalSeconds.round();
   }
@@ -174,36 +174,23 @@ class AudioProvider with ChangeNotifier {
     final bool isDifferent = _currentPlaylist?.id != playlist.id;
 
     _currentPlaylist = playlist;
-    if (isDifferent) {
-      // Every playlist always enforces the standard 2-second default gap
-      _gapBetweenAffirmations = defaultGapSeconds;
-      _intervalPerAffirmation = 4 + defaultGapSeconds;
-      _recalculateSessionTimeline();
+    // Every playlist always enforces the standard 2-second default gap
+    _gapBetweenAffirmations = defaultGapSeconds;
+    _intervalPerAffirmation = 4 + defaultGapSeconds;
+    _recalculateSessionTimeline();
 
-      // Reset position to 0 and cancel all prior playlist session timers
-      _gapTimer?.cancel();
-      _watchdogTimer?.cancel();
-      _sessionTicker?.cancel();
-      _audioService.stop();
-      _currentAffirmationIndex = (initialIndex >= 0 && initialIndex < playlist.affirmations.length)
-          ? initialIndex
-          : 0;
-      _sessionPositionSeconds = (_currentAffirmationIndex < _affirmationStartOffsets.length)
-          ? _affirmationStartOffsets[_currentAffirmationIndex]
-          : 0;
-    } else {
-      _recalculateSessionTimeline();
-      if (initialIndex != _currentAffirmationIndex) {
-        _gapTimer?.cancel();
-        _watchdogTimer?.cancel();
-        _currentAffirmationIndex = (initialIndex >= 0 && initialIndex < playlist.affirmations.length)
-            ? initialIndex
-            : 0;
-        _sessionPositionSeconds = (_currentAffirmationIndex < _affirmationStartOffsets.length)
-            ? _affirmationStartOffsets[_currentAffirmationIndex]
-            : 0;
-      }
-    }
+    // Cancel all prior playlist session timers and stop previous audio
+    _gapTimer?.cancel();
+    _watchdogTimer?.cancel();
+    _sessionTicker?.cancel();
+    _audioService.stop();
+
+    _currentAffirmationIndex = (initialIndex >= 0 && initialIndex < playlist.affirmations.length)
+        ? initialIndex
+        : 0;
+    _sessionPositionSeconds = (_currentAffirmationIndex < _affirmationStartOffsets.length)
+        ? _affirmationStartOffsets[_currentAffirmationIndex]
+        : 0;
 
     // Auto-activate the playlist's unique curated background soundscape!
     _audioService.setAmbientSound(playlist.defaultAmbientSound);
@@ -262,9 +249,10 @@ class AudioProvider with ChangeNotifier {
 
   void _onSpeechCompleted() {
     if (!_audioService.isPlaying) return;
+    if (_isCurrentSpeechFinished) return;
+    _isCurrentSpeechFinished = true;
     _watchdogTimer?.cancel();
     _gapTimer?.cancel();
-    _isCurrentSpeechFinished = true;
 
     // Trigger implicit completion feedback (Fix for Gap 3)
     final completedAff = currentAffirmation;
@@ -288,13 +276,15 @@ class AudioProvider with ChangeNotifier {
     if (aff != null) {
       _audioService.speakAffirmation(aff.quote);
 
-      // Fallback watchdog in case platform callback doesn't fire
-      final words = aff.quote.split(' ').length;
-      final estimatedSec = (words / 2.0).ceil().clamp(3, 16);
-      final maxWaitSec = estimatedSec + _gapBetweenAffirmations + 3;
+      // Generous fallback watchdog in case platform callback completely drops/crashes
+      // At slow meditative pace (rate 0.48 / 0.88), speech is ~1.0-1.5 words per second.
+      // We calculate a safe upper bound and add 20s buffer so watchdog never interrupts valid speech.
+      final words = aff.quote.trim().split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
+      final maxWaitSec = (words * 2.0).ceil().clamp(15, 90) + _gapBetweenAffirmations + 20;
       _watchdogTimer = Timer(Duration(seconds: maxWaitSec), () {
-        if (_audioService.isPlaying) {
-          _advanceToNextAffirmation();
+        if (_audioService.isPlaying && !_isCurrentSpeechFinished) {
+          debugPrint("AudioProvider: Watchdog fallback triggered after ${maxWaitSec}s - initiating completion gap");
+          _onSpeechCompleted();
         }
       });
     }
@@ -505,7 +495,7 @@ class AudioProvider with ChangeNotifier {
   }
 
   void setGapBetweenAffirmations(int seconds) {
-    _gapBetweenAffirmations = seconds.clamp(1, 10);
+    _gapBetweenAffirmations = seconds.clamp(2, 8);
     _intervalPerAffirmation = 4 + _gapBetweenAffirmations;
     _recalculateSessionTimeline();
     notifyListeners();

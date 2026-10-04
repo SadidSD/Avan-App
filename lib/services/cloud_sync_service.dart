@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../providers/app_provider.dart';
 import '../models/journal_entry.dart';
@@ -80,6 +81,38 @@ class CloudSyncService {
 
       await batch.commit();
       debugPrint('[CloudSyncService] Local data successfully synced to Cloud Firestore for user: $userId');
+
+      // Sync to Supabase user_vaults table
+      try {
+        await Supabase.instance.client.from('user_vaults').upsert({
+          'user_id': userId,
+          'profile': {
+            'userName': appProvider.userName,
+            'userEmail': appProvider.userEmail,
+            'appMode': appProvider.appModeSetting.name,
+            'selectedMood': appProvider.selectedMood,
+            'survey_goal': surveyAnswers['goal'],
+            'survey_challenge': surveyAnswers['challenge'],
+            'survey_vision': surveyAnswers['vision'],
+            'survey_commitment': surveyAnswers['commitment'],
+            'userTypedChallenge': appProvider.userTypedChallenge,
+            'userTypedAspiration': appProvider.userTypedAspiration,
+            'profileVector': appProvider.userProfileVector.toJson(),
+          },
+          'streak': streak.toJson(),
+          'favorites': appProvider.favoriteAffirmations,
+          'journals': appProvider.journalEntries.map((e) => e.toJson()).toList(),
+          'vision_boards': {
+            'boards': appProvider.savedVisionBoards.map((b) => b.toJson()).toList(),
+            'activeBoard': appProvider.activeVisionBoard.toJson(),
+          },
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        });
+        debugPrint('[CloudSyncService] Local data successfully synced to Supabase for user: $userId');
+      } catch (se) {
+        debugPrint('[CloudSyncService] Supabase sync note (handled): $se');
+      }
+
       return true;
     } catch (e) {
       debugPrint('[CloudSyncService] uploadLocalToCloud error: $e');
@@ -194,9 +227,14 @@ class CloudSyncService {
       for (final doc in vaultDocs.docs) {
         batch.delete(doc.reference);
       }
-      batch.delete(userDoc);
       await batch.commit();
       debugPrint('[CloudSyncService] Cloud vault deleted for user: $userId');
+
+      try {
+        await Supabase.instance.client.from('user_vaults').delete().eq('user_id', userId);
+        debugPrint('[CloudSyncService] Supabase vault wiped for user: $userId');
+      } catch (_) {}
+
       return true;
     } catch (e) {
       debugPrint('[CloudSyncService] deleteCloudVault error: $e');

@@ -10,6 +10,7 @@ import 'screens/splash/splash_screen.dart';
 import 'theme/app_theme.dart';
 import 'theme/app_colors.dart';
 
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'services/adapty_service.dart';
 
 void main() async {
@@ -115,6 +116,15 @@ void main() async {
     }
   } catch (e) {
     debugPrint('[Firebase] Init exception (handled): $e');
+  }
+  try {
+    await Supabase.initialize(
+      url: 'https://gpmyncjiclxgwxbhscxc.supabase.co',
+      anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdwbXluY2ppY2x4Z3d4YmhzY3hjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNDI4NjEsImV4cCI6MjEwMjcxODg2MX0.TOa-wCCR2UjgupodRYnZBVtP7D8oQ3i3UlhnL6bN5FE',
+    );
+    debugPrint('[Supabase] Initialized successfully');
+  } catch (e) {
+    debugPrint('[Supabase] Init exception (handled): $e');
   }
   try {
     await AdaptyService().initialize();

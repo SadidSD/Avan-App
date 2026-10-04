@@ -353,9 +353,10 @@ class _ProfileTabState extends State<ProfileTab> {
   }
 
   // ===========================================================================
-  // GOOGLE SIGN-IN & CLOUD BACKUP CARD
+  // SUPABASE AUTH & CLOUD BACKUP CARD
   // ===========================================================================
   Widget _buildGoogleSignInCard(BuildContext context, AppProvider appProvider, Color accent) {
+    const supabaseGreen = Color(0xFF3ECF8E);
     return CustomCard(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -367,14 +368,14 @@ class _ProfileTabState extends State<ProfileTab> {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF4285F4).withOpacity(0.12),
+                  color: supabaseGreen.withOpacity(0.12),
                   shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFF4285F4).withOpacity(0.3)),
+                  border: Border.all(color: supabaseGreen.withOpacity(0.3)),
                 ),
                 child: const Icon(
-                  Icons.account_circle_rounded,
-                  color: Color(0xFF4285F4),
-                  size: 24,
+                  Icons.lock_outline_rounded,
+                  color: supabaseGreen,
+                  size: 22,
                 ),
               ),
               const SizedBox(width: 12),
@@ -408,23 +409,15 @@ class _ProfileTabState extends State<ProfileTab> {
             children: [
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: appProvider.isSyncing
-                      ? null
-                      : () => _handleGoogleSignIn(context, appProvider),
-                  icon: appProvider.isSyncing
-                      ? const SizedBox(
-                          width: 14,
-                          height: 14,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                        )
-                      : const Icon(Icons.login_rounded, size: 16),
+                  onPressed: () => _showSupabaseAuthModal(context, appProvider),
+                  icon: const Icon(Icons.bolt_rounded, size: 16),
                   label: Text(
-                    appProvider.isSyncing ? 'Signing In...' : 'Sign in with Google',
+                    'Sign In / Register',
                     style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4285F4),
-                    foregroundColor: Colors.white,
+                    backgroundColor: supabaseGreen,
+                    foregroundColor: const Color(0xFF121212),
                     elevation: 0,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
@@ -1107,12 +1100,12 @@ class _ProfileTabState extends State<ProfileTab> {
           icon: appProvider.isSignedIn ? Icons.cloud_done_rounded : Icons.cloud_outlined,
           title: appProvider.isSignedIn
               ? 'Cloud Vault & Sync Active ☁️'
-              : 'Sign in with Google / Cloud Sync ☁️',
+              : 'Supabase Cloud Vault / Sync ☁️',
           subtitle: appProvider.isSignedIn
               ? (appProvider.lastSyncTime != null
                   ? 'Last backup saved • Tap to manage'
-                  : 'Secured with ${appProvider.userEmail.isNotEmpty ? appProvider.userEmail : "Google"}')
-              : 'Tap to connect Google & secure streak',
+                  : 'Secured with ${appProvider.userEmail.isNotEmpty ? appProvider.userEmail : "Supabase"}')
+              : 'Tap to connect Supabase & secure streak',
           onTap: () => _showCloudVaultModal(context, appProvider),
         ),
         _buildSettingTile(
@@ -1390,34 +1383,32 @@ class _ProfileTabState extends State<ProfileTab> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Google Sign In Button
+                    // Supabase Sign In / Register Button
                     SizedBox(
                       width: double.infinity,
                       height: 52,
                       child: ElevatedButton(
-                        onPressed: isSyncing
-                            ? null
-                            : () async {
-                                Navigator.pop(ctx);
-                                await _handleGoogleSignIn(context, appProvider);
-                              },
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          _showSupabaseAuthModal(context, appProvider);
+                        },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: Colors.black87,
+                          backgroundColor: const Color(0xFF3ECF8E),
+                          foregroundColor: const Color(0xFF121212),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          elevation: 2,
+                          elevation: 0,
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.account_circle_rounded, color: Color(0xFF4285F4), size: 24),
-                            const SizedBox(width: 12),
+                            const Icon(Icons.bolt_rounded, color: Color(0xFF121212), size: 22),
+                            const SizedBox(width: 10),
                             Text(
-                              'Continue with Google',
+                              'Sign In / Register with Supabase',
                               style: GoogleFonts.inter(
                                 fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black87,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF121212),
                               ),
                             ),
                           ],
@@ -1427,7 +1418,7 @@ class _ProfileTabState extends State<ProfileTab> {
                     const SizedBox(height: 10),
                     Center(
                       child: Text(
-                        'No password needed. AVAN will never post or share your data.',
+                        'Secure cloud backup powered by Supabase. AVAN never sells your data.',
                         style: GoogleFonts.inter(fontSize: 10.5, color: AppColors.textMuted),
                       ),
                     ),
@@ -1611,7 +1602,7 @@ class _ProfileTabState extends State<ProfileTab> {
                             Navigator.pop(ctx);
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('Signed out of Google. Switched back to guest mode.'),
+                                content: Text('Signed out of Supabase. Switched back to guest mode.'),
                                 behavior: SnackBarBehavior.floating,
                               ),
                             );
@@ -1832,10 +1823,10 @@ class _ProfileTabState extends State<ProfileTab> {
             const SizedBox(height: 16),
             Text('Reflection Pause Duration: ${audioProvider.gapBetweenAffirmations}s', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
             Slider(
-              value: audioProvider.gapBetweenAffirmations.toDouble(),
-              min: 1.0,
+              value: audioProvider.gapBetweenAffirmations.toDouble().clamp(2.0, 6.0),
+              min: 2.0,
               max: 6.0,
-              divisions: 5,
+              divisions: 4,
               activeColor: AppColors.goldAccent,
               onChanged: (val) {
                 audioProvider.setGapBetweenAffirmations(val.round());
@@ -2081,6 +2072,384 @@ class _ProfileTabState extends State<ProfileTab> {
             child: const Text('Reset Everything', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showSupabaseAuthModal(BuildContext context, AppProvider appProvider) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.surfaceElevated,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (ctx) => _SupabaseAuthSheet(appProvider: appProvider),
+    );
+  }
+}
+
+class _SupabaseAuthSheet extends StatefulWidget {
+  final AppProvider appProvider;
+  const _SupabaseAuthSheet({required this.appProvider});
+
+  @override
+  State<_SupabaseAuthSheet> createState() => _SupabaseAuthSheetState();
+}
+
+class _SupabaseAuthSheetState extends State<_SupabaseAuthSheet> {
+  bool _isSignUp = false;
+  bool _isLoading = false;
+  bool _obscurePassword = true;
+  String? _errorMessage;
+
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _nameController = TextEditingController();
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    final name = _nameController.text.trim();
+
+    if (email.isEmpty || !email.contains('@')) {
+      setState(() => _errorMessage = 'Please enter a valid email address.');
+      return;
+    }
+    if (password.length < 6) {
+      setState(() => _errorMessage = 'Password must be at least 6 characters.');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final AuthSignInResult result;
+      if (_isSignUp) {
+        result = await widget.appProvider.signUpWithPassword(
+          email: email,
+          password: password,
+          displayName: name.isNotEmpty ? name : null,
+        );
+      } else {
+        result = await widget.appProvider.signInWithPassword(
+          email: email,
+          password: password,
+        );
+      }
+
+      if (!mounted) return;
+
+      if (result.isSuccess) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_isSignUp
+                ? 'Welcome to AVAN! Your Supabase Vault is connected ☁️✨'
+                : 'Welcome back! Signed in with Supabase ☁️✨'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      } else {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = result.errorMessage ?? 'Authentication failed.';
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = e.toString();
+        });
+      }
+    }
+  }
+
+  Future<void> _forgotPassword() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty || !email.contains('@')) {
+      setState(() => _errorMessage = 'Please enter your email above to receive a reset link.');
+      return;
+    }
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    final res = await widget.appProvider.resetPasswordForEmail(email);
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (res.isSuccess) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Password reset link sent to $email ✉️'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } else {
+      setState(() => _errorMessage = res.errorMessage ?? 'Could not send reset email.');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    const supabaseGreen = Color(0xFF3ECF8E);
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Header
+              Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: supabaseGreen.withOpacity(0.12),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: supabaseGreen.withOpacity(0.3)),
+                    ),
+                    child: const Icon(Icons.bolt_rounded, color: supabaseGreen, size: 24),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _isSignUp ? 'Create Supabase Account' : 'Sign in with Supabase',
+                          style: GoogleFonts.cormorantGaramond(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            fontStyle: FontStyle.italic,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        const Text(
+                          'Native cloud vault for your streaks & reflections',
+                          style: TextStyle(fontSize: 11.5, color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // Mode Switcher (Sign In vs Sign Up)
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.border),
+                ),
+                padding: const EdgeInsets.all(4),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => setState(() {
+                          _isSignUp = false;
+                          _errorMessage = null;
+                        }),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          decoration: BoxDecoration(
+                            color: !_isSignUp ? AppColors.surfaceElevated : Colors.transparent,
+                            borderRadius: BorderRadius.circular(10),
+                            border: !_isSignUp ? Border.all(color: supabaseGreen.withOpacity(0.4)) : null,
+                          ),
+                          child: Center(
+                            child: Text(
+                              'Sign In',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: !_isSignUp ? Colors.white : AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => setState(() {
+                          _isSignUp = true;
+                          _errorMessage = null;
+                        }),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          decoration: BoxDecoration(
+                            color: _isSignUp ? AppColors.surfaceElevated : Colors.transparent,
+                            borderRadius: BorderRadius.circular(10),
+                            border: _isSignUp ? Border.all(color: supabaseGreen.withOpacity(0.4)) : null,
+                          ),
+                          child: Center(
+                            child: Text(
+                              'Create Account',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: _isSignUp ? Colors.white : AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 18),
+
+              // Error display
+              if (_errorMessage != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.redAccent.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.redAccent.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 18),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          _errorMessage!,
+                          style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+              ],
+
+              // Form fields
+              if (_isSignUp) ...[
+                TextField(
+                  controller: _nameController,
+                  textCapitalization: TextCapitalization.words,
+                  style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+                  decoration: InputDecoration(
+                    labelText: 'Your Name (Optional)',
+                    prefixIcon: const Icon(Icons.person_outline_rounded, size: 20, color: AppColors.textSecondary),
+                    filled: true,
+                    fillColor: AppColors.surface,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppColors.border)),
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppColors.border)),
+                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: supabaseGreen)),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+
+              TextField(
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                autocorrect: false,
+                style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+                decoration: InputDecoration(
+                  labelText: 'Email Address',
+                  prefixIcon: const Icon(Icons.mail_outline_rounded, size: 20, color: AppColors.textSecondary),
+                  filled: true,
+                  fillColor: AppColors.surface,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppColors.border)),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppColors.border)),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: supabaseGreen)),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              TextField(
+                controller: _passwordController,
+                obscureText: _obscurePassword,
+                style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+                decoration: InputDecoration(
+                  labelText: 'Password',
+                  prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20, color: AppColors.textSecondary),
+                  suffixIcon: IconButton(
+                    icon: Icon(_obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined, size: 20, color: AppColors.textSecondary),
+                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                  ),
+                  filled: true,
+                  fillColor: AppColors.surface,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppColors.border)),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppColors.border)),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: supabaseGreen)),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Action button
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _submit,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: supabaseGreen,
+                    foregroundColor: const Color(0xFF121212),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    elevation: 0,
+                  ),
+                  child: _isLoading
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF121212)))
+                      : Text(
+                          _isSignUp ? 'Create Account' : 'Sign In',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                        ),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Forgot password
+              if (!_isSignUp)
+                Center(
+                  child: TextButton(
+                    onPressed: _isLoading ? null : _forgotPassword,
+                    child: const Text('Forgot Password?', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }

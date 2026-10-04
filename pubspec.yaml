@@ -1,7 +1,7 @@
 name: avan_app
 description: AVAN Mindset & Affirmation App - Warm, Calm, Minimal & Meaningful.
 publish_to: 'none'
-version: 1.0.22+23
+version: 1.0.23+24
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -29,6 +29,7 @@ dependencies:
   cloud_firestore: ^5.5.1
   google_sign_in: ^6.2.2
   adapty_flutter: ^4.1.1
+  supabase_flutter: ^2.18.0
 
 dependency_overrides:
   record_platform_interface: 1.2.0

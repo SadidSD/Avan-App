@@ -62,6 +62,50 @@ void main() {
       }
     });
 
+    test('Re-opening the exact same playlist enforces 2s default gap', () {
+      final audioProvider = AudioProvider();
+      final testPlaylist = allPlaylists.first;
+
+      audioProvider.openPlaylist(testPlaylist);
+      expect(audioProvider.gapBetweenAffirmations, 2);
+
+      // User changes pacing in player screen
+      audioProvider.setIntervalPerAffirmation(6);
+      expect(audioProvider.gapBetweenAffirmations, 6);
+
+      // Reopening the same playlist must reset back to 2s
+      audioProvider.openPlaylist(testPlaylist);
+      expect(audioProvider.gapBetweenAffirmations, 2);
+    });
+
+    test('All playlists in library strictly enforce 2s default pause when opened', () {
+      final audioProvider = AudioProvider();
+      expect(allPlaylists.isNotEmpty, isTrue);
+
+      for (final pl in allPlaylists) {
+        // Artificially change pacing
+        audioProvider.setIntervalPerAffirmation(4);
+        expect(audioProvider.gapBetweenAffirmations, 4);
+
+        // Open playlist pl -> must strictly be 2s
+        audioProvider.openPlaylist(pl);
+        expect(audioProvider.gapBetweenAffirmations, 2,
+            reason: 'Playlist ${pl.id} ("${pl.title}") must default to 2s gap');
+      }
+    });
+
+    test('setGapBetweenAffirmations clamps to minimum 2 seconds', () {
+      final audioProvider = AudioProvider();
+      audioProvider.setGapBetweenAffirmations(0);
+      expect(audioProvider.gapBetweenAffirmations, 2);
+
+      audioProvider.setGapBetweenAffirmations(1);
+      expect(audioProvider.gapBetweenAffirmations, 2);
+
+      audioProvider.setGapBetweenAffirmations(4);
+      expect(audioProvider.gapBetweenAffirmations, 4);
+    });
+
     test('closePlayer resets gap to 2s default', () {
       final audioProvider = AudioProvider();
       audioProvider.setIntervalPerAffirmation(6);
