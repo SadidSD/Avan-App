@@ -575,10 +575,89 @@ class _HomeTabState extends State<HomeTab>
                       matchMap: matchMap,
                     ),
                   ] else ...[
-                    // 8a. Top Recommendations Carousel (Vector Personalized Playlists)
+                    // 8a. Free Playlists Carousel (Always on top of the library for immediate free listening)
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.only(left: 20, right: 20, top: 22),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    '✨ Free Playlists',
+                                    style: AppTextStyles.sectionHeader,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF3ECF8E).withOpacity(0.14),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: const Color(0xFF3ECF8E).withOpacity(0.35)),
+                                  ),
+                                  child: Text(
+                                    'Free · No Subscription Needed',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 9.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: const Color(0xFF3ECF8E),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 14),
+                            RepaintBoundary(
+                              child: SizedBox(
+                                height: 232,
+                                child: ListView.separated(
+                                  scrollDirection: Axis.horizontal,
+                                  physics: const BouncingScrollPhysics(),
+                                  itemCount: freePlaylists.length,
+                                  separatorBuilder: (_, __) => const SizedBox(width: 12),
+                                  itemBuilder: (context, index) {
+                                    final p = freePlaylists[index];
+                                    final match = matchMap[p.id];
+                                    return PlaylistCard(
+                                      playlist: p,
+                                      accentColor: accent,
+                                      matchPercent: match?.matchPercent,
+                                      width: 168,
+                                      onTap: () {
+                                        _handlePlaylistTap(
+                                          context: context,
+                                          playlist: p,
+                                          appProvider: appProvider,
+                                          audioProvider: audioProvider,
+                                          accent: accent,
+                                        );
+                                      },
+                                      onPlayTap: () {
+                                        _handlePlayTap(
+                                          context: context,
+                                          playlist: p,
+                                          appProvider: appProvider,
+                                          audioProvider: audioProvider,
+                                        );
+                                      },
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // 8b. Top Recommendations Carousel (Vector Personalized Playlists)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 20, right: 20, top: 28),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -652,8 +731,8 @@ class _HomeTabState extends State<HomeTab>
                       ),
                     ),
 
-                    // 8b. Thematic Group Carousels for each Group
-                    ...orderedGroups.map((group) {
+                    // 8c. Thematic Group Carousels for each Group
+                    ...orderedGroups.where((group) => group.id != 'group_daily_essentials').map((group) {
                       final playlists = group.getSortedPlaylists(matchMap);
                       if (playlists.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
 
@@ -899,6 +978,11 @@ class _HomeTabState extends State<HomeTab>
     required Map<String, PlaylistMatch> matchMap,
   }) {
     final matchingPlaylists = allPlaylists.where((p) => _matchesPlaylist(p, query)).toList();
+    matchingPlaylists.sort((a, b) {
+      if (!a.isPremium && b.isPremium) return -1;
+      if (a.isPremium && !b.isPremium) return 1;
+      return 0;
+    });
 
     if (matchingPlaylists.isEmpty) {
       return SliverToBoxAdapter(
