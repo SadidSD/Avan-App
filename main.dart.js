@@ -58766,17 +58766,20 @@ if(s!=null)s.a2(0)
 r=q.gAS()
 if(r!=null){s=q.CW
 if(s!=null)s.$1(r)}q.as=A.cr(A.cR(0,0,q.e),new A.aj0(q))},
-mi(){var s,r,q=this,p=q.as
-if(p!=null)p.a2(0)
-p=q.at
-if(p!=null)p.a2(0)
-q.ch=!1
-s=q.gAS()
-if(s!=null){p=s.c
-q.a.DM(p)
-p=B.c.uI(B.c.bJ(p),A.cU("\\s+",!0,!1))
-r=B.l.bn(B.l.hd(new A.b7(p,new A.aj1(),A.a2(p).i("b7<1>")).gB(0)*2),15,90)+q.e+20
-q.at=A.cr(A.cR(0,0,r),new A.aj2(q,r))}},
+mi(){var s,r,q,p,o,n=this,m=n.as
+if(m!=null)m.a2(0)
+m=n.at
+if(m!=null)m.a2(0)
+n.ch=!1
+s=n.gAS()
+if(s!=null){m=n.a
+r=s.c
+m.DM(r)
+r=B.c.uI(B.c.bJ(r),A.cU("\\s+",!0,!1))
+q=new A.b7(r,new A.aj1(),A.a2(r).i("b7<1>")).gB(0)
+p=m.e
+o=B.l.bn(B.d.hd(q/(1.2*(p>0?p:1))),4,30)+4
+n.at=A.cr(A.cR(0,0,o),new A.aj2(n,o))}},
 YP(){var s,r,q,p=this,o=p.b
 if(o==null)return
 s=o.r.length
