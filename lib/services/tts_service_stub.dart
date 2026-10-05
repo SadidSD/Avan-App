@@ -5,6 +5,8 @@ class PlatformTts {
   final FlutterTts _flutterTts = FlutterTts();
   VoidCallback? onComplete;
   bool _isSpeaking = false;
+  int _currentSpeechId = 0;
+  bool _isCurrentSpeechCompleted = false;
 
   Future<void> init() async {
     try {
@@ -13,39 +15,64 @@ class PlatformTts {
       await _flutterTts.setVolume(1.0);
       await _flutterTts.setPitch(1.0);
       await _flutterTts.awaitSpeakCompletion(true);
+      _flutterTts.setStartHandler(() {
+        debugPrint("Native TTS started speaking utterance #$_currentSpeechId");
+      });
       _flutterTts.setCompletionHandler(() {
-        if (_isSpeaking) {
-          _isSpeaking = false;
-          onComplete?.call();
-        }
+        _notifyCompletion(_currentSpeechId, source: "completionHandler");
       });
       _flutterTts.setErrorHandler((msg) {
-        _isSpeaking = false;
+        debugPrint("Native TTS Platform Error: $msg");
+        _notifyCompletion(_currentSpeechId, source: "errorHandler");
       });
       _flutterTts.setCancelHandler(() {
-        _isSpeaking = false;
+        debugPrint("Native TTS Platform Cancelled");
       });
     } catch (e) {
       debugPrint("Native TTS Init Error: $e");
     }
   }
 
+  void _notifyCompletion(int speechId, {required String source}) {
+    if (speechId != 0 && speechId == _currentSpeechId && !_isCurrentSpeechCompleted) {
+      _isCurrentSpeechCompleted = true;
+      _isSpeaking = false;
+      debugPrint("Native TTS: Completed utterance #$speechId via $source");
+      onComplete?.call();
+    }
+  }
+
   Future<void> speak(String text, {double volume = 1.0, double speed = 1.0}) async {
     try {
-      _isSpeaking = false;
-      await _flutterTts.stop();
+      if (_isSpeaking) {
+        _isSpeaking = false;
+        try {
+          await _flutterTts.stop();
+        } catch (_) {}
+      }
+
+      final speechId = ++_currentSpeechId;
+      _isCurrentSpeechCompleted = false;
+      _isSpeaking = true;
+
       await _flutterTts.setVolume(volume.clamp(0.0, 1.0));
       await _flutterTts.setSpeechRate((speed * 0.48).clamp(0.2, 0.9));
-      _isSpeaking = true;
+
+      // Dual completion safeguard:
+      // awaitSpeakCompletion(true) ensures speak returns when speech finishes natively.
+      // Whichever notifies first (setCompletionHandler or await speak()) triggers completion reliably.
       await _flutterTts.speak(text);
+      _notifyCompletion(speechId, source: "awaitSpeakCompletion");
     } catch (e) {
-      _isSpeaking = false;
       debugPrint("Native TTS Speak Error: $e");
+      _notifyCompletion(_currentSpeechId, source: "speakException");
     }
   }
 
   Future<void> pause() async {
+    _currentSpeechId = 0;
     _isSpeaking = false;
+    _isCurrentSpeechCompleted = true;
     try {
       await _flutterTts.stop();
     } catch (_) {}
@@ -56,7 +83,9 @@ class PlatformTts {
   }
 
   Future<void> stop() async {
+    _currentSpeechId = 0;
     _isSpeaking = false;
+    _isCurrentSpeechCompleted = true;
     try {
       await _flutterTts.stop();
     } catch (_) {}

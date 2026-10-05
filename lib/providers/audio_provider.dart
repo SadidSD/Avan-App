@@ -276,14 +276,15 @@ class AudioProvider with ChangeNotifier {
     if (aff != null) {
       _audioService.speakAffirmation(aff.quote);
 
-      // Generous fallback watchdog in case platform callback completely drops/crashes
-      // At slow meditative pace (rate 0.48 / 0.88), speech is ~1.0-1.5 words per second.
-      // We calculate a safe upper bound and add 20s buffer so watchdog never interrupts valid speech.
+      // Robust fallback watchdog in case platform callback completely drops/crashes.
+      // Speech pace is ~1.5 - 2.0 words/sec. We estimate speech duration with a safe 4s buffer.
+      // When watchdog fires, it triggers _onSpeechCompleted() which then enforces the exact 2s gap.
       final words = aff.quote.trim().split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
-      final maxWaitSec = (words * 2.0).ceil().clamp(15, 90) + _gapBetweenAffirmations + 20;
-      _watchdogTimer = Timer(Duration(seconds: maxWaitSec), () {
+      final double speed = _audioService.voiceSpeed > 0 ? _audioService.voiceSpeed : 1.0;
+      final speechTimeoutSec = (words / (1.2 * speed)).ceil().clamp(4, 30) + 4;
+      _watchdogTimer = Timer(Duration(seconds: speechTimeoutSec), () {
         if (_audioService.isPlaying && !_isCurrentSpeechFinished) {
-          debugPrint("AudioProvider: Watchdog fallback triggered after ${maxWaitSec}s - initiating completion gap");
+          debugPrint("AudioProvider: Watchdog fallback triggered after ${speechTimeoutSec}s - initiating completion gap");
           _onSpeechCompleted();
         }
       });
