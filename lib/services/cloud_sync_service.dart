@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../providers/app_provider.dart';
 import '../models/journal_entry.dart';
 import '../models/vision_board.dart';
@@ -56,17 +57,18 @@ class CloudSyncService {
           'activeBoard': appProvider.activeVisionBoard.toJson(),
         },
         'updated_at': DateTime.now().toUtc().toIso8601String(),
-      });
+      }).timeout(const Duration(seconds: 8));
       debugPrint('[CloudSyncService] Local data successfully synced to Supabase for user: $userId');
       syncedAny = true;
     } catch (se) {
       debugPrint('[CloudSyncService] Supabase sync note (handled): $se');
     }
 
-    // 2. Secondary / Legacy: Sync to Firestore
-    try {
-      final userDoc = _firestore.collection('users').doc(userId);
-      final batch = _firestore.batch();
+    // 2. Secondary / Legacy: Sync to Firestore ONLY if Firebase user is actively authenticated
+    if (customFirestoreInstance != null || FirebaseAuth.instance.currentUser != null) {
+      try {
+        final userDoc = _firestore.collection('users').doc(userId);
+        final batch = _firestore.batch();
 
       final profileRef = userDoc.collection('vault').doc('profile');
       batch.set(profileRef, {
@@ -109,11 +111,12 @@ class CloudSyncService {
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
-      await batch.commit();
-      debugPrint('[CloudSyncService] Local data successfully synced to Cloud Firestore for user: $userId');
-      syncedAny = true;
-    } catch (fe) {
-      debugPrint('[CloudSyncService] Firestore sync note (handled): $fe');
+        await batch.commit().timeout(const Duration(seconds: 5));
+        debugPrint('[CloudSyncService] Local data successfully synced to Cloud Firestore for user: $userId');
+        syncedAny = true;
+      } catch (fe) {
+        debugPrint('[CloudSyncService] Firestore sync note (handled): $fe');
+      }
     }
 
     return syncedAny;
@@ -130,7 +133,8 @@ class CloudSyncService {
           .from('user_vaults')
           .select()
           .eq('user_id', userId)
-          .maybeSingle();
+          .maybeSingle()
+          .timeout(const Duration(seconds: 8));
 
       if (res != null) {
         // Profile
@@ -214,9 +218,10 @@ class CloudSyncService {
       debugPrint('[CloudSyncService] Supabase restore note: $se');
     }
 
-    // 2. Secondary / Fallback: Try restoring from Firestore
-    try {
-      final userDoc = _firestore.collection('users').doc(userId);
+    // 2. Secondary / Fallback: Try restoring from Firestore ONLY if Firebase user is authenticated
+    if (customFirestoreInstance != null || FirebaseAuth.instance.currentUser != null) {
+      try {
+        final userDoc = _firestore.collection('users').doc(userId);
 
       // 1. Fetch Profile
       final profileSnap = await userDoc.collection('vault').doc('profile').get();
@@ -298,14 +303,15 @@ class CloudSyncService {
         }
       }
 
-      // Reload state in appProvider
-      await appProvider.loadState(forceReload: true);
-      debugPrint('[CloudSyncService] Cloud data successfully restored for user: $userId');
-      return true;
-    } catch (e) {
-      debugPrint('[CloudSyncService] restoreCloudToLocal error: $e');
-      return false;
+        // Reload state in appProvider
+        await appProvider.loadState(forceReload: true);
+        debugPrint('[CloudSyncService] Cloud data successfully restored for user: $userId');
+        return true;
+      } catch (e) {
+        debugPrint('[CloudSyncService] restoreCloudToLocal error: $e');
+      }
     }
+    return false;
   }
 
   /// Purges all cloud records for user upon account deletion.

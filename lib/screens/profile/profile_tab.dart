@@ -88,7 +88,7 @@ class _ProfileTabState extends State<ProfileTab> {
               _buildIdentityCard(context, appProvider, accent, archetypeLabel, archetypeSubLabel),
               if (!appProvider.isSignedIn) ...[
                 const SizedBox(height: 14),
-                _buildSupabaseAuthCard(context, appProvider, accent),
+                _buildCloudVaultAuthCard(context, appProvider, accent),
               ],
               const SizedBox(height: 20),
 
@@ -353,10 +353,9 @@ class _ProfileTabState extends State<ProfileTab> {
   }
 
   // ===========================================================================
-  // SUPABASE AUTH & CLOUD BACKUP CARD
+  // CLOUD VAULT AUTH & BACKUP CARD
   // ===========================================================================
-  Widget _buildSupabaseAuthCard(BuildContext context, AppProvider appProvider, Color accent) {
-    const supabaseGreen = Color(0xFF3ECF8E);
+  Widget _buildCloudVaultAuthCard(BuildContext context, AppProvider appProvider, Color accent) {
     return CustomCard(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -368,13 +367,13 @@ class _ProfileTabState extends State<ProfileTab> {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: supabaseGreen.withOpacity(0.12),
+                  color: AppColors.goldAccent.withOpacity(0.12),
                   shape: BoxShape.circle,
-                  border: Border.all(color: supabaseGreen.withOpacity(0.3)),
+                  border: Border.all(color: AppColors.goldAccent.withOpacity(0.3)),
                 ),
                 child: const Icon(
-                  Icons.lock_outline_rounded,
-                  color: supabaseGreen,
+                  Icons.cloud_done_rounded,
+                  color: AppColors.goldAccent,
                   size: 22,
                 ),
               ),
@@ -409,15 +408,15 @@ class _ProfileTabState extends State<ProfileTab> {
             children: [
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: () => _showSupabaseAuthModal(context, appProvider),
-                  icon: const Icon(Icons.bolt_rounded, size: 16),
+                  onPressed: () => _showCloudVaultAuthModal(context, appProvider),
+                  icon: const Icon(Icons.lock_outline_rounded, size: 16),
                   label: Text(
-                    'Sign In / Register',
+                    'Sign In or Register',
                     style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: supabaseGreen,
-                    foregroundColor: const Color(0xFF121212),
+                    backgroundColor: AppColors.buttonDark,
+                    foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
@@ -1100,12 +1099,12 @@ class _ProfileTabState extends State<ProfileTab> {
           icon: appProvider.isSignedIn ? Icons.cloud_done_rounded : Icons.cloud_outlined,
           title: appProvider.isSignedIn
               ? 'Cloud Vault & Sync Active ☁️'
-              : 'Supabase Cloud Vault / Sync ☁️',
+              : 'Cloud Vault & Account Backup ☁️',
           subtitle: appProvider.isSignedIn
               ? (appProvider.lastSyncTime != null
                   ? 'Last backup saved • Tap to manage'
-                  : 'Secured with ${appProvider.userEmail.isNotEmpty ? appProvider.userEmail : "Supabase"}')
-              : 'Tap to connect Supabase & secure streak',
+                  : 'Secured with ${appProvider.userEmail.isNotEmpty ? appProvider.userEmail : "Cloud Vault"}')
+              : 'Tap to connect Cloud Vault & secure streak',
           onTap: () => _showCloudVaultModal(context, appProvider),
         ),
         _buildSettingTile(
@@ -1132,7 +1131,7 @@ class _ProfileTabState extends State<ProfileTab> {
           _buildSettingTile(
             icon: Icons.delete_forever_rounded,
             title: 'Delete Account & Wipe Cloud Vault ⚠️',
-            subtitle: 'Permanently remove cloud vault and linked Supabase account',
+            subtitle: 'Permanently remove cloud vault and linked account',
             isDestructive: true,
             onTap: () => _showDeleteAccountDialog(context, appProvider),
           ),
@@ -1383,32 +1382,32 @@ class _ProfileTabState extends State<ProfileTab> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Supabase Sign In / Register Button
+                    // Sign In / Register Button
                     SizedBox(
                       width: double.infinity,
                       height: 52,
                       child: ElevatedButton(
                         onPressed: () {
                           Navigator.pop(ctx);
-                          _showSupabaseAuthModal(context, appProvider);
+                          _showCloudVaultAuthModal(context, appProvider);
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF3ECF8E),
-                          foregroundColor: const Color(0xFF121212),
+                          backgroundColor: AppColors.buttonDark,
+                          foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                           elevation: 0,
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.bolt_rounded, color: Color(0xFF121212), size: 22),
+                            const Icon(Icons.cloud_done_rounded, color: AppColors.goldAccent, size: 22),
                             const SizedBox(width: 10),
                             Text(
-                              'Sign In / Register with Supabase',
+                              'Sign In or Create Account',
                               style: GoogleFonts.inter(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
-                                color: const Color(0xFF121212),
+                                color: Colors.white,
                               ),
                             ),
                           ],
@@ -1418,7 +1417,7 @@ class _ProfileTabState extends State<ProfileTab> {
                     const SizedBox(height: 10),
                     Center(
                       child: Text(
-                        'Secure cloud backup powered by Supabase. AVAN never sells your data.',
+                        'End-to-end encrypted cloud backup. AVAN never sells your data.',
                         style: GoogleFonts.inter(fontSize: 10.5, color: AppColors.textMuted),
                       ),
                     ),
@@ -1602,7 +1601,7 @@ class _ProfileTabState extends State<ProfileTab> {
                             Navigator.pop(ctx);
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('Signed out of Supabase. Switched back to guest mode.'),
+                                content: Text('Signed out. Switched back to guest mode.'),
                                 behavior: SnackBarBehavior.floating,
                               ),
                             );
@@ -1674,7 +1673,7 @@ class _ProfileTabState extends State<ProfileTab> {
           ],
         ),
         content: const Text(
-          'This will permanently delete your AVAN account and wipe all cloud-saved records (streaks, journals, vision boards) from your Supabase Vault.\n\nThis action is irreversible and compliant with Google Play data safety regulations.',
+          'This will permanently delete your AVAN account and wipe all cloud-saved records (streaks, journals, vision boards) from your Cloud Vault.\n\nThis action is irreversible and compliant with Google Play data safety regulations.',
           style: TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.45),
         ),
         actions: [
@@ -2076,7 +2075,7 @@ class _ProfileTabState extends State<ProfileTab> {
     );
   }
 
-  void _showSupabaseAuthModal(BuildContext context, AppProvider appProvider) {
+  void _showCloudVaultAuthModal(BuildContext context, AppProvider appProvider) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -2084,20 +2083,20 @@ class _ProfileTabState extends State<ProfileTab> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      builder: (ctx) => _SupabaseAuthSheet(appProvider: appProvider),
+      builder: (ctx) => _CloudVaultAuthSheet(appProvider: appProvider),
     );
   }
 }
 
-class _SupabaseAuthSheet extends StatefulWidget {
+class _CloudVaultAuthSheet extends StatefulWidget {
   final AppProvider appProvider;
-  const _SupabaseAuthSheet({required this.appProvider});
+  const _CloudVaultAuthSheet({required this.appProvider});
 
   @override
-  State<_SupabaseAuthSheet> createState() => _SupabaseAuthSheetState();
+  State<_CloudVaultAuthSheet> createState() => _CloudVaultAuthSheetState();
 }
 
-class _SupabaseAuthSheetState extends State<_SupabaseAuthSheet> {
+class _CloudVaultAuthSheetState extends State<_CloudVaultAuthSheet> {
   bool _isSignUp = false;
   bool _isLoading = false;
   bool _obscurePassword = true;
@@ -2160,7 +2159,7 @@ class _SupabaseAuthSheetState extends State<_SupabaseAuthSheet> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               title: Row(
                 children: const [
-                  Icon(Icons.mark_email_read_rounded, color: Color(0xFF3ECF8E)),
+                  Icon(Icons.mark_email_read_rounded, color: AppColors.goldAccent),
                   SizedBox(width: 8),
                   Text('Check Your Email ✉️', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 ],
@@ -2173,8 +2172,8 @@ class _SupabaseAuthSheetState extends State<_SupabaseAuthSheet> {
                 ElevatedButton(
                   onPressed: () => Navigator.pop(ctx),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF3ECF8E),
-                    foregroundColor: const Color(0xFF121212),
+                    backgroundColor: AppColors.buttonDark,
+                    foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   child: const Text('Got it', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -2186,23 +2185,31 @@ class _SupabaseAuthSheetState extends State<_SupabaseAuthSheet> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(_isSignUp
-                  ? 'Welcome to AVAN! Your Supabase Vault is connected ☁️✨'
-                  : 'Welcome back! Signed in with Supabase ☁️✨'),
+                  ? 'Welcome to AVAN! Your Cloud Vault is connected ☁️✨'
+                  : 'Welcome back! Connected to Cloud Vault ☁️✨'),
               behavior: SnackBarBehavior.floating,
             ),
           );
         }
       } else {
+        final err = result.errorMessage ?? 'Authentication failed.';
         setState(() {
           _isLoading = false;
-          _errorMessage = result.errorMessage ?? 'Authentication failed.';
+          _errorMessage = err;
+          if (err.toLowerCase().contains('already exists')) {
+            _isSignUp = false;
+          }
         });
       }
     } catch (e) {
       if (mounted) {
+        final err = AuthService.parseErrorMessage(e);
         setState(() {
           _isLoading = false;
-          _errorMessage = e.toString();
+          _errorMessage = err;
+          if (err.toLowerCase().contains('already exists')) {
+            _isSignUp = false;
+          }
         });
       }
     }
@@ -2238,7 +2245,6 @@ class _SupabaseAuthSheetState extends State<_SupabaseAuthSheet> {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-    const supabaseGreen = Color(0xFF3ECF8E);
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottomInset),
@@ -2268,11 +2274,11 @@ class _SupabaseAuthSheetState extends State<_SupabaseAuthSheet> {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: supabaseGreen.withOpacity(0.12),
+                      color: AppColors.goldAccent.withOpacity(0.12),
                       shape: BoxShape.circle,
-                      border: Border.all(color: supabaseGreen.withOpacity(0.3)),
+                      border: Border.all(color: AppColors.goldAccent.withOpacity(0.3)),
                     ),
-                    child: const Icon(Icons.bolt_rounded, color: supabaseGreen, size: 24),
+                    child: const Icon(Icons.cloud_done_rounded, color: AppColors.goldAccent, size: 24),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -2280,9 +2286,9 @@ class _SupabaseAuthSheetState extends State<_SupabaseAuthSheet> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          _isSignUp ? 'Create Supabase Account' : 'Sign in with Supabase',
+                          _isSignUp ? 'Create Account' : 'Welcome Back',
                           style: GoogleFonts.cormorantGaramond(
-                            fontSize: 22,
+                            fontSize: 24,
                             fontWeight: FontWeight.bold,
                             fontStyle: FontStyle.italic,
                             color: AppColors.textPrimary,
@@ -2290,7 +2296,7 @@ class _SupabaseAuthSheetState extends State<_SupabaseAuthSheet> {
                         ),
                         const SizedBox(height: 2),
                         const Text(
-                          'Native cloud vault for your streaks & reflections',
+                          'Secure cloud vault for your streaks & reflections',
                           style: TextStyle(fontSize: 11.5, color: AppColors.textSecondary),
                         ),
                       ],
@@ -2321,7 +2327,7 @@ class _SupabaseAuthSheetState extends State<_SupabaseAuthSheet> {
                           decoration: BoxDecoration(
                             color: !_isSignUp ? AppColors.surfaceElevated : Colors.transparent,
                             borderRadius: BorderRadius.circular(10),
-                            border: !_isSignUp ? Border.all(color: supabaseGreen.withOpacity(0.4)) : null,
+                            border: !_isSignUp ? Border.all(color: AppColors.goldAccent.withOpacity(0.5)) : null,
                           ),
                           child: Center(
                             child: Text(
@@ -2329,7 +2335,7 @@ class _SupabaseAuthSheetState extends State<_SupabaseAuthSheet> {
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
-                                color: !_isSignUp ? Colors.white : AppColors.textSecondary,
+                                color: !_isSignUp ? AppColors.textPrimary : AppColors.textSecondary,
                               ),
                             ),
                           ),
@@ -2347,7 +2353,7 @@ class _SupabaseAuthSheetState extends State<_SupabaseAuthSheet> {
                           decoration: BoxDecoration(
                             color: _isSignUp ? AppColors.surfaceElevated : Colors.transparent,
                             borderRadius: BorderRadius.circular(10),
-                            border: _isSignUp ? Border.all(color: supabaseGreen.withOpacity(0.4)) : null,
+                            border: _isSignUp ? Border.all(color: AppColors.goldAccent.withOpacity(0.5)) : null,
                           ),
                           child: Center(
                             child: Text(
@@ -2355,7 +2361,7 @@ class _SupabaseAuthSheetState extends State<_SupabaseAuthSheet> {
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
-                                color: _isSignUp ? Colors.white : AppColors.textSecondary,
+                                color: _isSignUp ? AppColors.textPrimary : AppColors.textSecondary,
                               ),
                             ),
                           ),
@@ -2405,7 +2411,7 @@ class _SupabaseAuthSheetState extends State<_SupabaseAuthSheet> {
                     fillColor: AppColors.surface,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppColors.border)),
                     enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppColors.border)),
-                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: supabaseGreen)),
+                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppColors.goldAccent, width: 1.5)),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -2423,7 +2429,7 @@ class _SupabaseAuthSheetState extends State<_SupabaseAuthSheet> {
                   fillColor: AppColors.surface,
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppColors.border)),
                   enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppColors.border)),
-                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: supabaseGreen)),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppColors.goldAccent, width: 1.5)),
                 ),
               ),
               const SizedBox(height: 12),
@@ -2443,7 +2449,7 @@ class _SupabaseAuthSheetState extends State<_SupabaseAuthSheet> {
                   fillColor: AppColors.surface,
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppColors.border)),
                   enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppColors.border)),
-                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: supabaseGreen)),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppColors.goldAccent, width: 1.5)),
                 ),
               ),
               const SizedBox(height: 20),
@@ -2455,13 +2461,13 @@ class _SupabaseAuthSheetState extends State<_SupabaseAuthSheet> {
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _submit,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: supabaseGreen,
-                    foregroundColor: const Color(0xFF121212),
+                    backgroundColor: AppColors.buttonDark,
+                    foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     elevation: 0,
                   ),
                   child: _isLoading
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF121212)))
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                       : Text(
                           _isSignUp ? 'Create Account' : 'Sign In',
                           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
@@ -2475,7 +2481,7 @@ class _SupabaseAuthSheetState extends State<_SupabaseAuthSheet> {
                 Center(
                   child: TextButton(
                     onPressed: _isLoading ? null : _forgotPassword,
-                    child: const Text('Forgot Password?', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                    child: const Text('Forgot Password?', style: TextStyle(color: AppColors.goldAccent, fontSize: 12, fontWeight: FontWeight.w600)),
                   ),
                 ),
             ],

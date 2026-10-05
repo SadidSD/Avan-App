@@ -104,10 +104,15 @@ class AuthService {
       return 'Incorrect email or password. Please verify your credentials and try again.';
     } else if (errStr.contains('email not confirmed') || errStr.contains('email_not_confirmed')) {
       return 'Please check your inbox and confirm your email address before signing in.';
-    } else if (errStr.contains('user already registered') || errStr.contains('already_registered')) {
+    } else if (errStr.contains('user already registered') ||
+        errStr.contains('already_registered') ||
+        errStr.contains('user_already_exists') ||
+        errStr.contains('already exists')) {
       return 'An account with this email already exists. Please sign in instead.';
     } else if (errStr.contains('password') && (errStr.contains('short') || errStr.contains('least') || errStr.contains('6'))) {
       return 'Password should be at least 6 characters long.';
+    } else if (errStr.contains('timeout') || errStr.contains('timed out')) {
+      return 'Request timed out. Please check your internet connection and try again.';
     } else if (errStr.contains('10') || errStr.contains('developer_error')) {
       return 'Developer Error (10): App SHA-1 is missing in Console, or sign-in is disabled.';
     } else if (errStr.contains('operation-not-allowed')) {
@@ -116,6 +121,9 @@ class AuthService {
       return 'Network connection error. Please verify your internet connection.';
     } else if (errStr.contains('popup_closed') || errStr.contains('canceled') || errStr.contains('cancelled')) {
       return 'Sign-in cancelled by user.';
+    }
+    if (error is AuthException) {
+      return error.message;
     }
     return error.toString();
   }
@@ -167,7 +175,9 @@ class AuthService {
       final response = await auth.signInWithPassword(
         email: email.trim(),
         password: password,
-      );
+      ).timeout(const Duration(seconds: 10), onTimeout: () {
+        throw TimeoutException("Connection timed out. Please check your internet connection.");
+      });
 
       final user = response.user;
       if (user == null) {
@@ -210,7 +220,9 @@ class AuthService {
         data: displayName != null && displayName.isNotEmpty
             ? {'name': displayName, 'display_name': displayName}
             : null,
-      );
+      ).timeout(const Duration(seconds: 10), onTimeout: () {
+        throw TimeoutException("Connection timed out. Please check your internet connection.");
+      });
 
       final user = response.user;
       if (user == null) {
@@ -240,7 +252,9 @@ class AuthService {
       if (auth == null) {
         return const AuthSignInResult.error("Supabase client not initialized.");
       }
-      await auth.resetPasswordForEmail(email.trim());
+      await auth.resetPasswordForEmail(email.trim()).timeout(const Duration(seconds: 10), onTimeout: () {
+        throw TimeoutException("Connection timed out. Please check your internet connection.");
+      });
       logDiagnostic("Password reset email sent to: $email");
       return const AuthSignInResult.success(null);
     } catch (e) {

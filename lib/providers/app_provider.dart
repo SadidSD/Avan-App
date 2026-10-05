@@ -308,8 +308,9 @@ class AppProvider with ChangeNotifier {
       _isCloudSyncEnabled = true;
       await _storageService.setBool('cloud_sync_enabled', true);
 
-      await AdaptyService().identifyUser(user.id);
-      await syncToCloud();
+      // Perform background user identification and initial cloud backup without blocking auth response
+      unawaited(AdaptyService().identifyUser(user.id));
+      unawaited(syncToCloud());
 
       notifyListeners();
       return result;
@@ -352,8 +353,9 @@ class AppProvider with ChangeNotifier {
       _isCloudSyncEnabled = true;
       await _storageService.setBool('cloud_sync_enabled', true);
 
-      await AdaptyService().identifyUser(user.id);
-      await syncToCloud();
+      // Perform background user identification and initial cloud backup without blocking auth response
+      unawaited(AdaptyService().identifyUser(user.id));
+      unawaited(syncToCloud());
 
       notifyListeners();
       return result;
