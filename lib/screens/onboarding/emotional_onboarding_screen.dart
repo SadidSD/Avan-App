@@ -83,11 +83,19 @@ class _EmotionalOnboardingScreenState extends State<EmotionalOnboardingScreen> w
       if (page == 22) {
         _startSynthesis();
       }
-      _pageController.animateToPage(
-        page,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOutCubic,
-      );
+      if (_pageController.hasClients) {
+        _pageController.animateToPage(
+          page,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOutCubic,
+        );
+      } else {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_pageController.hasClients) {
+            _pageController.jumpToPage(page);
+          }
+        });
+      }
       setState(() {
         _currentPage = page;
       });
@@ -273,18 +281,40 @@ class _EmotionalOnboardingScreenState extends State<EmotionalOnboardingScreen> w
 
   // Screens
   Widget _buildScreen0Sanctuary() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24.0),
-        child: TypewriterText(
-          text: 'Welcome. This is your space.\nTake a breath.',
-          style: GoogleFonts.inter(
-            color: AppColors.textPrimary,
-            fontSize: 24,
-            fontWeight: FontWeight.w400,
-            height: 1.5,
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        _sanctuaryTimer?.cancel();
+        _goToPage(1);
+      },
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TypewriterText(
+                text: 'Welcome. This is your space.\nTake a breath.',
+                style: GoogleFonts.inter(
+                  color: AppColors.textPrimary,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w400,
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+              Text(
+                'Tap to begin',
+                style: GoogleFonts.inter(
+                  color: AppColors.textSecondary.withOpacity(0.6),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
           ),
-          textAlign: TextAlign.center,
         ),
       ),
     );
