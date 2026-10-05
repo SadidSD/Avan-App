@@ -627,6 +627,7 @@ class _HomeTabState extends State<HomeTab>
                                       accentColor: accent,
                                       matchPercent: match?.matchPercent,
                                       width: 168,
+                                      isPremiumUser: isPremium,
                                       onTap: () {
                                         _handlePlaylistTap(
                                           context: context,
@@ -704,6 +705,7 @@ class _HomeTabState extends State<HomeTab>
                                       accentColor: accent,
                                       matchPercent: match.matchPercent,
                                       width: 168,
+                                      isPremiumUser: isPremium,
                                       onTap: () {
                                         _handlePlaylistTap(
                                           context: context,
@@ -792,6 +794,7 @@ class _HomeTabState extends State<HomeTab>
                                         accentColor: accent,
                                         matchPercent: match?.matchPercent,
                                         width: 168,
+                                        isPremiumUser: isPremium,
                                         onTap: () {
                                           _handlePlaylistTap(
                                             context: context,
@@ -943,6 +946,7 @@ class _HomeTabState extends State<HomeTab>
                   accentColor: accent,
                   matchPercent: match?.matchPercent,
                   width: gridCardWidth,
+                  isPremiumUser: appProvider.isPremium,
                   onTap: () {
                     _handlePlaylistTap(
                       context: context,
@@ -1021,6 +1025,7 @@ class _HomeTabState extends State<HomeTab>
               accentColor: accent,
               matchPercent: match?.matchPercent,
               width: gridCardWidth,
+              isPremiumUser: appProvider.isPremium,
               onTap: () {
                 _handlePlaylistTap(
                   context: context,

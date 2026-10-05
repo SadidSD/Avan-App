@@ -113,22 +113,28 @@ class PlaylistTracklistSheet extends StatelessWidget {
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 7, vertical: 2.5),
                                     decoration: BoxDecoration(
-                                      color: playlist.isPremium
+                                      color: isLocked
                                           ? AppColors.goldAccent.withOpacity(0.18)
-                                          : accentColor.withOpacity(0.18),
+                                          : (playlist.isPremium
+                                              ? AppColors.goldAccent.withOpacity(0.18)
+                                              : accentColor.withOpacity(0.18)),
                                       borderRadius: BorderRadius.circular(8),
                                       border: Border.all(
-                                        color: playlist.isPremium
+                                        color: isLocked
                                             ? AppColors.goldAccent.withOpacity(0.5)
-                                            : accentColor.withOpacity(0.5),
+                                            : (playlist.isPremium
+                                                ? AppColors.goldAccent.withOpacity(0.5)
+                                                : accentColor.withOpacity(0.5)),
                                       ),
                                     ),
                                     child: Text(
-                                      playlist.isPremium ? 'PRO 🔒' : 'FREE 🌿',
+                                      isLocked
+                                          ? 'PRO 🔒'
+                                          : (playlist.isPremium ? 'UNLOCKED ✨' : 'FREE 🌿'),
                                       style: GoogleFonts.inter(
                                         fontSize: 10,
                                         fontWeight: FontWeight.w700,
-                                        color: playlist.isPremium
+                                        color: isLocked || playlist.isPremium
                                             ? AppColors.goldAccent
                                             : accentColor,
                                       ),

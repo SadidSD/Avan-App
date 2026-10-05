@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
 import '../models/playlist.dart';
+import '../providers/app_provider.dart';
 import '../theme/app_colors.dart';
 
 /// A card representing a curated audio Playlist entity.
@@ -14,6 +16,7 @@ class PlaylistCard extends StatelessWidget {
   final VoidCallback? onPlayTap;
   final double? width;
   final double imageHeight;
+  final bool? isPremiumUser;
 
   const PlaylistCard({
     Key? key,
@@ -24,10 +27,21 @@ class PlaylistCard extends StatelessWidget {
     this.onPlayTap,
     this.width,
     this.imageHeight = 116.0,
+    this.isPremiumUser,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final bool userHasPremium = isPremiumUser ??
+        (() {
+          try {
+            return Provider.of<AppProvider>(context).isPremium;
+          } catch (_) {
+            return false;
+          }
+        })();
+
+    final bool isLocked = playlist.isPremium && !userHasPremium;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
@@ -147,52 +161,54 @@ class PlaylistCard extends StatelessWidget {
                 ),
 
                 // Top-Right: PRO or FREE Badge (Zero-overhead high performance frosted glass)
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 7.0, vertical: 3.0),
-                    decoration: BoxDecoration(
-                      color: playlist.isPremium
-                          ? const Color(0xEE2A1E11)
-                          : const Color(0xEE16261B),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
+                // When the user has unlocked premium, pro cards do not show the 'PRO' lock badge above them.
+                if (isLocked || !playlist.isPremium)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 7.0, vertical: 3.0),
+                      decoration: BoxDecoration(
                         color: playlist.isPremium
-                            ? AppColors.goldAccent.withOpacity(0.8)
-                            : accentColor.withOpacity(0.7),
-                        width: 0.8,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          playlist.isPremium
-                              ? Icons.lock_rounded
-                              : Icons.auto_awesome_rounded,
-                          size: 9.5,
+                            ? const Color(0xEE2A1E11)
+                            : const Color(0xEE16261B),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
                           color: playlist.isPremium
-                              ? AppColors.goldAccent
-                              : Colors.white,
+                              ? AppColors.goldAccent.withOpacity(0.8)
+                              : accentColor.withOpacity(0.7),
+                          width: 0.8,
                         ),
-                        const SizedBox(width: 3),
-                        Text(
-                          playlist.isPremium ? 'PRO' : 'FREE',
-                          style: GoogleFonts.inter(
-                            fontSize: 9.0,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.5,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            playlist.isPremium
+                                ? Icons.lock_rounded
+                                : Icons.auto_awesome_rounded,
+                            size: 9.5,
                             color: playlist.isPremium
                                 ? AppColors.goldAccent
                                 : Colors.white,
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 3),
+                          Text(
+                            playlist.isPremium ? 'PRO' : 'FREE',
+                            style: GoogleFonts.inter(
+                              fontSize: 9.0,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.5,
+                              color: playlist.isPremium
+                                  ? AppColors.goldAccent
+                                  : Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
 
                 // Bottom-Left: Optional Vector Match Badge
                 if (matchPercent != null && matchPercent!.isNotEmpty)
