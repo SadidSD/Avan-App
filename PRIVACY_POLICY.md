@@ -21,10 +21,25 @@ In-app subscriptions (*Monthly* and *Annual*) are processed securely via **Googl
 
 ---
 
-### 3. Data Deletion
-Users can erase all stored data, journal entries, recordings, and personalization vectors at any time via the **Settings -> Reset App Data** button inside the Profile Tab.
+### 3. Account & Data Deletion Policy
+Users can delete their account and all associated personal data at any time:
+
+1. **In-App Account Deletion**:
+   - Open the **AVAN** app.
+   - Navigate to the **Profile** tab.
+   - Scroll down to the Account section and tap **Delete Account**.
+   - Confirm deletion. Your authentication credentials, profile data, and cloud backup data will be immediately and permanently deleted.
+
+2. **Web / Email Account Deletion Request**:
+   - If you cannot access the app, you can submit a deletion request by emailing **support@avanapp.com** with the subject line *"Account & Data Deletion Request"*.
+   - Please include your registered email address.
+   - All associated account records, profile information, and cloud vault entries will be permanently removed within 48 hours of verification.
+
+3. **Data Types Deleted vs. Retained**:
+   - **Deleted**: Name, email address, authentication credentials, journal entries, voice recordings, vision board data, and mindset profile vectors.
+   - **Retained**: None. No personal data is retained after account deletion.
 
 ---
 
-### 4. Support Contact
-For inquiries regarding data privacy: `support@avanapp.com`
+### 4. Support & Privacy Contact
+For inquiries regarding data privacy or account management: `support@avanapp.com`
