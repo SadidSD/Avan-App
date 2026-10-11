@@ -109,6 +109,14 @@ class PurchaseService {
         lastError = "Product query error: ${response.error?.message}";
         logDiagnostic(lastError!);
       }
+
+      // Automatically verify/restore any active Google Play / App Store subscriptions on startup
+      try {
+        await _iap.restorePurchases();
+      } catch (e) {
+        debugPrint("[PurchaseService] Startup subscription check note: $e");
+      }
+
       _isInitialized = true;
     } catch (e) {
       lastError = "Init exception: $e";

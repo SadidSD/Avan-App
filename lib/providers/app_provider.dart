@@ -156,28 +156,33 @@ class AppProvider with ChangeNotifier {
     super.dispose();
   }
 
-  Future<void> loadState({bool forceReload = false}) {
-    if (forceReload) {
-      _loadStateFuture = null;
+  Future<void> loadState({bool forceReload = false}) async {
+    if (_loadStateFuture != null) {
+      await _loadStateFuture;
+      if (!forceReload) return;
     }
-    _loadStateFuture ??= _loadStateInternal();
-    return _loadStateFuture!;
+    _loadStateFuture = _loadStateInternal();
+    await _loadStateFuture;
   }
 
   Future<void> _loadStateInternal() async {
     await _storageService.init();
 
     _isOnboardingCompleted = _storageService.getOnboardingStatus();
-    _isPremium = _storageService.getPremiumStatus();
+    _isPremium = _isPremium || _storageService.getPremiumStatus();
 
-    // Bind real-time store subscription updates
+    // Bind real-time store subscription updates (never overwrite saved local premium with false)
     PurchaseService().initialize((isPremium) {
-      setPremium(isPremium);
+      if (isPremium) {
+        setPremium(true);
+      }
     });
 
-    // Bind real-time Adapty subscription entitlement updates
+    // Bind real-time Adapty subscription entitlement updates (never overwrite saved local premium with false)
     AdaptyService().initialize((isPremium) {
-      setPremium(isPremium);
+      if (isPremium) {
+        setPremium(true);
+      }
     });
     
     _userName = _storageService.getString('user_name', defaultValue: 'Friend');
@@ -756,6 +761,9 @@ class AppProvider with ChangeNotifier {
     _isPremium = val;
     await _storageService.setPremiumStatus(_isPremium);
     notifyListeners();
+    if (_isCloudSyncEnabled && isSignedIn) {
+      unawaited(syncToCloud());
+    }
   }
 
   Future<void> togglePremium() async {

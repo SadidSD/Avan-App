@@ -36,7 +36,7 @@ class AdaptyService {
     }
 
     if (_isInitialized) {
-      if (_onPremiumChanged != null) {
+      if (_onPremiumChanged != null && _isPremium) {
         _onPremiumChanged!(_isPremium);
       }
       return;
@@ -69,10 +69,11 @@ class AdaptyService {
 
   void _updateProfileState(AdaptyProfile profile) {
     _currentProfile = profile;
-    final active = profile.accessLevels[premiumAccessLevelId]?.isActive ?? false;
+    final accessLevel = profile.accessLevels[premiumAccessLevelId];
+    final active = accessLevel?.isActive ?? false;
     _isPremium = active;
     debugPrint('[AdaptyService] Profile updated. Premium: $_isPremium');
-    if (_onPremiumChanged != null) {
+    if (_onPremiumChanged != null && _isPremium) {
       _onPremiumChanged!(_isPremium);
     }
   }

@@ -164,5 +164,23 @@ void main() {
 
       audioProvider.dispose();
     });
+
+    test('Subscription status persists across app restarts and loadState reloads without resetting to false', () async {
+      SharedPreferences.setMockInitialValues({});
+      final firstSessionProvider = AppProvider();
+      await firstSessionProvider.loadState(forceReload: true);
+      expect(firstSessionProvider.isPremium, isFalse);
+
+      // User subscribes in session 1
+      await firstSessionProvider.setPremium(true);
+      expect(firstSessionProvider.isPremium, isTrue);
+
+      // User closes app and opens a fresh session 2
+      final secondSessionProvider = AppProvider();
+      await secondSessionProvider.loadState(forceReload: true);
+
+      // Must remain premium and not ask to subscribe again
+      expect(secondSessionProvider.isPremium, isTrue);
+    });
   });
 }

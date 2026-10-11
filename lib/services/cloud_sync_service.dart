@@ -39,6 +39,7 @@ class CloudSyncService {
         'profile': {
           'userName': appProvider.userName,
           'userEmail': appProvider.userEmail,
+          'isPremium': appProvider.isPremium,
           'appMode': appProvider.appModeSetting.name,
           'selectedMood': appProvider.selectedMood,
           'survey_goal': surveyAnswers['goal'],
@@ -74,6 +75,7 @@ class CloudSyncService {
       batch.set(profileRef, {
         'userName': appProvider.userName,
         'userEmail': appProvider.userEmail,
+        'isPremium': appProvider.isPremium,
         'appMode': appProvider.appModeSetting.name,
         'selectedMood': appProvider.selectedMood,
         'survey_goal': surveyAnswers['goal'],
@@ -145,6 +147,9 @@ class CloudSyncService {
               name: data['userName'] as String,
               email: (data['userEmail'] as String?) ?? appProvider.userEmail,
             );
+          }
+          if (data['isPremium'] == true) {
+            await appProvider.storageService.setPremiumStatus(true);
           }
           if (data['appMode'] != null) {
             await appProvider.storageService.setAppMode(data['appMode'] as String);
@@ -232,6 +237,9 @@ class CloudSyncService {
             name: data['userName'] as String,
             email: (data['userEmail'] as String?) ?? appProvider.userEmail,
           );
+        }
+        if (data['isPremium'] == true) {
+          await appProvider.storageService.setPremiumStatus(true);
         }
         if (data['appMode'] != null) {
           final modeStr = data['appMode'] as String;
