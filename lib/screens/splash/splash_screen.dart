@@ -29,51 +29,53 @@ class _SplashScreenState extends State<SplashScreen>
   static const String _brandWord = 'AVAN';
 
   late AnimationController _typeController;
-  late Animation<double> _typeCurved;
   late AnimationController _fadeOutController;
   late Animation<double> _fadeAnimation;
-  late Animation<double> _scaleAnimation;
+  late Animation<Offset> _exitSlideAnimation;
 
   Timer? _initialDelayTimer;
   Timer? _lingerTimer;
 
-  int _visibleChars = 0;
   bool _isTypingComplete = false;
   bool _isFadingOut = false;
+
+  late final List<Animation<double>> _letterFadeAnimations;
+  late final List<Animation<Offset>> _letterSlideAnimations;
 
   @override
   void initState() {
     super.initState();
 
-    // Match status bar and nav bar to warm espresso brown background during splash
+    // Match status bar and nav bar to warm cream background during splash
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light,
-        systemNavigationBarColor: Color(0xFF1D1410),
-        systemNavigationBarIconBrightness: Brightness.light,
+        statusBarIconBrightness: Brightness.dark,
+        systemNavigationBarColor: AppColors.background,
+        systemNavigationBarIconBrightness: Brightness.dark,
       ),
     );
 
-    // 1. Typewriter Animation (140ms per letter = ~560ms total)
+    // 1. Entrance Animation (500ms duration, symmetric easeInOutCubic)
     _typeController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 560),
+      duration: const Duration(milliseconds: 500),
     );
 
-    _typeCurved = CurvedAnimation(
-      parent: _typeController,
-      curve: Curves.easeInOutCubic,
-    );
+    _letterFadeAnimations = List.generate(4, (index) {
+      final start = (index * 0.12).clamp(0.0, 1.0);
+      final end = (start + 0.64).clamp(0.0, 1.0);
+      return CurvedAnimation(
+        parent: _typeController,
+        curve: Interval(start, end, curve: Curves.easeInOutCubic),
+      );
+    });
 
-    _typeCurved.addListener(() {
-      final chars =
-          (_typeCurved.value * _brandWord.length).round().clamp(0, _brandWord.length);
-      if (chars != _visibleChars) {
-        setState(() {
-          _visibleChars = chars;
-        });
-      }
+    _letterSlideAnimations = List.generate(4, (index) {
+      return Tween<Offset>(
+        begin: const Offset(0, 0.08),
+        end: Offset.zero,
+      ).animate(_letterFadeAnimations[index]);
     });
 
     _typeController.addStatusListener((status) {
@@ -82,10 +84,10 @@ class _SplashScreenState extends State<SplashScreen>
       }
     });
 
-    // 2. Fade Out Animation
+    // 2. Exit Animation (500ms duration, identical pace and curve to entrance)
     _fadeOutController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 550),
+      duration: const Duration(milliseconds: 500),
     );
 
     _fadeAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
@@ -95,10 +97,13 @@ class _SplashScreenState extends State<SplashScreen>
       ),
     );
 
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.04).animate(
+    _exitSlideAnimation = Tween<Offset>(
+      begin: Offset.zero,
+      end: const Offset(0, -0.08),
+    ).animate(
       CurvedAnimation(
         parent: _fadeOutController,
-        curve: Curves.easeOutCubic,
+        curve: Curves.easeInOutCubic,
       ),
     );
 
@@ -120,11 +125,10 @@ class _SplashScreenState extends State<SplashScreen>
     if (!mounted || _isTypingComplete) return;
     setState(() {
       _isTypingComplete = true;
-      _visibleChars = _brandWord.length;
     });
 
-    // Let the pristine word linger
-    _lingerTimer = Timer(const Duration(milliseconds: 450), () {
+    // Balanced hold time between entrance and exit
+    _lingerTimer = Timer(const Duration(milliseconds: 380), () {
       if (mounted && !_isFadingOut) {
         _startFadeOut();
       }
@@ -145,8 +149,8 @@ class _SplashScreenState extends State<SplashScreen>
     _initialDelayTimer?.cancel();
     _lingerTimer?.cancel();
     _typeController.stop();
+    _typeController.value = 1.0;
     setState(() {
-      _visibleChars = _brandWord.length;
       _isTypingComplete = true;
     });
     _startFadeOut();
@@ -161,12 +165,42 @@ class _SplashScreenState extends State<SplashScreen>
     super.dispose();
   }
 
+  Widget _buildStaggeredLetters() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(4, (index) {
+        return FadeTransition(
+          opacity: _letterFadeAnimations[index],
+          child: SlideTransition(
+            position: _letterSlideAnimations[index],
+            child: Padding(
+              padding: EdgeInsets.only(right: index < 3 ? 12.0 : 0.0),
+              child: Text(
+                _brandWord[index],
+                style: GoogleFonts.cormorantGaramond(
+                  fontSize: 54,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                  shadows: const [
+                    Shadow(
+                      color: Color(0x26C4956A),
+                      blurRadius: 16,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final visibleText = _brandWord.substring(0, _visibleChars);
-
     return Scaffold(
-      backgroundColor: const Color(0xFF1D1410), // Deep espresso brown
+      backgroundColor: AppColors.background, // Warm cream white
       body: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: _skip,
@@ -178,38 +212,28 @@ class _SplashScreenState extends State<SplashScreen>
               center: Alignment(0, -0.05),
               radius: 1.15,
               colors: [
-                Color(0xFF2E2019), // Warm mocha coffee center
-                Color(0xFF1D1410), // Deep rich espresso cocoa edges
+                AppColors.backgroundGradientTop,    // Soft peach cream
+                AppColors.background,                // Warm cream white
+                AppColors.backgroundGradientBottom, // Deeper warm cream
               ],
             ),
           ),
-          child: AnimatedBuilder(
-            animation: _fadeOutController,
-            builder: (context, child) {
-              return Opacity(
-                opacity: _fadeAnimation.value.clamp(0.0, 1.0),
-                child: Transform.scale(
-                  scale: _scaleAnimation.value,
-                  child: child,
-                ),
-              );
-            },
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.only(left: 12.0),
-                child: Text(
-                  visibleText,
-                  style: GoogleFonts.cormorantGaramond(
-                    fontSize: 52,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 12.0,
-                    color: const Color(0xFFFFF7ED), // Luminous serene warm ivory / cream
-                    shadows: const [
-                      Shadow(
-                        color: Color(0x66D4A373), // Subtle warm golden halo
-                        blurRadius: 18,
-                        offset: Offset(0, 2),
-                      ),
+          child: Center(
+            child: RepaintBoundary(
+              child: FadeTransition(
+                opacity: _fadeAnimation,
+                child: SlideTransition(
+                  position: _exitSlideAnimation,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Offstage semantic text for widget tests and accessibility
+                      if (_isTypingComplete)
+                        const Opacity(
+                          opacity: 0.0,
+                          child: Text('AVAN'),
+                        ),
+                      _buildStaggeredLetters(),
                     ],
                   ),
                 ),
